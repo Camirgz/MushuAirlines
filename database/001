@@ -42,3 +42,10 @@ CREATE TABLE Operator (
         FOREIGN KEY (Id) 
         REFERENCES Employee(Id)
 );
+
+CREATE TABLE Administrator (
+    Id int PRIMARY KEY,
+    CONSTRAINT FK_AdminEmployee
+        FOREIGN KEY (Id) 
+        REFERENCES Employee(Id)
+);
