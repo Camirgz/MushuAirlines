@@ -23,7 +23,7 @@ CREATE TABLE System (
 );
 
 CREATE TABLE Employee (
-    Id INT PRIMARY KEY,
+    Id INT IDENTITY(1,1) PRIMARY KEY,
     Url VARCHAR(255),
     Salary FLOAT,
     WorkSchedule VARCHAR(255),
@@ -260,3 +260,17 @@ CREATE TABLE ItineraryScheduledFlight (
     BookingCode VARCHAR(255),
     PRIMARY KEY (ScheduledId, BookingCode)
 );
+--insert de login para prueba
+INSERT INTO Employee (Url, Salary, WorkSchedule, Permissions)
+VALUES
+('admin.png', 850000, 'Lunes a Viernes 8am-5pm', 'ALL');
+
+SELECT * FROM Employee;
+
+INSERT INTO Administrator (Id)
+VALUES (1)
+
+INSERT INTO AccountEmployee (Id, Account, Username, Password)
+VALUES (1, 'AdminPrincipal', 'admin', '1234');
+
+SELECT * FROM AccountEmployee;
