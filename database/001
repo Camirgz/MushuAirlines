@@ -187,3 +187,18 @@ CREATE TABLE AdminAirport (
     REFERENCES Airport(Code)
 );
 
+CREATE TABLE AirportScheduled (
+    AirportCode VARCHAR(3) NOT NULL,
+    ScheduledFlightId INT NOT NULL,
+
+    CONSTRAINT PK_AirportScheduled
+    PRIMARY KEY (AirportCode, ScheduledFlightId),
+
+    CONSTRAINT FK_AirportScheduled_Airport
+    FOREIGN KEY (AirportCode)
+    REFERENCES Airport(Code),
+
+    CONSTRAINT FK_AirportScheduled_Scheduled_Flight
+    FOREIGN KEY (ScheduledFlightId)
+    REFERENCES ScheduledFlight(Id)
+);
