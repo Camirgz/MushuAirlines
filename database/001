@@ -1,6 +1,6 @@
-CREATE DATABASE MushuAirlinesDraft;
+CREATE DATABASE MushuAirlinest;
 
-USE MushuAirlinesDraft;
+USE MushuAirlines;
 
 CREATE TABLE [User] (
     Id INT PRIMARY KEY
