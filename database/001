@@ -1,3 +1,11 @@
 CREATE TABLE [User] (
     Id INT PRIMARY KEY
 );
+
+CREATE TABLE Person (
+    Id INT PRIMARY KEY,
+    FirstName VARCHAR(255),
+    LastName VARCHAR(255),
+    Ssn VARCHAR(255),
+    Nationality VARCHAR(255)
+);
