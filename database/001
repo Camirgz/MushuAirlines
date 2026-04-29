@@ -171,3 +171,19 @@ CREATE TABLE Airport (
     CONSTRAINT PK_Airport PRIMARY KEY (Code)
 );
 
+CREATE TABLE AdminAirport (
+    AdministratorId INT NOT NULL,
+    AirportCode VARCHAR(3) NOT NULL,
+
+    CONSTRAINT PK_AdminAirport
+    PRIMARY KEY (AdministratorId, AirportCode),
+
+    CONSTRAINT FK_Administrator
+    FOREIGN KEY (AdministratorId)
+    REFERENCES Administrator(Id),
+
+    CONSTRAINT FK_Airport
+    FOREIGN KEY (AirportCode)
+    REFERENCES Airport(Code)
+);
+
