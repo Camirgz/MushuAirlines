@@ -15,3 +15,11 @@ CREATE TABLE ExternalSystChecksFlight (
     ExternalSystemId VARCHAR(255),
     PRIMARY KEY (FlightId, ExternalSystemId)
 );
+
+CREATE TABLE System (
+    Url VARCHAR(255) PRIMARY KEY,
+    Layover VARCHAR(255),
+    Schedule VARCHAR(255),
+    Route VARCHAR(255),
+    AircraftType VARCHAR(100),
+);
