@@ -162,4 +162,12 @@ CREATE TABLE FlightScheduleHasScheduledFlight (
 	REFERENCES ScheduledFlight(Id)
 );
 
+CREATE TABLE Airport (
+    Code VARCHAR(3) NOT NULL CHECK (LEN(Code) = 3),
+    AirportName VARCHAR(200) NOT NULL,
+    Country VARCHAR(60) NOT NULL,
+    City VARCHAR(85) NOT NULL,
+
+    CONSTRAINT PK_Airport PRIMARY KEY (Code)
+);
 
