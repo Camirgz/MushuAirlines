@@ -212,6 +212,21 @@ CREATE TABLE Ticket (
     CONSTRAINT FK_Ticket_Passenger FOREIGN KEY (PassengerHas) REFERENCES Passenger(Id)
 );
 
+CREATE TABLE Passport (
+    InternationalId INT PRIMARY KEY,
+    PassengerHas INT,
+    FirstName VARCHAR(255),
+    LastName VARCHAR(255),
+    BirthDay DATE,
+    PlaceOfBirth VARCHAR(255),
+    ExpirationDate DATE,
+    Nationality VARCHAR(255),
+    IssueDate DATE,
+    Gender VARCHAR(50),
+    Photo VARCHAR(255)
+);
+
+
 CREATE TABLE Itinerary (
     BookingCode INT PRIMARY KEY NOT NULL,
     PassengerBooks INT NOT NULL,
@@ -240,3 +255,8 @@ CREATE TABLE ExternalSystChecksFlight (
     REFERENCES ExternalSystem (id)
 );
 
+CREATE TABLE ItineraryScheduledFlight (
+    ScheduledId VARCHAR(255),
+    BookingCode VARCHAR(255),
+    PRIMARY KEY (ScheduledId, BookingCode)
+);
