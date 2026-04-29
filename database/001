@@ -23,3 +23,15 @@ CREATE TABLE System (
     Route VARCHAR(255),
     AircraftType VARCHAR(100),
 );
+
+CREATE TABLE AccountEmployee (
+    Id int,
+    Account varchar(255),
+    Username varchar(255) unique NOT NULL,
+    password varchar(255) NOT NULL,
+    PRIMARY KEY (Id, Account),
+
+    CONSTRAINT Fk_AccountEmployee
+        FOREIGN KEY (Id) 
+        REFERENCES Employee(Id)
+);
