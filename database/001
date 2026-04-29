@@ -145,3 +145,21 @@ CREATE TABLE ExternalSystChecksFlight (
 	FOREIGN KEY (ExternalSystemId)
     REFERENCES ExternalSystem (id)
 );
+
+CREATE TABLE FlightScheduleHasScheduledFlight (
+	FlightScheduleId INT NOT NULL,
+	ScheduledFlightId INT NOT NULL,
+
+	CONSTRAINT PK_FlightScheduleScheduledFlight
+	PRIMARY KEY (FlightScheduleId, ScheduledFlightId),
+
+	CONSTRAINT FK_Flight_Schedule
+	FOREIGN KEY (FlightScheduleId)
+	REFERENCES FlightSchedule(Id),
+
+	CONSTRAINT FK_Scheduled_Flight
+	FOREIGN KEY (ScheduledFlightId)
+	REFERENCES ScheduledFlight(Id)
+);
+
+
