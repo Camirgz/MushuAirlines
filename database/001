@@ -108,3 +108,24 @@ CREATE TABLE FlightSchedule (
 	FOREIGN KEY (destinationAirport)
     REFERENCES Airport (code)
 );
+
+CREATE TABLE Manages (
+    OperadorId INT NOT NULL,
+    AdministradorId INT NOT NULL,
+    FlightId INT NOT NULL,
+
+    CONSTRAINT PK_Manages               
+	PRIMARY KEY (OperadorId, AdministradorId, FlightId),
+
+    CONSTRAINT FK_Manages_Operator      
+	FOREIGN KEY (OperadorId)
+    REFERENCES Operator (id),
+
+    CONSTRAINT FK_Manages_Administrator 
+	FOREIGN KEY (AdministradorId)
+    REFERENCES Administrator (id),
+
+    CONSTRAINT FK_Manages_Flight        
+	FOREIGN KEY (FlightId)
+    REFERENCES FlightSchedule (id)
+);
