@@ -25,9 +25,9 @@ namespace backend.Services
                     result = "Usuario o contraseña incorrectos";
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                result = "Error en login";
+                result = "ERROR REAL: " + ex.Message;
             }
             return result;
         }

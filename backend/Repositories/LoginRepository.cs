@@ -1,9 +1,12 @@
 using backend.Model;
-using Dapper;
+using System.Data;
 using System.Data.SqlClient;
 
 namespace backend.Repositories
 {
+    using backend.Model;
+    using Dapper;
+    using System.Data.SqlClient;
     public class LoginRepository
     {
         private readonly string _connectionString;
@@ -20,7 +23,7 @@ namespace backend.Repositories
             using var connection = new SqlConnection(_connectionString);
 
             string query = @"SELECT COUNT(*) 
-                             FROM Account_Employee
+                             FROM AccountEmployee
                              WHERE username = @Username 
                              AND password = @Password";
 

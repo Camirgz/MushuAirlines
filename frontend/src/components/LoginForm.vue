@@ -57,8 +57,9 @@ export default {
                 window.location.href = "/";
             }})
             .catch(function(error) {
-                alert("Credenciales incorrectas");
-                console.log(error);
+                console.log("ERROR COMPLETO:", error);
+                console.log("RESPUESTA BACKEND:", error.response.data);
+                alert(error.response.data);
             });
         },
     },
