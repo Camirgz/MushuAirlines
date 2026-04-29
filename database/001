@@ -57,3 +57,27 @@ CREATE TABLE Administrator (
         FOREIGN KEY (Id) 
         REFERENCES Employee(Id)
 );
+
+CREATE TABLE AircraftType (
+    Id INT NOT NULL,
+    AircraftType VARCHAR(100) NOT NULL,
+
+    CONSTRAINT PK_AircraftType
+	PRIMARY KEY (id)
+);
+
+CREATE TABLE Aircraft (
+    Code INT NOT NULL,
+    EconomyRows INT NOT NULL,
+    FirstClassRows INT NOT NULL,
+    MaxTakeOffWeight FLOAT NOT NULL,
+    Model VARCHAR(100) NOT NULL,
+    [Type] INT NOT NULL,
+
+    CONSTRAINT PK_Aircraft
+	PRIMARY KEY (code),
+
+    CONSTRAINT FK_AircraftType
+	FOREIGN KEY (type)
+	REFERENCES AircraftType (id)
+);
