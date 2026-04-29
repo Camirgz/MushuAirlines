@@ -9,3 +9,9 @@ CREATE TABLE Person (
     Ssn VARCHAR(255),
     Nationality VARCHAR(255)
 );
+
+CREATE TABLE ExternalSystChecksFlight (
+    FlightId VARCHAR(255),
+    ExternalSystemId VARCHAR(255),
+    PRIMARY KEY (FlightId, ExternalSystemId)
+);
