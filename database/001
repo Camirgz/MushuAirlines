@@ -1,3 +1,7 @@
+CREATE DATABASE MushuAirlinesDraft;
+
+USE MushuAirlinesDraft;
+
 CREATE TABLE [User] (
     Id INT PRIMARY KEY
 );
@@ -8,12 +12,6 @@ CREATE TABLE Person (
     LastName VARCHAR(255),
     Ssn VARCHAR(255),
     Nationality VARCHAR(255)
-);
-
-CREATE TABLE ExternalSystChecksFlight (
-    FlightId VARCHAR(255),
-    ExternalSystemId VARCHAR(255),
-    PRIMARY KEY (FlightId, ExternalSystemId)
 );
 
 CREATE TABLE System (
@@ -82,6 +80,20 @@ CREATE TABLE Aircraft (
 	REFERENCES AircraftType (id)
 );
 
+CREATE TABLE Passenger (
+    Id INT PRIMARY KEY NOT NULL
+    CONSTRAINT fk_passenger_person FOREIGN KEY (Id) REFERENCES Person(id)
+);
+
+CREATE TABLE Airport (
+    Code VARCHAR(3) NOT NULL CHECK (LEN(Code) = 3),
+    AirportName VARCHAR(200) NOT NULL,
+    Country VARCHAR(60) NOT NULL,
+    City VARCHAR(85) NOT NULL,
+
+    CONSTRAINT PK_Airport PRIMARY KEY (Code)
+);
+
 CREATE TABLE FlightSchedule (
     Id INT NOT NULL,
     PassengerBooked INT NULL,
@@ -130,20 +142,14 @@ CREATE TABLE Manages (
     REFERENCES FlightSchedule (id)
 );
 
-CREATE TABLE ExternalSystChecksFlight (
-    FlightId INT NOT NULL,
-    ExternalSystemId INT NOT NULL,
-
-    CONSTRAINT PK_ExtSystChecksFlight           
-	PRIMARY KEY (FlightId, ExternalSystemId),
-
-    CONSTRAINT FK_ESCF_Scheduled_Flight         
-	FOREIGN KEY (FlightId)
-    REFERENCES ScheduledFlight (id),
-
-    CONSTRAINT FK_ESCF_External_System          
-	FOREIGN KEY (ExternalSystemId)
-    REFERENCES ExternalSystem (id)
+CREATE TABLE ScheduledFlight (
+    Id INT PRIMARY KEY NOT NULL,
+    AircraftCode INT NOT NULL,
+    Status VARCHAR(50) NOT NULL,
+    DepartureDate DATE NOT NULL,
+    ArrivalDate DATE NOT NULL,
+    BookedSeats INT NOT NULL
+    CONSTRAINT fk_sf_aircraft FOREIGN KEY (AircraftCode) REFERENCES Aircraft(code)
 );
 
 CREATE TABLE FlightScheduleHasScheduledFlight (
@@ -160,15 +166,6 @@ CREATE TABLE FlightScheduleHasScheduledFlight (
 	CONSTRAINT FK_Scheduled_Flight
 	FOREIGN KEY (ScheduledFlightId)
 	REFERENCES ScheduledFlight(Id)
-);
-
-CREATE TABLE Airport (
-    Code VARCHAR(3) NOT NULL CHECK (LEN(Code) = 3),
-    AirportName VARCHAR(200) NOT NULL,
-    Country VARCHAR(60) NOT NULL,
-    City VARCHAR(85) NOT NULL,
-
-    CONSTRAINT PK_Airport PRIMARY KEY (Code)
 );
 
 CREATE TABLE AdminAirport (
@@ -202,3 +199,44 @@ CREATE TABLE AirportScheduled (
     FOREIGN KEY (ScheduledFlightId)
     REFERENCES ScheduledFlight(Id)
 );
+
+CREATE TABLE Ticket (
+    ScheduledId INT NOT NULL,
+    Qr VARCHAR(255) NOT NULL,
+    PassengerHas INT NOT NULL,
+    SeatNumber INT NOT NULL,
+    Disability VARCHAR(255),
+    Luggage VARCHAR(255),
+    CONSTRAINT PK_Ticket PRIMARY KEY (ScheduledId, Qr),
+    CONSTRAINT FK_Ticket_Scheduled FOREIGN KEY (ScheduledId) REFERENCES ScheduledFlight(Id),
+    CONSTRAINT FK_Ticket_Passenger FOREIGN KEY (PassengerHas) REFERENCES Passenger(Id)
+);
+
+CREATE TABLE Itinerary (
+    BookingCode INT PRIMARY KEY NOT NULL,
+    PassengerBooks INT NOT NULL,
+    SeatType VARCHAR(50),
+    LuggageWeight FLOAT,
+    TicketCount INT,
+    Layover VARCHAR(255),
+    Origin VARCHAR(3),
+    Destination VARCHAR(3), 
+    CONSTRAINT FK_Itinerary_Passenger FOREIGN KEY (PassengerBooks) REFERENCES Passenger(Id)
+);
+
+CREATE TABLE ExternalSystChecksFlight (
+    FlightId INT NOT NULL,
+    ExternalSystemId INT NOT NULL,
+
+    CONSTRAINT PK_ExtSystChecksFlight           
+	PRIMARY KEY (FlightId, ExternalSystemId),
+
+    CONSTRAINT FK_ESCF_Scheduled_Flight         
+	FOREIGN KEY (FlightId)
+    REFERENCES ScheduledFlight (id),
+
+    CONSTRAINT FK_ESCF_External_System          
+	FOREIGN KEY (ExternalSystemId)
+    REFERENCES ExternalSystem (id)
+);
+
