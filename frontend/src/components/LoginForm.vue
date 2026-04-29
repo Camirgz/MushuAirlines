@@ -54,7 +54,7 @@ export default {
             .then(function(response) {
             if (response.data === true) {
                 alert("Login correcto");
-                window.location.href = "/";
+                window.location.href = "/admin";
             }})
             .catch(function(error) {
                 console.log("ERROR COMPLETO:", error);
