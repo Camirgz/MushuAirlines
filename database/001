@@ -35,3 +35,10 @@ CREATE TABLE AccountEmployee (
         FOREIGN KEY (Id) 
         REFERENCES Employee(Id)
 );
+
+CREATE TABLE Operator (
+    Id int PRIMARY KEY,
+    CONSTRAINT FK_OperatorEmployee
+        FOREIGN KEY (Id) 
+        REFERENCES Employee(Id)
+);
