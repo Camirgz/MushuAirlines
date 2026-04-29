@@ -81,3 +81,30 @@ CREATE TABLE Aircraft (
 	FOREIGN KEY (type)
 	REFERENCES AircraftType (id)
 );
+
+CREATE TABLE FlightSchedule (
+    Id INT NOT NULL,
+    PassengerBooked INT NULL,
+    OriginAirport VARCHAR(3) NOT NULL,
+    DestinationAirport VARCHAR(3) NOT NULL,
+    Duration VARCHAR(20) NOT NULL,
+    DepartureTime TIME NOT NULL,
+    ArrivalTime TIME NOT NULL,
+    DepartureDate DATE NOT NULL,
+    ArrivalDate DATE NOT NULL,
+
+    CONSTRAINT PK_FlightSchedule           
+	PRIMARY KEY (id),
+
+    CONSTRAINT FK_FS_Passenger              
+	FOREIGN KEY (passengerBooked)
+    REFERENCES Passenger (id),
+
+    CONSTRAINT FK_FS_OriginAirport         
+	FOREIGN KEY (originAirport)
+    REFERENCES Airport (code),
+
+    CONSTRAINT FK_FS_Destination_Airport
+	FOREIGN KEY (destinationAirport)
+    REFERENCES Airport (code)
+);
