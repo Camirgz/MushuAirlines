@@ -24,6 +24,14 @@ CREATE TABLE System (
     AircraftType VARCHAR(100),
 );
 
+CREATE TABLE Employee (
+    Id INT PRIMARY KEY,
+    Url VARCHAR(255),
+    Salary FLOAT,
+    WorkSchedule VARCHAR(255),
+    Permissions VARCHAR(255)
+);
+
 CREATE TABLE AccountEmployee (
     Id int,
     Account varchar(255),
