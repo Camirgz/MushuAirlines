@@ -22,7 +22,14 @@ namespace backend.Services
 
             try
             {
-                bool isValid = loginRepository.ValidateUser(login);
+                string storedHash = loginRepository.GetPasswordHash(login.Username);
+
+                if (storedHash == null)
+                {
+                    return "Usuario o contraseña incorrectos";
+                }
+
+                bool isValid = BCrypt.Net.BCrypt.Verify(login.Password, storedHash);
 
                 if (!isValid)
                 {
@@ -34,11 +41,14 @@ namespace backend.Services
                 // we prepare the security signature of the token
                 var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
                 
-                // the info we want to include in the token
+                // we get the role of the user to include it in the token
+                var role = loginRepository.GetUserRole(login.Username);
+
+                // the info we want to include in the token, in this case the username and the role of the user
                 var claims = new[]
                 {
-                    // include in the token who logged in
-                    new Claim(ClaimTypes.Name, login.Username)
+                    new Claim(ClaimTypes.Name, login.Username),
+                    new Claim(ClaimTypes.Role, role)
                 };
 
                 // we create the token with the info, the expiration time and the signature
