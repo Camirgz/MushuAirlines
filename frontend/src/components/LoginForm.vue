@@ -52,10 +52,12 @@ export default {
                 password: this.form.password,
             })
             .then(function(response) {
-            if (response.data === true) {
+                console.log("TOKEN RECIBIDO:", response.data);
+                // we save the token in localStorage and redirect to the admin page
+                localStorage.setItem("token", response.data);
                 alert("Login correcto");
                 window.location.href = "/admin";
-            }})
+            })
             .catch(function(error) {
                 console.log("ERROR COMPLETO:", error);
                 console.log("RESPUESTA BACKEND:", error.response.data);

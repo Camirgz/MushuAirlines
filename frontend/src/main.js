@@ -10,8 +10,19 @@ const router = createRouter({
     routes: [
         { path : "/", name: "Landing", component: LandingPage },
         { path : "/login", name: "Login", component: LoginForm },
-        { path : "/admin", name: "Admin", component: LandingPageInter },
+        { path : "/admin", name: "Admin", component: LandingPageInter, meta: { requiresAuth: true }  },
     ],
+});
+
+router.beforeEach((to, from, next) => {
+    // we check if the route requires authentication and if we have a token in localStorage
+    const token = localStorage.getItem("token");
+
+    if (to.meta.requiresAuth && !token) {
+        next("/login");
+    } else {
+        next();
+    }
 });
 
 createApp(App).use(router).mount('#app')
