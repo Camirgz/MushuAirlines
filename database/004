@@ -1,0 +1,17 @@
+CREATE TABLE Route (
+    Code varchar(100) NOT NULL PRIMARY KEY,
+    OriginAirport NVARCHAR(10),
+    DestinationAirport NVARCHAR(10),
+    DepartureTime NVARCHAR(5),
+    ArrivalTime NVARCHAR(5),
+    Duration NVARCHAR(5),
+    AircraftTypeId NVARCHAR(20),
+    Frequency NVARCHAR(100),
+    PriceFirstClass DECIMAL(10,2),
+    PriceEconomy DECIMAL(10,2),
+    HandBagPrice DECIMAL(10,2),
+    HandBagWeight DECIMAL(10,2),
+    BagPrice DECIMAL(10,2),
+    BagWeight DECIMAL(10,2),
+    BagMultiplier DECIMAL(10,2)
+);
