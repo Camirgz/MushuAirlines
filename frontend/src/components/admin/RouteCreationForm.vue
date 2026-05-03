@@ -87,7 +87,7 @@
                         <div class="col-md-4 form-group">
                             <label>Duración*</label>
                             <div class="input-box">
-                                <input type="text" v-model="form.duration" placeholder="00:00" required />
+                                <input type="text" v-model="form.duration" placeholder="00:00" required @keypress="onlyNumbersDuration" @input="formatDuration" />
                             </div>
                         </div>
                     </div>
@@ -102,7 +102,7 @@
                         <div class="col-md-6 form-group">
                             <label>Código**</label>
                             <div class="input-box">
-                                <input type="text" v-model="form.code" placeholder="XX0000" required />
+                                <input type="text" minlength="6" maxlength="6" v-model="form.code" placeholder="XX0000" required />
                             </div>
                         </div>
                     </div>
@@ -125,14 +125,14 @@
                         <div class="col-md-6 form-group">
                             <label>Primera Clase*</label>
                             <div class="input-box">
-                                <input type="number" v-model.number="form.priceFirstClass" placeholder="₡ 0.00" />
+                                <input type="number" min="0" step="0.01" v-model.number="form.priceFirstClass" placeholder="₡ 0.00" @keypress="onlyNumbers" />
                             </div>
                         </div>
 
                         <div class="col-md-6 form-group">
                             <label>Clase Turista*</label>
                             <div class="input-box">
-                                <input type="number" v-model.number="form.priceEconomy" placeholder="₡ 0.00" />
+                                <input type="number" min="0" step="0.01" v-model.number="form.priceEconomy" placeholder="₡ 0.00" @keypress="onlyNumbers" />
                             </div>
                         </div>
                     </div>
@@ -142,35 +142,35 @@
                         <div class="col-md-3 form-group">
                             <label>Precio equipaje de mano*</label>
                             <div class="input-box">
-                                <input type="number" v-model.number="form.handBagPrice" placeholder="₡ 0.00" />
+                                <input type="number" min="0" step="0.01" v-model.number="form.handBagPrice" placeholder="₡ 0.00" @keypress="onlyNumbers" />
                             </div>
                         </div>
 
                         <div class="col-md-3 form-group">
                             <label>Peso equipaje de mano*</label>
                             <div class="input-box">
-                                <input type="number" v-model.number="form.handBagWeight" placeholder="0.00" />
+                                <input type="number" min="0" step="0.01" v-model.number="form.handBagWeight" placeholder="0.00" @keypress="onlyNumbers" />
                             </div>
                         </div>
 
                         <div class="col-md-3 form-group">
                             <label>Precio equipaje documentado*</label>
                             <div class="input-box">
-                                <input type="number" v-model.number="form.bagPrice" placeholder="₡ 0.00" />
+                                <input type="number" min="0" step="0.01" v-model.number="form.bagPrice" placeholder="₡ 0.00" @keypress="onlyNumbers" />
                             </div>
                         </div>
 
                         <div class="col-md-3 form-group">
                             <label>Peso equipaje documentado*</label>
                             <div class="input-box">
-                                <input type="number" v-model.number="form.bagWeight" placeholder="0.00" />
+                                <input type="number" min="0" step="0.01" v-model.number="form.bagWeight" placeholder="0.00" @keypress="onlyNumbers" />
                             </div>
                         </div>
 
                         <div class="col-md-4 form-group mt-2">
                             <label>Multiplicador*</label>
                             <div class="input-box">
-                                <input type="number" v-model.number="form.bagMultiplier" placeholder="0.00" />
+                                <input type="number" min="0" v-model.number="form.bagMultiplier" placeholder="0.00" @keypress="onlyNumbers" />
                             </div>
                         </div>
                     </div>
@@ -216,7 +216,7 @@
 
                         <div class="route-sub small">
                             Salida: {{ route.departureTime }} ·
-                            Llegada: {{ route.arrivalTime }}
+                            Llegada: {{ route.arrivalTime }} ·
                             Duración: {{ route.duration }}
                         </div>
                     </div>
@@ -329,6 +329,11 @@ import axios from "axios";
             validateForm() {
                 const f = this.form;
 
+                if (!this.isValidDuration(f.duration)) {
+                    this.errorMessage = "Duración inválida (HH:mm)";
+                    return false;
+                }
+
                 const isValid =
                     f.originAirport !== "" &&
                     f.destinationAirport !== "" &&
@@ -400,6 +405,52 @@ import axios from "axios";
                 } else {
                     this.selectedRoute = route.code;
                 }
+            },
+            onlyNumbersDuration(event) {
+                const char = String.fromCharCode(event.keyCode);
+
+                if (!/[0-9.]/.test(char)) {
+                    event.preventDefault();
+                }
+
+                if (char === ':' && event.target.value.includes(':')) {
+                    event.preventDefault();
+                }
+            },
+            onlyNumbers(event) {
+                const char = String.fromCharCode(event.keyCode);
+
+                if (!/[0-9.]/.test(char)) {
+                    event.preventDefault();
+                }
+
+                if (char === '.' && event.target.value.includes('.')) {
+                    event.preventDefault();
+                }
+            },
+            isValidDuration(duration) {
+                const regex = /^(\d{2}):([0-5]\d)$/;
+
+                if (!regex.test(duration)) return false;
+
+                const [hours, minutes] = duration.split(':').map(Number);
+
+                if (hours < 0) return false;
+                if (minutes > 59) return false;
+
+                return true;
+            },
+            formatDuration() {
+                let raw = this.form.duration.replace(/[^0-9]/g, '').slice(0, 4);
+
+                let hours = raw.slice(0, 2);
+                let minutes = raw.slice(2, 4);
+
+                if (minutes.length === 2 && Number(minutes) > 59) {
+                    minutes = '59';
+                }
+
+                this.form.duration = minutes ? `${hours}:${minutes}` : hours;
             }
         }
     };
@@ -569,4 +620,5 @@ import axios from "axios";
         border: 1px solid #f5c6cb;
         margin-bottom: 20px;
     }
+
 </style>
