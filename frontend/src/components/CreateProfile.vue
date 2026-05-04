@@ -14,7 +14,6 @@
       <input v-model="form.permissions" placeholder="Permisos" />
 
       <input v-model="form.email" type="email" placeholder="Correo" required />
-
       <select v-model="form.role">
         <option>Administrator</option>
         <option>Operator</option>
@@ -52,7 +51,10 @@ export default {
     async createEmployee() {
       try {
         const token = localStorage.getItem("token");
-
+        if (!this.validateEmail(this.form.email)) {
+          this.message = "Correo inválido";
+          return;
+        }
         const response = await axios.post(
           "http://localhost:5103/api/PendingAccount",
           this.form,
@@ -67,6 +69,10 @@ export default {
       } catch (error) {
         this.message = error.response?.data || "Error";
       }
+    },
+    validateEmail(email) {
+      const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return regex.test(email);
     }
   }
 };

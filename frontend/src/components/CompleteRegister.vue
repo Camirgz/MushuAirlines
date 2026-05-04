@@ -48,6 +48,10 @@ export default {
       }
 
       try {
+        if (!this.validatePassword(this.password)) {
+          this.message = "Contraseña débil (8 chars, mayúscula, minúscula, número y símbolo)";
+          return;
+        }
         const response = await axios.post(
           "http://localhost:5103/api/PendingAccount/completeRegister",
           {
@@ -60,6 +64,10 @@ export default {
       } catch (error) {
         this.message = error.response?.data || "Error";
       }
+    },
+    validatePassword(password) {
+      const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W]).{8,}$/;
+      return regex.test(password);
     }
   }
 };

@@ -1,6 +1,8 @@
 using backend.Model;
 using backend.Repositories;
 using BCrypt.Net;
+using System.Text.RegularExpressions;
+
 namespace backend.Services
 {
     public class PendingAccountService
@@ -35,7 +37,8 @@ namespace backend.Services
                 if (string.IsNullOrWhiteSpace(model.Email))
                     return "Email requerido";
 
-                if (!model.Email.Contains("@"))
+                var emailRegex = new Regex(@"^[^\s@]+@[^\s@]+\.[^\s@]+$");
+                if (!emailRegex.IsMatch(model.Email))
                     return "Email inválido";
 
                 if (model.Salary < 0)
@@ -101,11 +104,10 @@ namespace backend.Services
                 {
                     return "Invalid or expired token";
                 }
-                // if the password is less than 8 characters, we return an error
-                if (model.Password.Length < 8)
-                {
-                    return "Contraseña muy corta";
-                }
+                // regex to validate the password
+                var passwordRegex = new Regex(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*\W).{8,}$");
+                if (!passwordRegex.IsMatch(model.Password))
+                    return "Contraseña débil";
                 // we hash the password 
                 string hashedPassword = BCrypt.Net.BCrypt.HashPassword(model.Password);
                 // we create the account for the employee with the email and the hashed password
