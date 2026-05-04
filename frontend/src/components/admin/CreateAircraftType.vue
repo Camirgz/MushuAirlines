@@ -171,15 +171,21 @@
             </div>
           </div>
 
+          <!-- Error message -->
+          <div v-if="ErrorMessage" class="error-msg">
+            <i class="bi bi-exclamation-circle me-2"></i>
+            {{ ErrorMessage }}
+          </div>
+
           <!-- Actions -->
           <div class="form-actions">
-            <button type="button" class="cancel-btn" @click="Cancel">
+            <button type="button" class="cancel-btn" @click="Cancel" :disabled="IsSubmitting">
               <i class="bi bi-x-lg me-2"></i>
               Cancelar
             </button>
-            <button type="submit" class="submit-btn">
+            <button type="submit" class="submit-btn" :disabled="IsSubmitting">
               <i class="bi bi-floppy me-2"></i>
-              Guardar
+              {{ IsSubmitting ? "Guardando..." : "Guardar" }}
             </button>
           </div>
         </form>
@@ -189,12 +195,16 @@
 </template>
 
 <script>
+import { CreateAircraftType } from "../../services/AircraftTypesService";
+
 export default {
   name: "CreateAircraftType",
 
   data() {
     return {
       IsDropdownOpen: false,
+      IsSubmitting: false,
+      ErrorMessage: "",
       Form: {
         Model: "",
         Type: "",
@@ -219,7 +229,29 @@ export default {
       this.IsDropdownOpen = false;
     },
     Submit() {
-      console.log("Datos del formulario:", this.Form);
+      this.IsSubmitting = true;
+      this.ErrorMessage = "";
+
+      const Payload = {
+        Model: this.Form.Model,
+        Type: this.Form.Type,
+        WeightKg: this.Form.WeightKg,
+        EconomyRows: this.Form.EconomyClass.RowCount,
+        EconomySeatsPerRow: this.Form.EconomyClass.SeatsPerRow,
+        FirstClassRows: this.Form.FirstClass.RowCount,
+        FirstClassSeatsPerRow: this.Form.FirstClass.SeatsPerRow,
+      };
+
+      CreateAircraftType(Payload)
+        .then(() => {
+          this.$router.push("/admin/aircraft-types");
+        })
+        .catch(() => {
+          this.ErrorMessage = "No se pudo crear la aeronave. Intente de nuevo.";
+        })
+        .finally(() => {
+          this.IsSubmitting = false;
+        });
     },
     Cancel() {
       this.$router.push("/admin/aircraft-types");
@@ -538,5 +570,25 @@ export default {
 .submit-btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 10px 22px rgba(240, 24, 24, 0.3);
+}
+
+.submit-btn:disabled,
+.cancel-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.error-msg {
+  margin-top: 20px;
+  padding: 14px 18px;
+  background: #fff1f1;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
 }
 </style>
