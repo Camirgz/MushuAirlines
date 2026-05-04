@@ -18,22 +18,31 @@ namespace backend.Repositories
                 builder.Configuration.GetConnectionString("LoginContext");
         }
 
-        public bool ValidateUser(LoginModel login)
+        public string GetPasswordHash(string username)
         {
             using var connection = new SqlConnection(_connectionString);
 
-            string query = @"SELECT COUNT(*) 
-                             FROM AccountEmployee
-                             WHERE username = @Username 
-                             AND password = @Password";
+            string query = @"SELECT Password 
+                            FROM AccountEmployee
+                            WHERE Username = @Username";
 
-            int count = connection.ExecuteScalar<int>(query, new
+            return connection.QueryFirstOrDefault<string>(query, new
             {
-                Username = login.Username,
-                Password = login.Password
+                Username = username
             });
+        }
+        public string GetUserRole(string username)
+        {
+            using var connection = new SqlConnection(_connectionString);
 
-            return count > 0;
+            string query = @"
+                SELECT 
+                    CASE 
+                        WHEN EXISTS (SELECT 1 FROM Administrator A JOIN AccountEmployee AE ON A.Id = AE.Id WHERE AE.Username = @Username) THEN 'Administrator'
+                        ELSE 'Operator'
+                    END";
+
+            return connection.ExecuteScalar<string>(query, new { Username = username });
         }
     }
 }
