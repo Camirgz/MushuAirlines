@@ -17,15 +17,42 @@ namespace backend.Services
         public string CreateInvitation(PendingAccountModel model)
         {
             var result = string.Empty;
-
+            int newId = 0;
             try
             {
-                int newId = pendingAccountRepository.CreateUser();
+                if (string.IsNullOrWhiteSpace(model.FirstName))
+                    return "Nombre requerido";
 
+                if (string.IsNullOrWhiteSpace(model.LastName))
+                    return "Apellido requerido";
+
+                if (string.IsNullOrWhiteSpace(model.Ssn))
+                    return "Cédula requerida";
+
+                if (string.IsNullOrWhiteSpace(model.Nationality))
+                    return "Nacionalidad requerida";
+
+                if (string.IsNullOrWhiteSpace(model.Email))
+                    return "Email requerido";
+
+                if (!model.Email.Contains("@"))
+                    return "Email inválido";
+
+                if (model.Salary < 0)
+                    return "Salario inválido";
+
+                if (pendingAccountRepository.EmailExists(model.Email))
+                    return "El correo ya tiene cuenta";
+
+                if (pendingAccountRepository.PendingEmailExists(model.Email))
+                    return "Ya existe una invitación pendiente";
+                // create user with the data from the pending account
+                newId = pendingAccountRepository.CreateUser();
+                // create person with the data from the pending account and the id of the user
                 pendingAccountRepository.CreatePerson(model, newId);
-
+                // create employee with the data from the pending account and the id of the user
                 pendingAccountRepository.CreateEmployee(model, newId);
-
+                // admin or oper
                 if (model.Role == "Administrator")
                 {
                     pendingAccountRepository.CreateAdministrator(newId);
@@ -34,66 +61,60 @@ namespace backend.Services
                 {
                     pendingAccountRepository.CreateOperator(newId);
                 }
-
+                // generate a token for the user to complete the registration
                 string token = Guid.NewGuid().ToString();
-
+                // save the token and the email in the pending account table
                 model.EmployeeId = newId;
                 model.VerificationToken = token;
                 model.IsVerified = false;
 
-                pendingAccountRepository.SaveInvitation(model);
-
+                // send email with the token to the user
                 emailService.SendInvitationEmail(model.Email, token);
+
+                // save the pending account with the token and the email
+                pendingAccountRepository.SaveInvitation(model);
 
                 result = "Invitation created successfully";
             }
             catch (Exception ex)
             {
+                // if there was an error, we delete the user that was created
+                if (newId > 0)
+                {
+                    pendingAccountRepository.DeleteUserCascade(newId);
+                }
                 result = "ERROR REAL: " + ex.Message;
             }
 
             return result;
         }
-        public string CompleteRegister(CompleteRegisterModel model)
+       public string CompleteRegister(CompleteRegisterModel model)
         {
             var result = string.Empty;
 
             try
             {
+                // we get the pending account with the token
                 var pending = pendingAccountRepository.GetByToken(model.Token);
-
+                // if there is no pending account with that token, we return an error
                 if (pending == null)
                 {
                     return "Invalid or expired token";
                 }
-
-                // 1. Crear User
-                int newId = pendingAccountRepository.CreateUser();
-
-                // 2. Crear Person con datos reales
-                pendingAccountRepository.CreatePerson(pending, newId);
-
-                // 3. Crear Employee con datos reales
-                pendingAccountRepository.CreateEmployee(pending, newId);
-
-                // 4. Crear rol
-                if (pending.Role == "Administrator")
+                // if the password is less than 8 characters, we return an error
+                if (model.Password.Length < 8)
                 {
-                    pendingAccountRepository.CreateAdministrator(newId);
+                    return "Contraseña muy corta";
                 }
-                else
-                {
-                    pendingAccountRepository.CreateOperator(newId);
-                }
-
+                // we hash the password 
                 string hashedPassword = BCrypt.Net.BCrypt.HashPassword(model.Password);
+                // we create the account for the employee with the email and the hashed password
                 pendingAccountRepository.CreateAccountEmployee(
-                    newId,
+                    pending.EmployeeId, 
                     pending.Email,
                     hashedPassword
                 );
-
-                // 6. Marcar como usado
+                // we mark the pending account as verified
                 pendingAccountRepository.MarkAsVerified(model.Token);
 
                 result = "Employee account created successfully";

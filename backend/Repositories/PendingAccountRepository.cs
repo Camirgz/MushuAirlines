@@ -133,5 +133,39 @@ namespace backend.Repositories
                 Token = token
             });
         }
+        public bool EmailExists(string email)
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            string query = @"SELECT COUNT(*) FROM AccountEmployee WHERE Username = @Email";
+
+            int count = connection.ExecuteScalar<int>(query, new { Email = email });
+
+            return count > 0;
+        }
+    
+    public bool PendingEmailExists(string email)
+    {
+        using var connection = new SqlConnection(_connectionString);
+
+        string query = @"SELECT COUNT(*) 
+                        FROM PendingAccount 
+                        WHERE Email = @Email";
+
+        int count = connection.ExecuteScalar<int>(query, new { Email = email });
+
+        return count > 0;
+    }
+
+        public void DeleteUserCascade(int id)
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            connection.Execute("DELETE FROM Administrator WHERE Id = @Id", new { Id = id });
+            connection.Execute("DELETE FROM Operator WHERE Id = @Id", new { Id = id });
+            connection.Execute("DELETE FROM Employee WHERE Id = @Id", new { Id = id });
+            connection.Execute("DELETE FROM Person WHERE Id = @Id", new { Id = id });
+            connection.Execute("DELETE FROM [User] WHERE Id = @Id", new { Id = id });
+        }
     }
 }
