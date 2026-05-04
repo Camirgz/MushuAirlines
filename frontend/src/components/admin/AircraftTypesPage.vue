@@ -83,7 +83,17 @@
           </RouterLink>
         </div>
 
-        <table class="aircraft-table">
+        <div v-if="IsLoading" class="status-msg">
+          <i class="bi bi-arrow-repeat spin me-2"></i>
+          Cargando aeronaves...
+        </div>
+
+        <div v-else-if="ErrorMessage" class="error-msg">
+          <i class="bi bi-exclamation-circle me-2"></i>
+          {{ ErrorMessage }}
+        </div>
+
+        <table v-else class="aircraft-table">
           <thead>
             <tr>
               <th>MODELO</th>
@@ -109,17 +119,22 @@
 </template>
 
 <script>
+import { GetAircraftTypes } from "../../services/AircraftTypesService";
+
 export default {
   name: "AircraftTypesPage",
 
   data() {
     return {
       IsDropdownOpen: false,
-      AircraftTypes: [
-        { Id: 1, Model: "737-800", Type: "Avión comercial", WeightKg: 79016, Capacity: 166 },
-        { Id: 2, Model: "A320-200", Type: "Avión comercial", WeightKg: 78000, Capacity: 144 },
-      ],
+      AircraftTypes: [],
+      IsLoading: false,
+      ErrorMessage: "",
     };
+  },
+
+  mounted() {
+    this.LoadAircraftTypes();
   },
 
   methods: {
@@ -128,6 +143,21 @@ export default {
     },
     CloseDropdown() {
       this.IsDropdownOpen = false;
+    },
+    LoadAircraftTypes() {
+      this.IsLoading = true;
+      this.ErrorMessage = "";
+
+      GetAircraftTypes()
+        .then((Response) => {
+          this.AircraftTypes = Response.data;
+        })
+        .catch(() => {
+          this.ErrorMessage = "No se pudieron cargar las aeronaves. Intente de nuevo.";
+        })
+        .finally(() => {
+          this.IsLoading = false;
+        });
     },
   },
 };
@@ -413,5 +443,35 @@ export default {
   border-radius: 20px;
   font-size: 0.85rem;
   font-weight: 700;
+}
+
+.status-msg {
+  padding: 24px 0;
+  color: #6b7280;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+}
+
+.error-msg {
+  padding: 16px 20px;
+  background: #fff1f1;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.spin {
+  display: inline-block;
+  animation: spin 0.8s linear infinite;
 }
 </style>

@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const BaseUrl = "http://localhost:5103/api/aircraft-types";
+const BaseUrl = "http://localhost:5103/api/aircraft";
 
 export function GetAircraftTypes() {
   return axios.get(BaseUrl);
