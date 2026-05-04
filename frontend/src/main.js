@@ -5,6 +5,7 @@ import LandingPage from "./components/LandingPage.vue";
 import LoginForm from './components/LoginForm.vue';
 import LandingPageInter from './components/LandingPageInter.vue';
 import AircraftTypesPage from './components/admin/AircraftTypesPage.vue';
+import CreateAircraftType from './components/admin/CreateAircraftType.vue';
 import RoutesPage from './components/admin/RoutesPage.vue';
 import AirportsPage from './components/admin/AirportsPage.vue';
 import UsersPage from './components/admin/UsersPage.vue';
@@ -17,6 +18,7 @@ const router = createRouter({
         { path : "/admin", name: "Admin", component: LandingPageInter },
 
         { path: "/admin/aircraft-types", name: "AircraftTypes", component: AircraftTypesPage },
+        { path: "/admin/aircraft-types/create", name: "CreateAircraftType", component: CreateAircraftType },
         { path: "/admin/routes", name: "Routes", component: RoutesPage },       
         { path: "/admin/airports", name: "Airports", component: AirportsPage },
         { path: "/admin/users", name: "Users", component: UsersPage },
