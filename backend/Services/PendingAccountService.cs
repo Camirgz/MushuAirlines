@@ -44,11 +44,11 @@ namespace backend.Services
                 if (model.Salary < 0)
                     return "Salario inválido";
 
-                if (pendingAccountRepository.EmailExists(model.Email))
-                    return "El correo ya tiene cuenta";
-
-                if (pendingAccountRepository.PendingEmailExists(model.Email))
-                    return "Ya existe una invitación pendiente";
+                if (pendingAccountRepository.EmailExists(model.Email) ||
+                    pendingAccountRepository.PendingEmailExists(model.Email))
+                {
+                    return "El correo ya está en uso o tiene invitación pendiente";
+                }
                 // create user with the data from the pending account
                 newId = pendingAccountRepository.CreateUser();
                 // create person with the data from the pending account and the id of the user
@@ -71,11 +71,11 @@ namespace backend.Services
                 model.VerificationToken = token;
                 model.IsVerified = false;
 
+                // save the pending account with the token and the email
+                pendingAccountRepository.SaveInvitation(model);
                 // send email with the token to the user
                 emailService.SendInvitationEmail(model.Email, token);
 
-                // save the pending account with the token and the email
-                pendingAccountRepository.SaveInvitation(model);
 
                 result = "Invitation created successfully";
             }
@@ -84,6 +84,7 @@ namespace backend.Services
                 // if there was an error, we delete the user that was created
                 if (newId > 0)
                 {
+                    pendingAccountRepository.DeletePendingByEmployeeId(newId); // opcional
                     pendingAccountRepository.DeleteUserCascade(newId);
                 }
                 result = "ERROR REAL: " + ex.Message;

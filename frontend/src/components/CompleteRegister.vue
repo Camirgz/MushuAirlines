@@ -48,13 +48,14 @@
         </div>
 
         <div class="actions">
-          <button type="button" class="cancel-btn" @click="goBack">
+          <button type="button" class="cancel-btn" @click="goBack" :disabled="loading">
             Cancelar
           </button>
-          <button type="submit" class="login-btn">
-            Activar Cuenta
+
+          <button type="submit" class="login-btn" :disabled="loading">
+            {{ loading ? "Activando..." : "Activar Cuenta" }}
           </button>
-        </div>
+      </div>
 
       </form>
 
@@ -69,6 +70,7 @@ import axios from "axios";
 export default {
   data() {
     return {
+      loading: false,
       token: "",
       password: "",
       confirmPassword: "",
@@ -81,11 +83,12 @@ export default {
   },
   methods: {
     async completeRegister() {
+      if (this.loading) return;
       if (this.password !== this.confirmPassword) {
         this.message = "Las contraseñas no coinciden";
         return;
       }
-
+      this.loading = true;
       try {
         if (!this.validatePassword(this.password)) {
           this.message = "Contraseña débil (8 chars, mayúscula, minúscula, número y símbolo)";
@@ -102,11 +105,16 @@ export default {
         this.message = response.data;
       } catch (error) {
         this.message = error.response?.data || "Error";
+      } finally {
+        this.loading = false;
       }
     },
     validatePassword(password) {
       const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W]).{8,}$/;
       return regex.test(password);
+    },
+    goBack() {
+      window.location.href = "/login";
     }
   }
 };

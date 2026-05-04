@@ -93,8 +93,8 @@
           </div>
         </div>
 
-        <button type="submit" class="login-btn">
-          Crear Usuario
+        <button type="submit" class="login-btn" :disabled="loading">
+          {{ loading ? "Creando..." : "Crear Usuario" }}
         </button>
 
       </form>
@@ -111,6 +111,7 @@ import axios from "axios";
 export default {
   data() {
     return {
+      loading: false,
       form: {
         firstName: "",
         lastName: "",
@@ -128,6 +129,9 @@ export default {
   },
   methods: {
     async createEmployee() {
+      if (this.loading) return; //don't allow multiple submissions
+
+      this.loading = true;
       try {
         const token = localStorage.getItem("token");
         if (!this.validateEmail(this.form.email)) {
@@ -147,6 +151,8 @@ export default {
         this.message = response.data;
       } catch (error) {
         this.message = error.response?.data || "Error";
+      } finally {
+        this.loading = false; // allow new submissions after response
       }
     },
     validateEmail(email) {

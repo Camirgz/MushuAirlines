@@ -144,18 +144,24 @@ namespace backend.Repositories
             return count > 0;
         }
     
-    public bool PendingEmailExists(string email)
-    {
-        using var connection = new SqlConnection(_connectionString);
+        public bool PendingEmailExists(string email)
+        {
+            using var connection = new SqlConnection(_connectionString);
 
-        string query = @"SELECT COUNT(*) 
-                        FROM PendingAccount 
-                        WHERE Email = @Email";
+            string query = @"SELECT COUNT(*) 
+                            FROM PendingAccount 
+                            WHERE Email = @Email
+                            AND IsVerified = 0";
 
-        int count = connection.ExecuteScalar<int>(query, new { Email = email });
+            int count = connection.ExecuteScalar<int>(query, new { Email = email });
 
-        return count > 0;
-    }
+            return count > 0;
+        }
+        public void DeletePendingByEmployeeId(int employeeId)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            connection.Execute("DELETE FROM PendingAccount WHERE EmployeeId = @Id", new { Id = employeeId });
+        }
 
         public void DeleteUserCascade(int id)
         {
