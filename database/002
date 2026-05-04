@@ -1,0 +1,11 @@
+USE MushuAirlines;
+
+ALTER TABLE Aircraft
+ADD EconomySeatsPerRow INT NOT NULL 
+    CONSTRAINT DF_EconomySeatsPerRow DEFAULT 1,
+
+    FirstClassSeatsPerRow INT NOT NULL 
+    CONSTRAINT DF_FirstClassSeatsPerRow DEFAULT 1,
+
+    CONSTRAINT CHK_SeatsPerRow
+    CHECK (EconomySeatsPerRow >= 1 AND FirstClassSeatsPerRow >= 1);
