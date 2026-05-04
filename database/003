@@ -1,0 +1,336 @@
+USE master;
+DROP DATABASE MushuAirlines;
+CREATE DATABASE MushuAirlines;
+USE MushuAirlines;
+
+CREATE TABLE [User] (
+    Id INT IDENTITY(1,1) PRIMARY KEY
+);
+
+CREATE TABLE Person (
+    Id INT PRIMARY KEY,
+    FirstName VARCHAR(255),
+    LastName VARCHAR(255),
+    Ssn VARCHAR(255),
+    Nationality VARCHAR(255),
+
+    CONSTRAINT FK_Person_User
+        FOREIGN KEY (Id)
+        REFERENCES [User](Id)
+);
+
+
+CREATE TABLE System (
+    Url VARCHAR(255) PRIMARY KEY,
+    Layover VARCHAR(255),
+    Schedule VARCHAR(255),
+    Route VARCHAR(255),
+    AircraftType VARCHAR(100)
+);
+
+
+CREATE TABLE ExternalSystem (
+    Id INT PRIMARY KEY,
+    Name VARCHAR(255) NOT NULL,
+    Owner VARCHAR(255) NOT NULL,
+
+    CONSTRAINT FK_ExternalSystem_User
+        FOREIGN KEY (Id)
+        REFERENCES [User](Id)
+);
+
+
+CREATE TABLE Employee (
+    Id INT PRIMARY KEY,
+    Url VARCHAR(255),
+    Salary FLOAT,
+    WorkSchedule VARCHAR(255),
+    Permissions VARCHAR(255),
+
+    CONSTRAINT FK_Employee_Person
+        FOREIGN KEY (Id)
+        REFERENCES Person(Id),
+
+);
+
+
+CREATE TABLE AccountEmployee (
+    Id INT,
+    Account VARCHAR(255),
+    Username VARCHAR(255) UNIQUE NOT NULL,
+    Password VARCHAR(255) NOT NULL,
+    PRIMARY KEY (Id, Account),
+
+    CONSTRAINT FK_AccountEmployee
+        FOREIGN KEY (Id)
+        REFERENCES Employee(Id)
+);
+
+
+CREATE TABLE Operator (
+    Id INT PRIMARY KEY,
+
+    CONSTRAINT FK_OperatorEmployee
+        FOREIGN KEY (Id)
+        REFERENCES Employee(Id)
+);
+
+
+CREATE TABLE Administrator (
+    Id INT PRIMARY KEY,
+
+    CONSTRAINT FK_AdminEmployee
+        FOREIGN KEY (Id)
+        REFERENCES Employee(Id)
+);
+
+CREATE TABLE AircraftType (
+    Id INT NOT NULL,
+    AircraftType VARCHAR(100) NOT NULL,
+
+    CONSTRAINT PK_AircraftType
+	PRIMARY KEY (id)
+);
+
+CREATE TABLE Aircraft (
+    Code INT NOT NULL,
+    EconomyRows INT NOT NULL,
+    FirstClassRows INT NOT NULL,
+    MaxTakeOffWeight FLOAT NOT NULL,
+    Model VARCHAR(100) NOT NULL,
+    [Type] INT NOT NULL,
+
+    CONSTRAINT PK_Aircraft
+	PRIMARY KEY (code),
+
+    CONSTRAINT FK_AircraftType
+	FOREIGN KEY (type)
+	REFERENCES AircraftType (id)
+);
+
+CREATE TABLE Passenger (
+    Id INT PRIMARY KEY NOT NULL
+    CONSTRAINT fk_passenger_person FOREIGN KEY (Id) REFERENCES Person(id)
+);
+
+CREATE TABLE Airport (
+    Code VARCHAR(3) NOT NULL CHECK (LEN(Code) = 3),
+    AirportName VARCHAR(200) NOT NULL,
+    Country VARCHAR(60) NOT NULL,
+    City VARCHAR(85) NOT NULL,
+
+    CONSTRAINT PK_Airport PRIMARY KEY (Code)
+);
+
+CREATE TABLE FlightSchedule (
+    Id INT NOT NULL,
+    PassengerBooked INT NULL,
+    OriginAirport VARCHAR(3) NOT NULL,
+    DestinationAirport VARCHAR(3) NOT NULL,
+    Duration VARCHAR(20) NOT NULL,
+    DepartureTime TIME NOT NULL,
+    ArrivalTime TIME NOT NULL,
+    DepartureDate DATE NOT NULL,
+    ArrivalDate DATE NOT NULL,
+
+    CONSTRAINT PK_FlightSchedule           
+	PRIMARY KEY (id),
+
+    CONSTRAINT FK_FS_Passenger              
+	FOREIGN KEY (passengerBooked)
+    REFERENCES Passenger (id),
+
+    CONSTRAINT FK_FS_OriginAirport         
+	FOREIGN KEY (originAirport)
+    REFERENCES Airport (code),
+
+    CONSTRAINT FK_FS_Destination_Airport
+	FOREIGN KEY (destinationAirport)
+    REFERENCES Airport (code)
+);
+
+CREATE TABLE Manages (
+    OperadorId INT NOT NULL,
+    AdministradorId INT NOT NULL,
+    FlightId INT NOT NULL,
+
+    CONSTRAINT PK_Manages               
+	PRIMARY KEY (OperadorId, AdministradorId, FlightId),
+
+    CONSTRAINT FK_Manages_Operator      
+	FOREIGN KEY (OperadorId)
+    REFERENCES Operator (id),
+
+    CONSTRAINT FK_Manages_Administrator 
+	FOREIGN KEY (AdministradorId)
+    REFERENCES Administrator (id),
+
+    CONSTRAINT FK_Manages_Flight        
+	FOREIGN KEY (FlightId)
+    REFERENCES FlightSchedule (id)
+);
+
+CREATE TABLE ScheduledFlight (
+    Id INT PRIMARY KEY NOT NULL,
+    AircraftCode INT NOT NULL,
+    Status VARCHAR(50) NOT NULL,
+    DepartureDate DATE NOT NULL,
+    ArrivalDate DATE NOT NULL,
+    BookedSeats INT NOT NULL
+    CONSTRAINT fk_sf_aircraft FOREIGN KEY (AircraftCode) REFERENCES Aircraft(code)
+);
+
+CREATE TABLE FlightScheduleHasScheduledFlight (
+	FlightScheduleId INT NOT NULL,
+	ScheduledFlightId INT NOT NULL,
+
+	CONSTRAINT PK_FlightScheduleScheduledFlight
+	PRIMARY KEY (FlightScheduleId, ScheduledFlightId),
+
+	CONSTRAINT FK_Flight_Schedule
+	FOREIGN KEY (FlightScheduleId)
+	REFERENCES FlightSchedule(Id),
+
+	CONSTRAINT FK_Scheduled_Flight
+	FOREIGN KEY (ScheduledFlightId)
+	REFERENCES ScheduledFlight(Id)
+);
+
+CREATE TABLE AdminAirport (
+    AdministratorId INT NOT NULL,
+    AirportCode VARCHAR(3) NOT NULL,
+
+    CONSTRAINT PK_AdminAirport
+    PRIMARY KEY (AdministratorId, AirportCode),
+
+    CONSTRAINT FK_Administrator
+    FOREIGN KEY (AdministratorId)
+    REFERENCES Administrator(Id),
+
+    CONSTRAINT FK_Airport
+    FOREIGN KEY (AirportCode)
+    REFERENCES Airport(Code)
+);
+
+CREATE TABLE AirportScheduled (
+    AirportCode VARCHAR(3) NOT NULL,
+    ScheduledFlightId INT NOT NULL,
+
+    CONSTRAINT PK_AirportScheduled
+    PRIMARY KEY (AirportCode, ScheduledFlightId),
+
+    CONSTRAINT FK_AirportScheduled_Airport
+    FOREIGN KEY (AirportCode)
+    REFERENCES Airport(Code),
+
+    CONSTRAINT FK_AirportScheduled_Scheduled_Flight
+    FOREIGN KEY (ScheduledFlightId)
+    REFERENCES ScheduledFlight(Id)
+);
+
+CREATE TABLE Ticket (
+    ScheduledId INT NOT NULL,
+    Qr VARCHAR(255) NOT NULL,
+    PassengerHas INT NOT NULL,
+    SeatNumber INT NOT NULL,
+    Disability VARCHAR(255),
+    Luggage VARCHAR(255),
+    CONSTRAINT PK_Ticket PRIMARY KEY (ScheduledId, Qr),
+    CONSTRAINT FK_Ticket_Scheduled FOREIGN KEY (ScheduledId) REFERENCES ScheduledFlight(Id),
+    CONSTRAINT FK_Ticket_Passenger FOREIGN KEY (PassengerHas) REFERENCES Passenger(Id)
+);
+
+CREATE TABLE Passport (
+    InternationalId INT PRIMARY KEY,
+    PassengerHas INT,
+    FirstName VARCHAR(255),
+    LastName VARCHAR(255),
+    BirthDay DATE,
+    PlaceOfBirth VARCHAR(255),
+    ExpirationDate DATE,
+    Nationality VARCHAR(255),
+    IssueDate DATE,
+    Gender VARCHAR(50),
+    Photo VARCHAR(255),
+
+    CONSTRAINT FK_Passport_Passenger
+    FOREIGN KEY (PassengerHas)
+    REFERENCES Passenger(Id)
+);
+
+
+CREATE TABLE Itinerary (
+    BookingCode INT PRIMARY KEY NOT NULL,
+    PassengerBooks INT NOT NULL,
+    SeatType VARCHAR(50),
+    LuggageWeight FLOAT,
+    TicketCount INT,
+    Layover VARCHAR(255),
+    Origin VARCHAR(3),
+    Destination VARCHAR(3), 
+    CONSTRAINT FK_Itinerary_Passenger FOREIGN KEY (PassengerBooks) REFERENCES Passenger(Id)
+);
+
+CREATE TABLE ExternalSystChecksFlight (
+    FlightId INT NOT NULL,
+    ExternalSystemId INT NOT NULL,
+
+    CONSTRAINT PK_ExtSystChecksFlight
+    PRIMARY KEY (FlightId, ExternalSystemId),
+
+    CONSTRAINT FK_ESCF_FlightSchedule
+    FOREIGN KEY (FlightId)
+    REFERENCES FlightSchedule(Id),
+
+    CONSTRAINT FK_ESCF_ExternalSystem
+    FOREIGN KEY (ExternalSystemId)
+    REFERENCES ExternalSystem(Id)
+);
+
+CREATE TABLE ItineraryScheduledFlight (
+    ScheduledId INT,
+    BookingCode INT,
+
+    CONSTRAINT PK_ItineraryScheduledFlight
+    PRIMARY KEY (ScheduledId, BookingCode),
+
+    CONSTRAINT FK_ISF_ScheduledFlight
+    FOREIGN KEY (ScheduledId)
+    REFERENCES ScheduledFlight(Id),
+
+    CONSTRAINT FK_ISF_Itinerary
+    FOREIGN KEY (BookingCode)
+    REFERENCES Itinerary(BookingCode)
+);
+
+INSERT INTO [User] DEFAULT VALUES;
+
+
+INSERT INTO Person (Id,FirstName, LastName, Ssn, Nationality)
+VALUES (1 ,'Leo', 'Sibaja', '208648887', 'Costa Rica');
+
+
+INSERT INTO Employee (Id, Url, Salary, WorkSchedule, Permissions)
+VALUES (1, 'admin.png', 850000, 'Lunes a Viernes 8am-5pm', 'ALL');
+
+
+INSERT INTO Administrator (Id)
+VALUES (1);
+
+INSERT INTO AccountEmployee (Id, Account, Username, Password)
+VALUES (1, 'AdminPrincipal', 'admin', '1234');
+
+select * from [User]
+select * from Person
+select * from Employee
+select * from AccountEmployee
+
+ALTER TABLE Aircraft
+ADD EconomySeatsPerRow INT NOT NULL 
+    CONSTRAINT DF_EconomySeatsPerRow DEFAULT 1,
+
+    FirstClassSeatsPerRow INT NOT NULL 
+    CONSTRAINT DF_FirstClassSeatsPerRow DEFAULT 1,
+
+    CONSTRAINT CHK_SeatsPerRow
+    CHECK (EconomySeatsPerRow >= 1 AND FirstClassSeatsPerRow >= 1);
