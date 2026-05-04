@@ -13,15 +13,24 @@ import UsersPage from './components/admin/UsersPage.vue';
 const router = createRouter({
     history: createWebHistory(),
     routes: [
-        { path : "/", name: "Landing", component: LandingPage },
-        { path : "/login", name: "Login", component: LoginForm },
-        { path : "/admin", name: "Admin", component: LandingPageInter },
-        { path: "/admin/aircraft-types", name: "AircraftTypes", component: AircraftTypesPage },
-        { path: "/admin/routes", name: "Routes", component: RoutesPage },
-        { path: "/admin/routes/create-route", name: "RouteCreation", component: RouteCreationForm },
-        { path: "/admin/airports", name: "Airports", component: AirportsPage },
-        { path: "/admin/users", name: "Users", component: UsersPage },
+        { path: "/", name: "Landing", component: LandingPage },
+        { path: "/login", name: "Login", component: LoginForm },
+        { path: "/admin", name: "Admin", component: LandingPageInter, meta: { requiresAuth: true } },
+        { path: "/admin/aircraft-types", name: "AircraftTypes", component: AircraftTypesPage, meta: { requiresAuth: true } },
+        { path: "/admin/routes", name: "Routes", component: RoutesPage, meta: { requiresAuth: true } },
+        { path: "/admin/routes/create-route", name: "RouteCreation", component: RouteCreationForm, meta: { requiresAuth: true } },
+        { path: "/admin/airports", name: "Airports", component: AirportsPage, meta: { requiresAuth: true } },
+        { path: "/admin/users", name: "Users", component: UsersPage, meta: { requiresAuth: true } },
     ],
+});
+
+router.beforeEach((to, from, next) => {
+    const token = localStorage.getItem("token");
+    if (to.meta.requiresAuth && !token) {
+        next("/login");
+    } else {
+        next();
+    }
 });
 
 createApp(App).use(router).mount('#app')

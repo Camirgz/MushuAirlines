@@ -16,7 +16,7 @@ namespace backend.Controllers
         }
 
         [HttpPost]
-        public ActionResult<bool> Login(LoginModel login)
+        public ActionResult<string> Login(LoginModel login)
         {
             if (login == null)
             {
@@ -25,16 +25,13 @@ namespace backend.Controllers
 
             var result = loginService.Login(login);
 
-            if (string.IsNullOrEmpty(result))
+            if (result == "Usuario o contraseña incorrectos")
             {
-                // login correcto
-                return Ok(true); 
+                return BadRequest(result);
             }
-            else
-            {
-                // error
-                return BadRequest(result); 
-            }
+           
+            // else we have here the token to return to the frontend
+            return Ok(result); 
         }
     }
 }
