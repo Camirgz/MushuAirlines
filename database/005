@@ -1,0 +1,20 @@
+USE MushuAirlines;
+
+CREATE TABLE PendingAccount (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    EmployeeId INT,
+    Email VARCHAR(255) UNIQUE,
+    Role VARCHAR(50),
+    VerificationToken VARCHAR(500),
+    IsVerified BIT DEFAULT 0,
+
+    CONSTRAINT FK_PendingAccount_Employee
+    FOREIGN KEY (EmployeeId)
+    REFERENCES Employee(Id)
+);
+
+UPDATE AccountEmployee
+SET Password = '$2a$11$xZxGvbVaK5dO3wdkCDACuO2lL9c3W6mOAO0WWdSXd/mrwDakCA5IG'
+WHERE Username = 'admin';
+
+select * from AccountEmployee;
