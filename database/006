@@ -1,0 +1,8 @@
+USE MushuAirlines;
+
+CREATE TABLE ExternalApiConsumers (
+    Id INT IDENTITY PRIMARY KEY NOT NULL,
+    Name VARCHAR(100),
+    ApiKeyHash VARCHAR(256),
+    IsActive BIT
+);
