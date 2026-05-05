@@ -76,11 +76,27 @@
       <!-- Content card -->
       <section class="content-card">
         <div class="card-header">
-          <h2>Aeronaves ({{ AircraftTypes.length }})</h2>
+          <h2>
+            Aeronaves ({{ FilteredAircraftTypes.length }}
+            <span v-if="SearchQuery" class="total-hint">de {{ AircraftTypes.length }}</span>)
+          </h2>
           <RouterLink to="/admin/aircraft-types/create" class="create-btn">
             <i class="bi bi-plus-lg me-2"></i>
             Crear Aeronave
           </RouterLink>
+        </div>
+
+        <div class="search-bar">
+          <i class="bi bi-search search-icon"></i>
+          <input
+            v-model="SearchQuery"
+            type="text"
+            class="search-input"
+            placeholder="Buscar por modelo o tipo..."
+          />
+          <button v-if="SearchQuery" class="search-clear" @click="SearchQuery = ''">
+            <i class="bi bi-x-lg"></i>
+          </button>
         </div>
 
         <div v-if="IsLoading" class="status-msg">
@@ -93,26 +109,63 @@
           {{ ErrorMessage }}
         </div>
 
-        <table v-else class="aircraft-table">
-          <thead>
-            <tr>
-              <th>MODELO</th>
-              <th>TIPO</th>
-              <th>PESO (KG)</th>
-              <th>CAPACIDAD</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="Aircraft in AircraftTypes" :key="Aircraft.Id">
-              <td>{{ Aircraft.Model }}</td>
-              <td class="type-cell">{{ Aircraft.Type }}</td>
-              <td>{{ Aircraft.WeightKg.toLocaleString() }}</td>
-              <td>
-                <span class="capacity-badge">{{ Aircraft.Capacity }} asientos</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <template v-else>
+          <table class="aircraft-table">
+            <thead>
+              <tr>
+                <th>MODELO</th>
+                <th>TIPO</th>
+                <th>PESO (KG)</th>
+                <th>CAPACIDAD</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="FilteredAircraftTypes.length === 0">
+                <td colspan="4" class="empty-msg">No se encontraron aeronaves.</td>
+              </tr>
+              <tr v-for="Aircraft in PaginatedAircraftTypes" :key="Aircraft.Id">
+                <td>{{ Aircraft.Model }}</td>
+                <td class="type-cell">{{ Aircraft.Type }}</td>
+                <td>{{ Aircraft.WeightKg.toLocaleString() }}</td>
+                <td>
+                  <span class="capacity-badge">{{ Aircraft.Capacity }} asientos</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div v-if="TotalPages > 1" class="pagination">
+            <button
+              class="page-btn"
+              :disabled="CurrentPage === 1"
+              @click="GoToPage(CurrentPage - 1)"
+            >
+              <i class="bi bi-chevron-left"></i>
+            </button>
+
+            <button
+              v-for="Page in TotalPages"
+              :key="Page"
+              class="page-btn"
+              :class="{ 'page-btn--active': Page === CurrentPage }"
+              @click="GoToPage(Page)"
+            >
+              {{ Page }}
+            </button>
+
+            <button
+              class="page-btn"
+              :disabled="CurrentPage === TotalPages"
+              @click="GoToPage(CurrentPage + 1)"
+            >
+              <i class="bi bi-chevron-right"></i>
+            </button>
+
+            <span class="page-info">
+              Página {{ CurrentPage }} de {{ TotalPages }}
+            </span>
+          </div>
+        </template>
       </section>
     </main>
   </div>
@@ -124,10 +177,38 @@ import { GetAircraftTypes } from "../../services/AircraftTypesService";
 export default {
   name: "AircraftTypesPage",
 
+  computed: {
+    FilteredAircraftTypes() {
+      const Query = this.SearchQuery.trim().toLowerCase();
+      if (!Query) return this.AircraftTypes;
+      return this.AircraftTypes.filter(
+        (A) =>
+          A.Model.toLowerCase().includes(Query) ||
+          A.Type.toLowerCase().includes(Query)
+      );
+    },
+    TotalPages() {
+      return Math.ceil(this.FilteredAircraftTypes.length / this.PageSize) || 1;
+    },
+    PaginatedAircraftTypes() {
+      const Start = (this.CurrentPage - 1) * this.PageSize;
+      return this.FilteredAircraftTypes.slice(Start, Start + this.PageSize);
+    },
+  },
+
+  watch: {
+    SearchQuery() {
+      this.CurrentPage = 1;
+    },
+  },
+
   data() {
     return {
       IsDropdownOpen: false,
       AircraftTypes: [],
+      SearchQuery: "",
+      CurrentPage: 1,
+      PageSize: 10,
       IsLoading: false,
       ErrorMessage: "",
     };
@@ -158,6 +239,10 @@ export default {
         .finally(() => {
           this.IsLoading = false;
         });
+    },
+    GoToPage(Page) {
+      if (Page < 1 || Page > this.TotalPages) return;
+      this.CurrentPage = Page;
     },
   },
 };
@@ -433,6 +518,128 @@ export default {
 .type-cell {
   color: #ff5a00;
   font-weight: 600;
+}
+
+.total-hint {
+  font-weight: 400;
+  font-size: 1rem;
+  color: #6b7280;
+}
+
+/* Search bar */
+.search-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 14px;
+  color: #9ca3af;
+  font-size: 0.95rem;
+  pointer-events: none;
+}
+
+.search-input {
+  width: 100%;
+  padding: 11px 40px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  color: #111827;
+  background: #ffffff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.search-input::placeholder {
+  color: #9ca3af;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #ff5a00;
+  box-shadow: 0 0 0 3px rgba(255, 90, 0, 0.1);
+}
+
+.search-clear {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  font-size: 0.8rem;
+  transition: color 0.15s ease;
+}
+
+.search-clear:hover {
+  color: #374151;
+}
+
+.empty-msg {
+  text-align: center;
+  padding: 32px 0;
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.page-btn {
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #374151;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.15s ease;
+}
+
+.page-btn:hover:not(:disabled) {
+  border-color: #ff5a00;
+  color: #ff5a00;
+}
+
+.page-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.page-btn--active {
+  background: linear-gradient(135deg, #f01818 0%, #ff5a00 45%, #ffc400 100%);
+  border-color: transparent;
+  color: #ffffff;
+}
+
+.page-btn--active:hover {
+  border-color: transparent;
+  color: #ffffff;
+}
+
+.page-info {
+  margin-left: 8px;
+  font-size: 0.85rem;
+  color: #6b7280;
 }
 
 .capacity-badge {
