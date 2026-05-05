@@ -1,0 +1,26 @@
+USE MushuAirlines;
+
+INSERT INTO AirportCatalog (City, Country)
+VALUES
+('San José', 'Costa Rica'),
+('Miami', 'Estados Unidos'),
+('Nueva York', 'Estados Unidos'),
+('Los Ángeles', 'Estados Unidos'),
+('Chicago', 'Estados Unidos'),
+('Atlanta', 'Estados Unidos'),
+('Dallas', 'Estados Unidos'),
+('Seattle', 'Estados Unidos'),
+('San Francisco', 'Estados Unidos'),
+('Boston', 'Estados Unidos'),
+('Madrid', 'España'),
+('Barcelona', 'España'),
+('Ciudad de México', 'México'),
+('Cancún', 'México'),
+('Guadalajara', 'México'),
+('Monterrey', 'México'),
+('Taipéi', 'Taiwán'),
+('Tokio', 'Japón'),
+('Seúl', 'Corea del Sur');
+
+SELECT * FROM AirportCatalog;
+SELECT * FROM Airport;
