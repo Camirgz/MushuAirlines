@@ -90,16 +90,25 @@
             />
           </div>
 
-          <!-- Type -->
+          <!-- Type: free text with autocomplete suggestions from existing types -->
           <div class="form-group">
             <label class="form-label">Tipo de aeronave <span class="required">*</span></label>
             <input
               v-model="Form.Type"
+              list="AircraftTypesList"
               type="text"
               class="form-input"
               placeholder="Ej: Avión comercial, Helicóptero..."
+              @input="OnTypeNameChanged"
               required
             />
+            <datalist id="AircraftTypesList">
+              <option
+                v-for="Option in AircraftTypeOptions"
+                :key="Option.Id"
+                :value="Option.Name"
+              />
+            </datalist>
           </div>
 
           <!-- Weight -->
@@ -171,6 +180,15 @@
             </div>
           </div>
 
+          <!-- Seat counter -->
+          <div class="seat-counter" :class="{ 'seat-counter--danger': TotalSeats >= 1000 }">
+            <i class="bi bi-person-fill me-2"></i>
+            Capacidad total: <strong>{{ TotalSeats }} asientos</strong>
+            <span v-if="TotalSeats >= 1000" class="seat-limit-msg">
+              — máximo permitido: 999
+            </span>
+          </div>
+
           <!-- Error message -->
           <div v-if="ErrorMessage" class="error-msg">
             <i class="bi bi-exclamation-circle me-2"></i>
@@ -183,7 +201,7 @@
               <i class="bi bi-x-lg me-2"></i>
               Cancelar
             </button>
-            <button type="submit" class="submit-btn" :disabled="IsSubmitting">
+            <button type="submit" class="submit-btn" :disabled="IsSubmitting || TotalSeats >= 1000">
               <i class="bi bi-floppy me-2"></i>
               {{ IsSubmitting ? "Guardando..." : "Guardar" }}
             </button>
@@ -195,16 +213,25 @@
 </template>
 
 <script>
-import { CreateAircraftType } from "../../services/AircraftTypesService";
+import { CreateAircraftType, GetAircraftTypeOptions } from "../../services/AircraftTypesService";
 
 export default {
   name: "CreateAircraftType",
+
+  computed: {
+    TotalSeats() {
+      const Economy    = (this.Form.EconomyClass.RowCount  || 0) * (this.Form.EconomyClass.SeatsPerRow || 0);
+      const FirstClass = (this.Form.FirstClass.RowCount    || 0) * (this.Form.FirstClass.SeatsPerRow   || 0);
+      return Economy + FirstClass;
+    },
+  },
 
   data() {
     return {
       IsDropdownOpen: false,
       IsSubmitting: false,
       ErrorMessage: "",
+      AircraftTypeOptions: [],
       Form: {
         Model: "",
         Type: "",
@@ -221,12 +248,36 @@ export default {
     };
   },
 
+  mounted() {
+    this.LoadAircraftTypeOptions();
+  },
+
   methods: {
     ToggleDropdown() {
       this.IsDropdownOpen = !this.IsDropdownOpen;
     },
     CloseDropdown() {
       this.IsDropdownOpen = false;
+    },
+    LoadAircraftTypeOptions() {
+      GetAircraftTypeOptions()
+        .then((Response) => {
+          this.AircraftTypeOptions = Response.data;
+        })
+        .catch(() => {});
+    },
+    OnTypeNameChanged() {
+      const Option = this.AircraftTypeOptions.find(
+        (O) => O.Name === this.Form.Type
+      );
+      if (!Option) return;
+
+      if (Option.DefaultModel)                 this.Form.Model                    = Option.DefaultModel;
+      if (Option.DefaultWeightKg)              this.Form.WeightKg                 = Option.DefaultWeightKg;
+      if (Option.DefaultEconomyRows)           this.Form.EconomyClass.RowCount    = Option.DefaultEconomyRows;
+      if (Option.DefaultEconomySeatsPerRow)    this.Form.EconomyClass.SeatsPerRow = Option.DefaultEconomySeatsPerRow;
+      if (Option.DefaultFirstClassRows)        this.Form.FirstClass.RowCount      = Option.DefaultFirstClassRows;
+      if (Option.DefaultFirstClassSeatsPerRow) this.Form.FirstClass.SeatsPerRow   = Option.DefaultFirstClassSeatsPerRow;
     },
     Submit() {
       this.IsSubmitting = true;
@@ -246,8 +297,11 @@ export default {
         .then(() => {
           this.$router.push("/admin/aircraft-types");
         })
-        .catch(() => {
-          this.ErrorMessage = "No se pudo crear la aeronave. Intente de nuevo.";
+        .catch((Error) => {
+          const ServerMessage = Error.response?.data;
+          this.ErrorMessage = ServerMessage
+            ? `Error del servidor: ${ServerMessage}`
+            : `Error de red: ${Error.message}`;
         })
         .finally(() => {
           this.IsSubmitting = false;
@@ -590,5 +644,29 @@ export default {
   font-weight: 600;
   display: flex;
   align-items: center;
+}
+
+.seat-counter {
+  margin-top: 20px;
+  padding: 12px 18px;
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  display: flex;
+  align-items: center;
+  transition: 0.2s ease;
+}
+
+.seat-counter--danger {
+  background: #fff1f1;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.seat-limit-msg {
+  margin-left: 4px;
+  font-weight: 700;
 }
 </style>
