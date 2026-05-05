@@ -1,3 +1,5 @@
+USE MushuAirlines;
+
 CREATE TABLE Route (
     Code varchar(100) NOT NULL PRIMARY KEY,
     OriginAirport NVARCHAR(10),
