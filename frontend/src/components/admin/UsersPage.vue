@@ -8,6 +8,7 @@
         <h1 class="header-title">Lista de Usuarios</h1>
         <p class="header-subtitle">Panel de administración de Mushu Airlines</p>
       </div>
+      <RouterLink to="/admin" class="back-btn">&#8592; Volver al panel</RouterLink>
     </div>
 
     <!-- Main content -->
@@ -66,8 +67,6 @@
           <span class="page-info">Página {{ page }} de {{ totalPages }}</span>
           <button @click="changePage(page + 1)" :disabled="page >= totalPages" class="page-btn">Siguiente</button>
         </div>
-
-        <RouterLink to="/admin" class="back-btn">← Volver al panel</RouterLink>
 
       </div>
     </div>
@@ -336,13 +335,16 @@ export default {
   color: #e74c3c;
 }
 
-/* Back link */
+/* Back button */
 .back-btn {
-  display: block;
-  text-align: center;
+  margin-left: auto;
+  background: white;
   color: #e74c3c;
   font-weight: bold;
   text-decoration: none;
   font-size: 14px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  white-space: nowrap;
 }
 </style>
