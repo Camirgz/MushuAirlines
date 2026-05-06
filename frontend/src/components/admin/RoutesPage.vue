@@ -1,5 +1,38 @@
 <template>
+
     <div class="admin-page">
+        <nav class="navbar bg-white shadow-sm px-4 py-2">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+                <img src="@/assets/logo.png" width="42" height="42" class="rounded-2" />
+                <div>
+                    <div class="brand-name">Mushu Airlines</div>
+                    <div class="brand-tagline">Vuela con el dragón</div>
+                </div>
+            </a>
+
+            <div class="d-flex align-items-center gap-4">
+                <a href="#" class="nav-link-item">
+                    <img src="@/assets/BuscarVuelos.png" width="16" />
+                    Buscar vuelos
+                </a>
+                <a href="#" class="nav-link-item">
+                    <img src="@/assets/MisVuelos.png" width="16" />
+                    Mis vuelos
+                </a>
+                <a href="#" class="nav-link-item">
+                    <img src="@/assets/CheckIn.png" width="16" />
+                    Check-in
+                </a>
+                <a href="/admin" class="btn btn-gradient">
+                    <img src="@/assets/Gestion.png" width="16" />
+                    Gestión
+                </a>
+                <a href="/logout" class="btn btn-outline-danger rounded-pill px-3 py-1">
+                    <img src="@/assets/Usuario.png" width="16" />
+                    Logout
+                </a>
+            </div>
+        </nav>
         <main class="admin-main">
             <section class="admin-hero">
                 <i class="bi bi-geo-alt hero-icon"></i>
@@ -380,4 +413,50 @@
             transform: rotate(360deg);
         }
     }
+
+
+
+    .nav-link-item {
+        color: #333;
+        font-size: 0.9rem;
+        text-decoration: none;
+    }
+
+        .nav-link-item:hover {
+            color: #e74c3c;
+        }
+
+    .btn-gradient {
+        background: linear-gradient(to right, #e74c3c, #f39c12);
+        color: white;
+        border-radius: 20px;
+        padding: 6px 14px;
+        border: none;
+    }
+
+    .brand-name {
+        font-weight: 700;
+        font-size: 1.05rem;
+    }
+
+    .brand-tagline {
+        font-size: 0.7rem;
+        color: #888;
+    }
+
+    .admin-banner {
+        background: linear-gradient(90deg, #e60000, #f0a500);
+        padding: 28px;
+        border-radius: 12px;
+        color: white;
+    }
+
+        .admin-banner h2 {
+            font-weight: 800;
+        }
+
+        .admin-banner p {
+            margin: 0;
+            opacity: 0.9;
+        }
 </style>
