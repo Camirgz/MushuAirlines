@@ -45,7 +45,11 @@ namespace backend.Services
                 HandBagWeight = r.HandBagWeight,
                 BagPrice = r.BagPrice,
                 BagWeight = r.BagWeight,
-                BagMultiplier = r.BagMultiplier
+                BagMultiplier = r.BagMultiplier,
+                StartDate = r.StartDate,
+                FinalizationDate = r.FinalizationDate,
+                EconomyClassCapacity = r.EconomyClassCapacity,
+                FirstClassCapacity = r.FirstClassCapacity
             }).ToList();
         }
 

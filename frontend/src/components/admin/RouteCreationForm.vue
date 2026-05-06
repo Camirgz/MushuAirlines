@@ -27,7 +27,6 @@
                     <img src="@/assets/Gestion.png" width="16" />
                     Gestión
                 </a>
-
                 <a href="/logout" class="btn btn-outline-danger rounded-pill px-3 py-1">
                     <img src="@/assets/Usuario.png" width="16" />
                     Logout
@@ -59,6 +58,7 @@
                         <div class="col-md-6 form-group">
                             <label>Aeropuerto de Origen*</label>
                             <select v-model="form.originAirport" class="form-control" required>
+                                <option value="" disabled>Seleccione un aeropuerto</option>
                                 <option v-for="a in airports" :key="a.id" :value="a.id">{{ a.name }}</option>
                             </select>
                         </div>
@@ -66,6 +66,7 @@
                         <div class="col-md-6 form-group">
                             <label>Aeropuerto de Destino*</label>
                             <select v-model="form.destinationAirport" class="form-control" required>
+                                <option value="" disabled>Seleccione un aeropuerto</option>
                                 <option v-for="a in airports" :key="a.id" :value="a.id">{{ a.name }}</option>
                             </select>
                         </div>
@@ -96,7 +97,10 @@
                         <div class="col-md-6 form-group">
                             <label>Tipo de Aeronave*</label>
                             <select v-model="form.aircraftTypeId" class="form-control" required>
-                                <option v-for="plane in aircraftTypes" :key="plane.id" :value="plane.id">{{ plane.model }}</option>
+                                <option value="" disabled>Seleccione un tipo de aeronave</option>
+                                <option v-for="type in aircraftTypes" :key="type.Id" :value="type.Name">
+                                    {{ type.Name }}
+                                </option>
                             </select>
                         </div>
                         <div class="col-md-6 form-group">
@@ -120,17 +124,32 @@
                         </div>
                     </div>
 
-                    <h5 class="mt-4" style="font-weight: bold ; font-size: x-large">Tarifas</h5>
+                    <div class="row mt-3">
+                        <div class="col-md-6 form-group">
+                            <label>Fecha de inicio*</label>
+                            <div class="input-box">
+                                <input type="date" v-model="form.startDate" required />
+                            </div>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label>Fecha de finalización*</label>
+                            <div class="input-box">
+                                <input type="date" v-model="form.finalizationDate" required />
+                            </div>
+                        </div>
+                    </div>
+
+                    <h5 class="mt-4" style="font-weight: bold; font-size: x-large">Tarifas</h5>
                     <div class="row">
                         <div class="col-md-6 form-group">
-                            <label>Primera Clase*</label>
+                            <label>Primera Clase ₡*</label>
                             <div class="input-box">
                                 <input type="number" min="0" step="0.01" v-model.number="form.priceFirstClass" placeholder="₡ 0.00" @keypress="onlyNumbers" />
                             </div>
                         </div>
 
                         <div class="col-md-6 form-group">
-                            <label>Clase Turista*</label>
+                            <label>Clase Turista ₡*</label>
                             <div class="input-box">
                                 <input type="number" min="0" step="0.01" v-model.number="form.priceEconomy" placeholder="₡ 0.00" @keypress="onlyNumbers" />
                             </div>
@@ -140,28 +159,28 @@
                     <h5 class="mt-4">Políticas de Equipaje</h5>
                     <div class="row">
                         <div class="col-md-3 form-group">
-                            <label>Precio equipaje de mano*</label>
+                            <label>Precio equipaje de mano ₡*</label>
                             <div class="input-box">
                                 <input type="number" min="0" step="0.01" v-model.number="form.handBagPrice" placeholder="₡ 0.00" @keypress="onlyNumbers" />
                             </div>
                         </div>
 
                         <div class="col-md-3 form-group">
-                            <label>Peso equipaje de mano*</label>
+                            <label>Peso equipaje de mano (kg)*</label>
                             <div class="input-box">
                                 <input type="number" min="0" step="0.01" v-model.number="form.handBagWeight" placeholder="0.00" @keypress="onlyNumbers" />
                             </div>
                         </div>
 
                         <div class="col-md-3 form-group">
-                            <label>Precio equipaje documentado*</label>
+                            <label>Precio equipaje documentado ₡*</label>
                             <div class="input-box">
                                 <input type="number" min="0" step="0.01" v-model.number="form.bagPrice" placeholder="₡ 0.00" @keypress="onlyNumbers" />
                             </div>
                         </div>
 
                         <div class="col-md-3 form-group">
-                            <label>Peso equipaje documentado*</label>
+                            <label>Peso equipaje documentado (kg)*</label>
                             <div class="input-box">
                                 <input type="number" min="0" step="0.01" v-model.number="form.bagWeight" placeholder="0.00" @keypress="onlyNumbers" />
                             </div>
@@ -175,121 +194,120 @@
                         </div>
                     </div>
 
-                    <button type="submit" class="search-btn mt-4" style="font-size: large ; font-weight: bold">
+                    <button type="submit" class="search-btn mt-4" style="font-size: large; font-weight: bold">
                         Crear ruta
                     </button>
-
                 </form>
             </div>
         </div>
-    </div>
-<div>
 
+        <div class="container mt-4 mb-5">
+            <div class="route-card">
+                <h2 class="mb-4" style="font-weight: bold;">
+                    <img src="@/assets/Vuelos.png" width="32" class="me-2" />
+                    Rutas existentes
+                </h2>
 
-    <div class="container mt-4 mb-5">
-        <div class="route-card">
-        <h2 class="mb-4" style="font-weight: bold;">
-            <img src="@/assets/Vuelos.png" width="32" class="me-2" />
-            Rutas existentes
-        </h2>
+                <div v-for="route in routes"
+                     :key="route.code"
+                     @click="toggleRoute(route)"
+                     class="route-item d-flex flex-column">
 
-            <div v-for="route in routes"
-            :key="route.code"
-            @click="toggleRoute(route)"
-            class="route-item d-flex flex-column">
-
-                <div class="d-flex justify-content-between align-items-center">
-
-                    <div>
-                        <div class="route-title">
-                            <strong>{{ route.code }}</strong>
-                            <span class="mx-2">•</span>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="route-title">
+                                <strong>{{ route.code }}</strong>
+                                <span class="mx-2">•</span>
                                 {{ route.originAirport }} → {{ route.destinationAirport }}
+                            </div>
+
+                            <div class="route-sub">
+                                {{ route.aircraftTypeId }} •
+                                <span v-for="day in route.frequency" :key="day">
+                                    {{ day + " " }}
+                                </span>
+                            </div>
+
+                            <div class="route-sub small">
+                                Salida: {{ route.departureTime }} ·
+                                Llegada: {{ route.arrivalTime }} ·
+                                Duración: {{ route.duration }}
+                            </div>
                         </div>
 
-                        <div class="route-sub">
-                            {{ route.aircraftTypeId }} •
-                            <span v-for="day in route.frequency" :key="day">
-                                {{ day + " "}}
-                            </span>
-                        </div>
-
-                        <div class="route-sub small">
-                            Salida: {{ route.departureTime }} ·
-                            Llegada: {{ route.arrivalTime }} ·
-                            Duración: {{ route.duration }}
+                        <div class="route-arrow">
+                            {{ selectedRoute === route.code ? '⌄' : '›' }}
                         </div>
                     </div>
 
-                    <div class="route-arrow">
-                        {{ selectedRoute === route.code ? '⌄' : '›' }}
-                    </div>
-                </div>
-
-                <div v-if="selectedRoute === route.code" class="route-details mt-3 route-sub small">
-                    <div class="row mt-2">
-                        <div class="col-md-4">
-                            Primera Clase:
-                            ₡{{ route.priceFirstClass.toLocaleString() }}
+                    <div v-if="selectedRoute === route.code" class="route-details mt-3 route-sub small">
+                        <div class="row mt-2">
+                            <div class="col-md-4">
+                                Primera Clase:
+                                ₡{{ (route.priceFirstClass || 0).toLocaleString() }}
+                            </div>
+                            <div class="col-md-4">
+                                Clase Turista:
+                                ₡{{ (route.priceEconomy || 0).toLocaleString() }}
+                            </div>
                         </div>
-
-                       <div class="col-md-4">
-                            Clase Turista:
-                            ₡{{ route.priceEconomy.toLocaleString() }}
-                       </div>
-                       
-                    </div>
                         <div class="row mt-2">
                             <div class="col-md-4">
                                 Equipaje de mano:
                                 ₡{{ route.handBagPrice }} · {{ route.handBagWeight }}kg
                             </div>
-
                             <div class="col-md-4">
                                 Equipaje documentado:
                                 ₡{{ route.bagPrice }} · {{ route.bagWeight }}kg
                             </div>
-
                             <div class="col-md-4">
                                 Multiplicador:
                                 {{ route.bagMultiplier }}
                             </div>
                         </div>
+                        <div class="row mt-2">
+                            <div class="col-md-4">
+                                Vigencia: {{ route.startDate }} → {{ route.finalizationDate }}
+                            </div>
+                        </div>
                     </div>
                 </div>
-
             </div>
         </div>
+
     </div>
 </template>
 
 <script>
-
-import axios from "axios";
+    import axios from "axios";
 
     export default {
         data() {
             return {
-            successMessage: "",
+                successMessage: "",
                 errorMessage: "",
                 selectedRoute: null,
-            form: {
-                code: "",
-                priceFirstClass: 0,
-                priceEconomy: 0,
-                handBagPrice: 0,
-                handBagWeight: 0,
-                bagPrice: 0,
-                bagWeight: 0,
-                bagMultiplier: 0,
-                originAirport: "",
-                destinationAirport: "",
-                departureTime: "",
-                arrivalTime: "",
-                duration: "",
-                aircraftTypeId: "",
-                frequency: []
-            },
+                form: {
+                    code: "",
+                    priceFirstClass: 0,
+                    priceEconomy: 0,
+                    handBagPrice: 0,
+                    handBagWeight: 0,
+                    bagPrice: 0,
+                    bagWeight: 0,
+                    bagMultiplier: 0,
+                    originAirport: "",
+                    destinationAirport: "",
+                    departureTime: "",
+                    arrivalTime: "",
+                    duration: "",
+                    aircraftTypeId: "",
+                    frequency: [],
+                    startDate: "",
+                    finalizationDate: "",
+                    economyClassCapacity: 0,
+                    firstClassCapacity: 0
+                },
                 days: [
                     { label: 'L', val: 'Lunes' },
                     { label: 'M', val: 'Martes' },
@@ -299,7 +317,6 @@ import axios from "axios";
                     { label: 'S', val: 'Sábado' },
                     { label: 'D', val: 'Domingo' }
                 ],
-                // hardcodeado por mientras
                 airports: [
                     { id: "MAD", name: "Madrid-Barajas" },
                     { id: "JFK", name: "JFK" },
@@ -310,43 +327,48 @@ import axios from "axios";
                     { id: "AMS", name: "Ámsterdam-Schiphol" },
                     { id: "BCN", name: "Barcelona-El Prat" }
                 ],
-                // hardcodeado por mientras
-                aircraftTypes: [
-                    { id: "A320", model: "Airbus A320" },
-                    { id: "B737", model: "Boeing 737" },
-                    { id: "E190", model: "Embraer 190" },
-                    { id: "A321", model: "Airbus A321" },
-                    { id: "B787", model: "Boeing 787" },
-                    { id: "E195", model: "Embraer 195" }
-                ],
+                aircraftTypes: [],
                 routes: []
             };
         },
+
         async mounted() {
             await this.loadRoutes();
+            await this.loadAircraftTypes();
         },
+
+        watch: {
+            'form.aircraftTypeId'(newName) {
+                const selected = this.aircraftTypes.find(t => t.Name === newName);
+                if (selected) {
+                    this.form.firstClassCapacity =
+                        (selected.DefaultFirstClassRows || 0) * (selected.DefaultFirstClassSeatsPerRow || 0);
+                    this.form.economyClassCapacity =
+                        (selected.DefaultEconomyRows || 0) * (selected.DefaultEconomySeatsPerRow || 0);
+                }
+            }
+        },
+
         methods: {
             validateForm() {
-                const f = this.form;
-
-                if (!this.isValidDuration(f.duration)) {
+                if (!this.isValidDuration(this.form.duration)) {
                     this.errorMessage = "Duración inválida (HH:mm)";
                     return false;
                 }
 
-                const isValid =
-                    f.originAirport !== "" &&
-                    f.destinationAirport !== "" &&
-                    f.departureTime !== "" &&
-                    f.arrivalTime !== "" &&
-                    f.duration !== "" &&
-                    f.aircraftTypeId !== "" &&
-                    f.aircraftTypeId !== undefined &&
-                    f.code !== "" &&
-                    Array.isArray(f.frequency) &&
-                    f.frequency.length > 0;
-
-                return isValid;
+                return (
+                    this.form.originAirport !== "" &&
+                    this.form.destinationAirport !== "" &&
+                    this.form.departureTime !== "" &&
+                    this.form.arrivalTime !== "" &&
+                    this.form.duration !== "" &&
+                    this.form.aircraftTypeId !== "" &&
+                    this.form.code !== "" &&
+                    Array.isArray(this.form.frequency) &&
+                    this.form.frequency.length > 0 &&
+                    this.form.startDate !== "" &&
+                    this.form.finalizationDate !== ""
+                );
             },
 
             async saveFlight() {
@@ -359,15 +381,13 @@ import axios from "axios";
                 }
 
                 try {
-                    const payload = {
+                    await axios.post("http://localhost:5103/api/routecreation", {
                         ...this.form,
                         frequency: this.form.frequency
-
-                    };
-
-                    await axios.post("http://localhost:5103/api/routecreation", payload);
+                    });
 
                     this.successMessage = "Vuelo creado correctamente.";
+                    await this.loadRoutes();
 
                     this.form = {
                         code: "",
@@ -384,72 +404,86 @@ import axios from "axios";
                         handBagWeight: 0,
                         bagPrice: 0,
                         bagWeight: 0,
-                        bagMultiplier: 0
+                        bagMultiplier: 0,
+                        startDate: "",
+                        finalizationDate: "",
+                        economyClassCapacity: 0,
+                        firstClassCapacity: 0
                     };
-
                 } catch (err) {
-                    this.errorMessage = err.response.data.title || "Error al crear el vuelo";
+                    this.errorMessage = err.response?.data?.title || "Error al crear el vuelo";
                 }
             },
+
             async loadRoutes() {
                 try {
                     const response = await axios.get("http://localhost:5103/api/routecreation");
-                    this.routes = response.data;
+                    this.routes = response.data.map(r => ({
+                        code: r.Code,
+                        originAirport: r.OriginAirport,
+                        destinationAirport: r.DestinationAirport,
+                        departureTime: r.DepartureTime,
+                        arrivalTime: r.ArrivalTime,
+                        duration: r.Duration,
+                        aircraftTypeId: r.AircraftTypeId,
+                        startDate: r.StartDate,
+                        finalizationDate: r.FinalizationDate,
+                        frequency: Array.isArray(r.Frequency)
+                            ? r.Frequency
+                            : (r.Frequency || "").split(",").map(d => d.trim()).filter(Boolean),
+                        priceFirstClass: Number(r.PriceFirstClass) || 0,
+                        priceEconomy: Number(r.PriceEconomy) || 0,
+                        handBagPrice: Number(r.HandBagPrice) || 0,
+                        handBagWeight: Number(r.HandBagWeight) || 0,
+                        bagPrice: Number(r.BagPrice) || 0,
+                        bagWeight: Number(r.BagWeight) || 0,
+                        bagMultiplier: Number(r.BagMultiplier) || 0,
+                        economyClassCapacity: r.EconomyClassCapacity ?? 0,
+                        firstClassCapacity: r.FirstClassCapacity ?? 0
+                    }));
                 } catch (error) {
                     console.error("Error cargando rutas:", error);
                 }
             },
-            toggleRoute(route) {
-                if (this.selectedRoute === route.code) {
-                    this.selectedRoute = null;
-                } else {
-                    this.selectedRoute = route.code;
+
+            async loadAircraftTypes() {
+                try {
+                    const response = await axios.get("http://localhost:5103/api/aircraft-type");
+                    this.aircraftTypes = response.data;
+                } catch (error) {
+                    console.error("Error cargando tipos de aeronave:", error);
+                    this.errorMessage = "No se pudieron cargar los tipos de avión.";
                 }
             },
+
+            toggleRoute(route) {
+                this.selectedRoute = this.selectedRoute === route.code ? null : route.code;
+            },
+
             onlyNumbersDuration(event) {
                 const char = String.fromCharCode(event.keyCode);
-
-                if (!/[0-9.]/.test(char)) {
-                    event.preventDefault();
-                }
-
-                if (char === ':' && event.target.value.includes(':')) {
-                    event.preventDefault();
-                }
+                if (!/[0-9:]/.test(char)) event.preventDefault();
+                if (char === ':' && event.target.value.includes(':')) event.preventDefault();
             },
+
             onlyNumbers(event) {
                 const char = String.fromCharCode(event.keyCode);
-
-                if (!/[0-9.]/.test(char)) {
-                    event.preventDefault();
-                }
-
-                if (char === '.' && event.target.value.includes('.')) {
-                    event.preventDefault();
-                }
+                if (!/[0-9.]/.test(char)) event.preventDefault();
+                if (char === '.' && event.target.value.includes('.')) event.preventDefault();
             },
+
             isValidDuration(duration) {
                 const regex = /^(\d{2}):([0-5]\d)$/;
-
                 if (!regex.test(duration)) return false;
-
                 const [hours, minutes] = duration.split(':').map(Number);
-
-                if (hours < 0) return false;
-                if (minutes > 59) return false;
-
-                return true;
+                return hours >= 0 && minutes <= 59;
             },
+
             formatDuration() {
                 let raw = this.form.duration.replace(/[^0-9]/g, '').slice(0, 4);
-
                 let hours = raw.slice(0, 2);
                 let minutes = raw.slice(2, 4);
-
-                if (minutes.length === 2 && Number(minutes) > 59) {
-                    minutes = '59';
-                }
-
+                if (minutes.length === 2 && Number(minutes) > 59) minutes = '59';
                 this.form.duration = minutes ? `${hours}:${minutes}` : hours;
             }
         }
@@ -457,8 +491,6 @@ import axios from "axios";
 </script>
 
 <style scoped>
-
-
     .route-card {
         background: white;
         border-radius: 16px;
@@ -516,7 +548,6 @@ import axios from "axios";
             color: #e74c3c;
         }
 
-
     .btn-gradient {
         background: linear-gradient(to right, #e74c3c, #f39c12);
         color: white;
@@ -524,7 +555,6 @@ import axios from "axios";
         padding: 6px 14px;
         border: none;
     }
-
 
     .admin-banner {
         background: linear-gradient(90deg, #e60000, #f0a500);
@@ -542,21 +572,12 @@ import axios from "axios";
             opacity: 0.9;
         }
 
-
     .flight-card {
         background: white;
         border-radius: 16px;
         padding: 28px;
         box-shadow: 0 10px 40px rgba(0,0,0,0.15);
     }
-
-    .route-card {
-        background: white;
-        border-radius: 16px;
-        padding: 88px;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.15);
-    }
-
 
     .input-box {
         border: 1.5px solid #e0e0e0;
@@ -575,7 +596,6 @@ import axios from "axios";
             width: 100%;
         }
 
-
     .day-container {
         display: flex;
         gap: 10px;
@@ -592,7 +612,6 @@ import axios from "axios";
             background: linear-gradient(to right, #e74c3c, #f39c12);
             color: white;
         }
-
 
     .search-btn {
         width: 100%;
@@ -620,5 +639,4 @@ import axios from "axios";
         border: 1px solid #f5c6cb;
         margin-bottom: 20px;
     }
-
 </style>

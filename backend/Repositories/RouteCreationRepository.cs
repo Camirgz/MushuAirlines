@@ -37,7 +37,11 @@ namespace backend.Repositories
                     HandBagWeight,
                     BagPrice,
                     BagWeight,
-                    BagMultiplier
+                    BagMultiplier,
+                    StartDate,
+                    FinalizationDate,
+                    EconomyClassCapacity,
+                    FirstClassCapacity
                 )
                 VALUES
                 (
@@ -55,7 +59,11 @@ namespace backend.Repositories
                     @HandBagWeight,
                     @BagPrice,
                     @BagWeight,
-                    @BagMultiplier
+                    @BagMultiplier,
+                    @StartDate,
+                    @FinalizationDate,
+                    @EconomyClassCapacity,
+                    @FirstClassCapacity
                 );";
 
             connection.Execute(query, new
@@ -74,7 +82,11 @@ namespace backend.Repositories
                 route.HandBagWeight,
                 route.BagPrice,
                 route.BagWeight,
-                route.BagMultiplier
+                route.BagMultiplier,
+                route.StartDate,
+                route.FinalizationDate,
+                route.EconomyClassCapacity,
+                route.FirstClassCapacity
             });
         }
 
