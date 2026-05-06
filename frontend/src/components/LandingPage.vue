@@ -339,10 +339,6 @@ function durationToLabel(dur) {
   return minutes === 0 ? `${hours}h` : `${hours}h ${minutes}min`
 }
 
-// id % 5 spreads prices so flights don't all cost the same
-function calcPrice(id, hours) {
-  return Math.round(40 + hours * 25 + (id % 5) * 10)
-}
 
 function parseAirportsCsv(text) {
   return text.trim().split('\n').slice(1).filter(l => l.trim()).map(line => {
@@ -351,26 +347,19 @@ function parseAirportsCsv(text) {
   })
 }
 
-function parseFlightsCsv(text) {
-  return text.trim().split('\n').slice(1).filter(l => l.trim()).map(line => {
-    const parts = line.split(',')
-    const id = parseInt(parts[0])
-    const duration = parts[4].trim()
-    const hours = durationToHours(duration)
-    return {
-      id,
-      origin: parts[2].trim(),
-      destination: parts[3].trim(),
-      duration,
-      departureTime: parts[5].trim(),
-      arrivalTime: parts[6].trim(),
-      date: parts[7].trim(),
-      arrivalDate: parts[8] ? parts[8].trim() : parts[7].trim(), // fallback if arrival date column is missing
-      durationHours: hours,
-      durationLabel: durationToLabel(duration),
-      price: calcPrice(id, hours),
-    }
-  })
+function routeToFlight(r) {
+  const hours = durationToHours(r.duration)
+  return {
+    id: r.code,
+    origin: r.originAirport,
+    destination: r.destinationAirport,
+    duration: r.duration,
+    departureTime: r.departureTime,
+    arrivalTime: r.arrivalTime,
+    durationHours: hours,
+    durationLabel: durationToLabel(r.duration),
+    price: r.priceEconomy,
+  }
 }
 
 export default {
@@ -407,12 +396,13 @@ export default {
   },
 
   async created() {
-    const [airportRes, flightRes] = await Promise.all([
+    const [airportRes, routesRes] = await Promise.all([
       fetch('/data/Airports.csv'),
-      fetch('/data/FlightSchedule.csv'),
+      fetch('http://localhost:5103/api/routecreation'),
     ])
     this.airports = parseAirportsCsv(await airportRes.text())
-    this.flights = parseFlightsCsv(await flightRes.text())
+    const routes = await routesRes.json()
+    this.flights = routes.map(routeToFlight)
   },
 
   computed: {
@@ -489,7 +479,9 @@ export default {
       const origin = this.selectedOrigin.code
       const destination = this.selectedDestination.code
 
-      this.searchedFlights = this.flights.filter(f => f.origin === origin && f.destination === destination)
+      this.searchedFlights = this.flights
+        .filter(f => f.origin === origin && f.destination === destination)
+        .map(f => ({ ...f, date: this.departureDate, arrivalDate: this.departureDate }))
 
       const maxPrice = this.searchedFlights.length > 0
         ? Math.max(...this.searchedFlights.map(f => f.price))
