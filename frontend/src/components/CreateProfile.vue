@@ -51,14 +51,6 @@
             </div>
           </div>
 
-          <div class="input-group-custom full">
-            <label>URL</label>
-            <div class="input-box">
-              <i class="bi bi-link"></i>
-              <input v-model="form.url" />
-            </div>
-          </div>
-
           <div class="input-group-custom">
             <label>Salario</label>
             <div class="input-box">
@@ -198,6 +190,10 @@ export default {
   font-weight: bold;
   text-decoration: none;
   font-size: 14px;
+  padding: 8px 16px;
+  border: 1px solid #f1948a;
+  border-radius: 10px;
+  background: #fdf2f2;
 }
 
 .login-title{
