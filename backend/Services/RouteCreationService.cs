@@ -49,7 +49,9 @@ namespace backend.Services
                 StartDate = r.StartDate,
                 FinalizationDate = r.FinalizationDate,
                 EconomyClassCapacity = r.EconomyClassCapacity,
-                FirstClassCapacity = r.FirstClassCapacity
+                FirstClassCapacity = r.FirstClassCapacity,
+                OriginCity = r.OriginCity,
+                DestinationCity = r.DestinationCity
             }).ToList();
         }
 

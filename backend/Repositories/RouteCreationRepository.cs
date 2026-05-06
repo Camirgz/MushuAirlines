@@ -41,7 +41,9 @@ namespace backend.Repositories
                     StartDate,
                     FinalizationDate,
                     EconomyClassCapacity,
-                    FirstClassCapacity
+                    FirstClassCapacity,
+                    OriginCity,
+                    DestinationCity
                 )
                 VALUES
                 (
@@ -63,7 +65,9 @@ namespace backend.Repositories
                     @StartDate,
                     @FinalizationDate,
                     @EconomyClassCapacity,
-                    @FirstClassCapacity
+                    @FirstClassCapacity,
+                    @OriginCity,
+                    @DestinationCity
                 );";
 
             connection.Execute(query, new
@@ -86,7 +90,9 @@ namespace backend.Repositories
                 route.StartDate,
                 route.FinalizationDate,
                 route.EconomyClassCapacity,
-                route.FirstClassCapacity
+                route.FirstClassCapacity,
+                route.OriginCity,
+                route.DestinationCity
             });
         }
 

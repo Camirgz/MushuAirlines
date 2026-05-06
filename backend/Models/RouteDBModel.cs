@@ -13,6 +13,8 @@ public class RouteDbModel
     public string AircraftTypeId { get; set; }
     public string StartDate { get; set; }
     public string FinalizationDate { get; set; }
+    public string OriginCity { get; set; }
+    public string DestinationCity { get; set; }
     public string Frequency { get; set; }
     public decimal PriceFirstClass { get; set; }
     public decimal PriceEconomy { get; set; }
