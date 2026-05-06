@@ -11,6 +11,7 @@ import CreateAircraftType from './components/admin/CreateAircraftType.vue';
 import RoutesPage from './components/admin/RoutesPage.vue';
 import RouteCreationForm from './components/admin/RouteCreationForm.vue';
 import AirportsPage from './components/admin/AirportsPage.vue';
+import AirportCreationForm from './components/admin/AirportCreationForm.vue';
 import UsersPage from './components/admin/UsersPage.vue';
 
 const router = createRouter({
@@ -26,6 +27,7 @@ const router = createRouter({
         { path: "/admin/routes", name: "Routes", component: RoutesPage, meta: { requiresAuth: true } },
         { path: "/admin/routes/create-route", name: "RouteCreation", component: RouteCreationForm, meta: { requiresAuth: true } },
         { path: "/admin/airports", name: "Airports", component: AirportsPage, meta: { requiresAuth: true } },
+        { path: "/admin/airports/create-airport", name: "AirportCreation", component: AirportCreationForm, meta: { requiresAuth: true } },
         { path: "/admin/users", name: "Users", component: UsersPage, meta: { requiresAuth: true } },
     ],
 });
