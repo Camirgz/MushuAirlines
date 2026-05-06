@@ -1,0 +1,9 @@
+USE MushuAirlines;
+
+CREATE TABLE AirportCatalog (
+    Country VARCHAR(60) NOT NULL,
+    City VARCHAR(85) NOT NULL,
+
+    CONSTRAINT PK_AirportCatalog
+    PRIMARY KEY (Country, City)
+);
