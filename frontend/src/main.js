@@ -19,38 +19,71 @@ const router = createRouter({
     routes: [
         { path: "/", name: "Landing", component: LandingPage },
         { path: "/login", name: "Login", component: LoginForm },
-        { path: "/admin", name: "Admin", component: LandingPageInter, meta: { requiresAuth: true } },
-        { path: "/create-profile", name: "createProfile", component: AdminCreateEmployee, meta: { requiresAuth: true, requiresAdmin: true } },
+        { path: "/admin", name: "Admin", component: LandingPageInter, meta: { requiresAuth: true, allowedRoles: ["Administrator", "Operator"] } },
+        { path: "/create-profile", name: "createProfile", component: AdminCreateEmployee, meta: { requiresAuth: true, allowedRoles: ["Administrator"] } },
         { path: "/complete-register", name: "CompleteRegister", component: CompleteRegister },
-        { path: "/admin/aircraft-types", name: "AircraftTypes", component: AircraftTypesPage, meta: { requiresAuth: true } },
-        { path: "/admin/aircraft-types/create", name: "CreateAircraftType", component: CreateAircraftType, meta: { requiresAuth: true, requiresAdmin: true } },
-        { path: "/admin/routes", name: "Routes", component: RoutesPage, meta: { requiresAuth: true } },
-        { path: "/admin/routes/create-route", name: "RouteCreation", component: RouteCreationForm, meta: { requiresAuth: true } },
-        { path: "/admin/airports", name: "Airports", component: AirportsPage, meta: { requiresAuth: true } },
-        { path: "/admin/airports/create-airport", name: "AirportCreation", component: AirportCreationForm, meta: { requiresAuth: true } },
-        { path: "/admin/users", name: "Users", component: UsersPage, meta: { requiresAuth: true } },
+        { path: "/admin/aircraft-types", name: "AircraftTypes", component: AircraftTypesPage, meta: { requiresAuth: true, allowedRoles: ["Administrator"] } },
+        { path: "/admin/aircraft-types/create", name: "CreateAircraftType", component: CreateAircraftType, meta: { requiresAuth: true, allowedRoles: ["Administrator"] } },
+        { path: "/admin/routes", name: "Routes", component: RoutesPage, meta: { requiresAuth: true, allowedRoles: ["Administrator"] } },
+        { path: "/admin/routes/create-route", name: "RouteCreation", component: RouteCreationForm, meta: { requiresAuth: true, allowedRoles: ["Administrator"] } },
+        { path: "/admin/airports", name: "Airports", component: AirportsPage, meta: { requiresAuth: true, allowedRoles: ["Administrator"]} },
+        { path: "/admin/airports/create-airport", name: "AirportCreation", component: AirportCreationForm, meta: { requiresAuth: true, allowedRoles: ["Administrator"] } },
+        { path: "/admin/users", name: "Users", component: UsersPage, meta: { requiresAuth: true, allowedRoles: ["Administrator"] } },
     ],
 });
 
 function getRoleFromToken() {
     const token = localStorage.getItem("token");
     if (!token) return null;
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    return payload["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
+    try {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        console.log("Payload del token:", payload);
+        return (
+            payload["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] ||
+            payload.role ||
+            payload.Role ||
+            null
+        );
+    } catch (error) {
+        console.error("Error leyendo el token:", error);
+        return null;
+    }
 }
 
 router.beforeEach((to, from, next) => {
     const token = localStorage.getItem("token");
-    if (to.meta.requiresAuth && !token) {
-        return next("/login");
+
+    const requiresAuth = to.matched.some(route => route.meta.requiresAuth);
+
+    const allowedRoles = to.matched.flatMap(route => route.meta.allowedRoles || []);
+
+    if (requiresAuth && !token) {
+        sessionStorage.setItem(
+            "authMessage",
+            "Debe iniciar sesión para acceder a esta página."
+        );
+
+        return next("/");
     }
-    if (to.meta.requiresAdmin) {
-        const role = getRoleFromToken();
-        if (role !== "Administrator") {
-            return next("/admin");
+
+    const role = getRoleFromToken();
+
+    if (allowedRoles.length > 0) {
+        if (!role || !allowedRoles.includes(role)) {
+            sessionStorage.setItem(
+                "authMessage",
+                "Usuario no autorizado."
+            );
+
+            if (role === "Operator") {
+                return next("/admin");
+            }
+
+            localStorage.removeItem("token");
+            return next("/");
         }
     }
+
     next();
 });
-
 createApp(App).use(router).mount('#app')
