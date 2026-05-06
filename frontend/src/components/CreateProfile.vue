@@ -2,6 +2,8 @@
   <div class="login-page">
     <div class="login-card">
 
+      <RouterLink to="/admin/users" class="back-arrow">&#8592; Volver</RouterLink>
+
       <h2 class="login-title">Crear Nuevo Usuario</h2>
       <p class="login-subtitle">Registro de empleados Mushu Airlines</p>
 
@@ -49,14 +51,6 @@
             </div>
           </div>
 
-          <div class="input-group-custom full">
-            <label>URL</label>
-            <div class="input-box">
-              <i class="bi bi-link"></i>
-              <input v-model="form.url" />
-            </div>
-          </div>
-
           <div class="input-group-custom">
             <label>Salario</label>
             <div class="input-box">
@@ -99,7 +93,10 @@
 
       </form>
 
-      <p style="text-align:center; margin-top:10px;">{{ message }}</p>
+      <div v-if="message" :class="['alert-box', isError ? 'alert-error' : 'alert-success']">
+        <i :class="['bi', isError ? 'bi-exclamation-circle-fill' : 'bi-check-circle-fill']"></i>
+        {{ message }}
+      </div>
 
     </div>
   </div>
@@ -112,6 +109,7 @@ export default {
   data() {
     return {
       loading: false,
+      isError: false,
       form: {
         firstName: "",
         lastName: "",
@@ -135,10 +133,11 @@ export default {
       try {
         const token = localStorage.getItem("token");
         if (!this.validateEmail(this.form.email)) {
-          this.message = "Correo inválido";
+          this.message = "El correo electrónico ingresado no es válido.";
+          this.isError = true;
           return;
         }
-        const response = await axios.post(
+        await axios.post(
           "http://localhost:5103/api/PendingAccount",
           this.form,
           {
@@ -148,9 +147,14 @@ export default {
           }
         );
 
-        this.message = response.data;
+        this.message = "Invitación enviada con éxito. El usuario recibirá un correo para completar su registro.";
+        this.isError = false;
       } catch (error) {
-        this.message = error.response?.data || "Error";
+        const raw = error.response?.data || "";
+        this.message = (typeof raw === "string" && raw.startsWith("ERROR REAL:"))
+          ? "Ocurrió un error inesperado. Por favor intente de nuevo."
+          : raw || "Ocurrió un error. Por favor intente de nuevo.";
+        this.isError = true;
       } finally {
         this.loading = false; // allow new submissions after response
       }
@@ -177,6 +181,19 @@ export default {
   width: 700px;
   padding: 30px;
   border-radius: 15px;
+}
+
+.back-arrow {
+  display: inline-block;
+  margin-bottom: 16px;
+  color: #e74c3c;
+  font-weight: bold;
+  text-decoration: none;
+  font-size: 14px;
+  padding: 8px 16px;
+  border: 1px solid #f1948a;
+  border-radius: 10px;
+  background: #fdf2f2;
 }
 
 .login-title{
@@ -233,5 +250,28 @@ export default {
 
 .full{
   grid-column: span 2;
+}
+
+.alert-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.alert-success {
+  background: #eafaf1;
+  color: #1e8449;
+  border: 1px solid #a9dfbf;
+}
+
+.alert-error {
+  background: #fdf2f2;
+  color: #c0392b;
+  border: 1px solid #f1948a;
 }
 </style>
