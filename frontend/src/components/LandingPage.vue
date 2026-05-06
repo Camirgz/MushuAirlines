@@ -140,14 +140,14 @@
           <div class="filter-group">
             <div class="filter-header">
               <span>Precio</span>
-              <span class="filter-value">${{ filterPriceMin }} - ${{ filterPriceMax }}</span>
+              <span class="filter-value">₡{{ filterPriceMin.toLocaleString() }} - ₡{{ filterPriceMax.toLocaleString() }}</span>
             </div>
             <input
               type="range"
               v-model.number="filterPriceMax"
               :min="filterPriceMin"
               :max="priceSliderRange"
-              step="5"
+              step="100"
               class="range-slider"
             />
           </div>
@@ -188,13 +188,11 @@
                 <span class="airline-name">Mushu Airlines</span>
               </div>
               <div class="price-section">
-                <span class="price-label">Precio por persona</span>
-                <span class="price-amount">${{ flight.price }}</span>
+                <span class="price-label">Clase Turista / persona</span>
+                <span class="price-amount">₡{{ flight.price.toLocaleString() }}</span>
                 <div class="price-total-row">
-                  <span class="price-total-label">
-                    Total · {{ passengerCount }} {{ passengerCount === 1 ? 'pasajero' : 'pasajeros' }}
-                  </span>
-                  <span class="price-total-amount">${{ flight.price * passengerCount }}</span>
+                  <span class="price-total-label">{{ passengerCount }} {{ passengerCount === 1 ? 'pasajero' : 'pasajeros' }}</span>
+                  <span class="price-total-amount">₡{{ (flight.price * passengerCount).toLocaleString() }}</span>
                 </div>
               </div>
             </div>
@@ -293,29 +291,108 @@
               <span class="modal-info-value">{{ selectedFlight.durationLabel }}</span>
             </div>
             <div class="modal-info-item">
-              <span class="modal-info-label"><i class="bi bi-people me-1"></i>Pasajeros</span>
-              <span class="modal-info-value">{{ passengerCount }} {{ passengerCount === 1 ? 'pasajero' : 'pasajeros' }}</span>
+              <span class="modal-info-label"><i class="bi bi-airplane me-1"></i>Aeronave</span>
+              <span class="modal-info-value">{{ selectedFlight.aircraftTypeId }}</span>
             </div>
             <div class="modal-info-item">
               <span class="modal-info-label"><i class="bi bi-globe me-1"></i>País destino</span>
               <span class="modal-info-value">{{ getAirportCountry(selectedFlight.destination) }}</span>
             </div>
+            <div class="modal-info-item">
+              <span class="modal-info-label"><i class="bi bi-people me-1"></i>Pasajeros</span>
+              <span class="modal-info-value">{{ passengerCount }}</span>
+            </div>
           </div>
 
-          <div class="modal-price-block">
-            <div class="modal-price-row">
-              <span class="modal-price-label">Precio por persona</span>
-              <span class="modal-price-amount">${{ selectedFlight.price }}</span>
+          <!-- Distribución de clase -->
+          <div class="modal-section-block">
+            <div class="modal-section-title">Distribución de clase</div>
+            <div class="modal-class-row">
+              <div class="modal-class-info">
+                <span class="modal-class-name">Primera Clase</span>
+                <span class="modal-class-price">₡{{ selectedFlight.priceFirstClass.toLocaleString() }} / persona</span>
+              </div>
+              <div class="modal-qty-ctrl">
+                <button class="modal-qty-btn" @click="firstClassCount = Math.max(0, firstClassCount - 1)">−</button>
+                <span class="modal-qty-val">{{ firstClassCount }}</span>
+                <button class="modal-qty-btn" @click="firstClassCount = Math.min(passengerCount, firstClassCount + 1)">+</button>
+              </div>
             </div>
-            <div class="modal-price-row modal-price-total">
-              <span>Total · {{ passengerCount }} {{ passengerCount === 1 ? 'pasajero' : 'pasajeros' }}</span>
-              <span class="modal-total-amount">${{ selectedFlight.price * passengerCount }}</span>
+            <div class="modal-class-row">
+              <div class="modal-class-info">
+                <span class="modal-class-name">Clase Turista</span>
+                <span class="modal-class-price">₡{{ selectedFlight.priceEconomy.toLocaleString() }} / persona</span>
+              </div>
+              <div class="modal-qty-ctrl">
+                <span class="modal-qty-val readonly">{{ economyCount }}</span>
+              </div>
+            </div>
+            <p v-if="firstClassCount + economyCount !== passengerCount" class="modal-class-warning">
+              La suma debe ser {{ passengerCount }} pasajero(s)
+            </p>
+          </div>
+
+          <!-- Equipaje -->
+          <div class="modal-section-block">
+            <div class="modal-section-title">Equipaje</div>
+            <div class="modal-class-row">
+              <div class="modal-class-info">
+                <span class="modal-class-name">Equipaje de mano</span>
+                <span class="modal-class-price">₡{{ selectedFlight.handBagPrice.toLocaleString() }} · máx {{ selectedFlight.handBagWeight }}kg c/u</span>
+              </div>
+              <div class="modal-qty-ctrl">
+                <button class="modal-qty-btn" @click="handBagsCount = Math.max(0, handBagsCount - 1)">−</button>
+                <span class="modal-qty-val">{{ handBagsCount }}</span>
+                <button class="modal-qty-btn" @click="handBagsCount++">+</button>
+              </div>
+            </div>
+            <div class="modal-class-row">
+              <div class="modal-class-info">
+                <span class="modal-class-name">Equipaje documentado</span>
+                <span class="modal-class-price">₡{{ selectedFlight.bagPrice.toLocaleString() }} · máx {{ selectedFlight.bagWeight }}kg c/u
+                  <span v-if="selectedFlight.bagMultiplier !== 1"> (×{{ selectedFlight.bagMultiplier }})</span>
+                </span>
+              </div>
+              <div class="modal-qty-ctrl">
+                <button class="modal-qty-btn" @click="checkedBagsCount = Math.max(0, checkedBagsCount - 1)">−</button>
+                <span class="modal-qty-val">{{ checkedBagsCount }}</span>
+                <button class="modal-qty-btn" @click="checkedBagsCount++">+</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recibo/Resumen de compra -->
+          <div class="modal-receipt">
+            <div class="modal-section-title">Resumen</div>
+
+            <div class="receipt-line" v-if="firstClassCount > 0">
+              <span>{{ firstClassCount }} × Primera Clase</span>
+              <span>₡{{ (firstClassCount * selectedFlight.priceFirstClass).toLocaleString() }}</span>
+            </div>
+            <div class="receipt-line" v-if="economyCount > 0">
+              <span>{{ economyCount }} × Clase Turista</span>
+              <span>₡{{ (economyCount * selectedFlight.priceEconomy).toLocaleString() }}</span>
+            </div>
+            <div class="receipt-line" v-if="handBagsCount > 0">
+              <span>{{ handBagsCount }} × Equipaje de mano</span>
+              <span>₡{{ (handBagsCount * selectedFlight.handBagPrice).toLocaleString() }}</span>
+            </div>
+            <div class="receipt-line" v-if="checkedBagsCount > 0">
+              <span>{{ checkedBagsCount }} × Equipaje documentado
+                <span v-if="selectedFlight.bagMultiplier !== 1">(×{{ selectedFlight.bagMultiplier }})</span>
+              </span>
+              <span>₡{{ (checkedBagsCount * selectedFlight.bagPrice * selectedFlight.bagMultiplier).toLocaleString() }}</span>
+            </div>
+
+            <div class="receipt-total">
+              <span>Total</span>
+              <span>₡{{ modalTotal.toLocaleString() }}</span>
             </div>
           </div>
 
           <div class="modal-actions">
             <button class="modal-cancel-btn" @click="closeFlightDetails">Cancelar</button>
-            <button class="modal-cart-btn">
+            <button class="modal-cart-btn" :disabled="firstClassCount + economyCount === 0">
               <i class="bi bi-cart3 me-2"></i>Agregar al carrito
             </button>
           </div>
@@ -358,7 +435,15 @@ function routeToFlight(r) {
     arrivalTime: r.arrivalTime,
     durationHours: hours,
     durationLabel: durationToLabel(r.duration),
+    aircraftTypeId: r.aircraftTypeId,
     price: r.priceEconomy,
+    priceFirstClass: r.priceFirstClass,
+    priceEconomy: r.priceEconomy,
+    handBagPrice: r.handBagPrice,
+    handBagWeight: r.handBagWeight,
+    bagPrice: r.bagPrice,
+    bagWeight: r.bagWeight,
+    bagMultiplier: r.bagMultiplier,
   }
 }
 
@@ -392,17 +477,26 @@ export default {
       passengerCount: 1,
       errorMsg: '',
       selectedFlight: null,
+      firstClassCount: 0,
+      handBagsCount: 0,
+      checkedBagsCount: 0,
     }
   },
 
   async created() {
-    const [airportRes, routesRes] = await Promise.all([
-      fetch('/data/Airports.csv'),
-      fetch('http://localhost:5103/api/routecreation'),
-    ])
-    this.airports = parseAirportsCsv(await airportRes.text())
-    const routes = await routesRes.json()
-    this.flights = routes.map(routeToFlight)
+    try {
+      const airportRes = await fetch('/data/Airports.csv')
+      this.airports = parseAirportsCsv(await airportRes.text())
+    } catch (e) {
+      console.error('Error cargando aeropuertos:', e)
+    }
+    try {
+      const routesRes = await fetch('http://localhost:5103/api/routecreation')
+      const routes = await routesRes.json()
+      this.flights = routes.map(routeToFlight)
+    } catch (e) {
+      console.error('Error cargando rutas:', e)
+    }
   },
 
   computed: {
@@ -434,6 +528,19 @@ export default {
         if (f.durationHours > this.filterDurationMax) return false
         return true
       })
+    },
+
+    economyCount() {
+      return this.passengerCount - this.firstClassCount
+    },
+
+    modalTotal() {
+      if (!this.selectedFlight) return 0
+      const f = this.selectedFlight
+      const tickets = (this.firstClassCount * f.priceFirstClass) + (this.economyCount * f.priceEconomy)
+      const handBags = this.handBagsCount * f.handBagPrice
+      const checkedBags = this.checkedBagsCount * f.bagPrice * f.bagMultiplier
+      return tickets + handBags + checkedBags
     },
   },
 
@@ -485,13 +592,13 @@ export default {
 
       const maxPrice = this.searchedFlights.length > 0
         ? Math.max(...this.searchedFlights.map(f => f.price))
-        : 500
+        : 100000
       const maxDuration = this.searchedFlights.length > 0
         ? Math.max(...this.searchedFlights.map(f => f.durationHours))
         : 24
 
-      this.priceSliderRange = maxPrice + 50
-      this.filterPriceMax = maxPrice + 50
+      this.priceSliderRange = maxPrice + 5000
+      this.filterPriceMax = maxPrice + 5000
       this.filterPriceMin = 0
       this.filterDurationMax = Math.ceil(maxDuration) + 1
       this.hasSearched = true
@@ -505,7 +612,10 @@ export default {
 
     openFlightDetails(flight) {
       this.selectedFlight = flight
-      document.body.style.overflow = 'hidden' // prevent background scroll while modal is open
+      this.firstClassCount = 0
+      this.handBagsCount = 0
+      this.checkedBagsCount = 0
+      document.body.style.overflow = 'hidden'
     },
 
     closeFlightDetails() {
@@ -1310,6 +1420,125 @@ export default {
   transition: opacity 0.2s;
 }
 .modal-cart-btn:hover { opacity: 0.88; }
+
+.modal-section-block {
+  border: 1px solid #f0f0f0;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+
+.modal-section-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #aaa;
+  margin-bottom: 10px;
+}
+
+.modal-class-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px dashed #f0f0f0;
+}
+.modal-class-row:last-of-type { border-bottom: none; }
+
+.modal-class-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.modal-class-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.modal-class-price {
+  font-size: 0.76rem;
+  color: #888;
+}
+
+.modal-class-warning {
+  font-size: 0.75rem;
+  color: #e74c3c;
+  margin: 6px 0 0;
+}
+
+.modal-qty-ctrl {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f8f9fa;
+  border-radius: 999px;
+  padding: 4px 12px;
+}
+
+.modal-qty-btn {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #e74c3c;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+.modal-qty-btn:hover { color: #c0392b; }
+
+.modal-qty-val {
+  font-size: 0.95rem;
+  font-weight: 700;
+  min-width: 18px;
+  text-align: center;
+  color: #1a1a1a;
+}
+.modal-qty-val.readonly { color: #555; }
+
+.modal-receipt {
+  background: #fff8f7;
+  border: 1px solid #fde8e5;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.receipt-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: #555;
+  padding: 5px 0;
+  border-bottom: 1px dashed #fde8e5;
+}
+
+.receipt-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  padding-top: 10px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.receipt-total span:last-child {
+  font-size: 1.25rem;
+  background: linear-gradient(to right, #e74c3c, #f39c12);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.modal-cart-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
 
 .modal-fade-enter-active,
 .modal-fade-leave-active {
