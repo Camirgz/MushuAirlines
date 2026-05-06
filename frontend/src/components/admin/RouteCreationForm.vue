@@ -59,7 +59,7 @@
                             <label>Aeropuerto de Origen*</label>
                             <select v-model="form.originAirport" class="form-control" required>
                                 <option value="" disabled>Seleccione un aeropuerto</option>
-                                <option v-for="a in airports" :key="a.id" :value="a.id">{{ a.name }}</option>
+                                <option v-for="a in airports" :key="a.code" :value="a.code">{{ a.airportName }} ({{ a.city }})</option>
                             </select>
                         </div>
 
@@ -67,7 +67,7 @@
                             <label>Aeropuerto de Destino*</label>
                             <select v-model="form.destinationAirport" class="form-control" required>
                                 <option value="" disabled>Seleccione un aeropuerto</option>
-                                <option v-for="a in airports" :key="a.id" :value="a.id">{{ a.name }}</option>
+                                <option v-for="a in airports" :key="a.code" :value="a.code">{{ a.airportName }} ({{ a.city }})</option>
                             </select>
                         </div>
 
@@ -98,8 +98,8 @@
                             <label>Tipo de Aeronave*</label>
                             <select v-model="form.aircraftTypeId" class="form-control" required>
                                 <option value="" disabled>Seleccione un tipo de aeronave</option>
-                                <option v-for="type in aircraftTypes" :key="type.Id" :value="type.Name">
-                                    {{ type.Name }}
+                                <option v-for="type in aircraftTypes" :key="type.id" :value="type.name">
+                                    {{ type.name }}
                                 </option>
                             </select>
                         </div>
@@ -218,7 +218,7 @@
                             <div class="route-title">
                                 <strong>{{ route.code }}</strong>
                                 <span class="mx-2">•</span>
-                                {{ route.originAirport }} → {{ route.destinationAirport }}
+                                {{ route.originCity }} → {{ route.destinationCity }}
                             </div>
 
                             <div class="route-sub">
@@ -269,6 +269,12 @@
                             <div class="col-md-4">
                                 Vigencia: {{ route.startDate }} → {{ route.finalizationDate }}
                             </div>
+                            <div class="col-md-4">
+                                Origen: {{ route.originAirport }} ({{ route.originCity }})
+                            </div>
+                            <div class="col-md-4">
+                                Destino: {{ route.destinationAirport }} ({{ route.destinationCity }})
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -317,34 +323,26 @@
                     { label: 'S', val: 'Sábado' },
                     { label: 'D', val: 'Domingo' }
                 ],
-                airports: [
-                    { id: "MAD", name: "Madrid-Barajas" },
-                    { id: "JFK", name: "JFK" },
-                    { id: "SJO", name: "Juan Santamaría" },
-                    { id: "LHR", name: "Londres-Heathrow" },
-                    { id: "CDG", name: "París-Charles de Gaulle" },
-                    { id: "FRA", name: "Fráncfort" },
-                    { id: "AMS", name: "Ámsterdam-Schiphol" },
-                    { id: "BCN", name: "Barcelona-El Prat" }
-                ],
+                airports: [],
                 aircraftTypes: [],
                 routes: []
             };
         },
 
         async mounted() {
+            await this.loadAirports();
             await this.loadRoutes();
             await this.loadAircraftTypes();
         },
 
         watch: {
             'form.aircraftTypeId'(newName) {
-                const selected = this.aircraftTypes.find(t => t.Name === newName);
+                const selected = this.aircraftTypes.find(t => t.name === newName);
                 if (selected) {
                     this.form.firstClassCapacity =
-                        (selected.DefaultFirstClassRows || 0) * (selected.DefaultFirstClassSeatsPerRow || 0);
+                        (selected.defaultFirstClassRows || 0) * (selected.defaultFirstClassSeatsPerRow || 0);
                     this.form.economyClassCapacity =
-                        (selected.DefaultEconomyRows || 0) * (selected.DefaultEconomySeatsPerRow || 0);
+                        (selected.defaultEconomyRows || 0) * (selected.defaultEconomySeatsPerRow || 0);
                 }
             }
         },
@@ -381,9 +379,14 @@
                 }
 
                 try {
+                    const originAirport = this.airports.find(a => a.code === this.form.originAirport);
+                    const destAirport = this.airports.find(a => a.code === this.form.destinationAirport);
+
                     await axios.post("http://localhost:5103/api/routecreation", {
                         ...this.form,
-                        frequency: this.form.frequency
+                        frequency: this.form.frequency,
+                        originCity: originAirport?.city || "",
+                        destinationCity: destAirport?.city || ""
                     });
 
                     this.successMessage = "Vuelo creado correctamente.";
@@ -415,32 +418,52 @@
                 }
             },
 
+            async loadAirports() {
+                try {
+                    const response = await axios.get("http://localhost:5103/api/AirportCreation");
+                    this.airports = response.data.map(a => ({
+                        code: a.code ?? a.Code,
+                        airportName: a.airportName ?? a.AirportName,
+                        city: a.city ?? a.City,
+                        country: a.country ?? a.Country
+                    }));
+                } catch (error) {
+                    this.errorMessage = "No se pudieron cargar los aeropuertos.";
+                }
+            },
+
             async loadRoutes() {
                 try {
                     const response = await axios.get("http://localhost:5103/api/routecreation");
-                    this.routes = response.data.map(r => ({
-                        code: r.Code,
-                        originAirport: r.OriginAirport,
-                        destinationAirport: r.DestinationAirport,
-                        departureTime: r.DepartureTime,
-                        arrivalTime: r.ArrivalTime,
-                        duration: r.Duration,
-                        aircraftTypeId: r.AircraftTypeId,
-                        startDate: r.StartDate,
-                        finalizationDate: r.FinalizationDate,
-                        frequency: Array.isArray(r.Frequency)
-                            ? r.Frequency
-                            : (r.Frequency || "").split(",").map(d => d.trim()).filter(Boolean),
-                        priceFirstClass: Number(r.PriceFirstClass) || 0,
-                        priceEconomy: Number(r.PriceEconomy) || 0,
-                        handBagPrice: Number(r.HandBagPrice) || 0,
-                        handBagWeight: Number(r.HandBagWeight) || 0,
-                        bagPrice: Number(r.BagPrice) || 0,
-                        bagWeight: Number(r.BagWeight) || 0,
-                        bagMultiplier: Number(r.BagMultiplier) || 0,
-                        economyClassCapacity: r.EconomyClassCapacity ?? 0,
-                        firstClassCapacity: r.FirstClassCapacity ?? 0
-                    }));
+                    this.routes = response.data.map(r => {
+                        const originAirport = this.airports.find(a => a.code === r.originAirport);
+                        const destAirport = this.airports.find(a => a.code === r.destinationAirport);
+                        return {
+                            code: r.code,
+                            originAirport: r.originAirport,
+                            originCity: originAirport?.city || r.originAirport,
+                            destinationAirport: r.destinationAirport,
+                            destinationCity: destAirport?.city || r.destinationAirport,
+                            departureTime: r.departureTime,
+                            arrivalTime: r.arrivalTime,
+                            duration: r.duration,
+                            aircraftTypeId: r.aircraftTypeId,
+                            startDate: r.startDate,
+                            finalizationDate: r.finalizationDate,
+                            frequency: Array.isArray(r.frequency)
+                                ? r.frequency
+                                : (r.frequency || "").split(",").map(d => d.trim()).filter(Boolean),
+                            priceFirstClass: Number(r.priceFirstClass) || 0,
+                            priceEconomy: Number(r.priceEconomy) || 0,
+                            handBagPrice: Number(r.handBagPrice) || 0,
+                            handBagWeight: Number(r.handBagWeight) || 0,
+                            bagPrice: Number(r.bagPrice) || 0,
+                            bagWeight: Number(r.bagWeight) || 0,
+                            bagMultiplier: Number(r.bagMultiplier) || 0,
+                            economyClassCapacity: r.economyClassCapacity ?? 0,
+                            firstClassCapacity: r.firstClassCapacity ?? 0
+                        };
+                    });
                 } catch (error) {
                     console.error("Error cargando rutas:", error);
                 }
@@ -451,7 +474,6 @@
                     const response = await axios.get("http://localhost:5103/api/aircraft-type");
                     this.aircraftTypes = response.data;
                 } catch (error) {
-                    console.error("Error cargando tipos de aeronave:", error);
                     this.errorMessage = "No se pudieron cargar los tipos de avión.";
                 }
             },
