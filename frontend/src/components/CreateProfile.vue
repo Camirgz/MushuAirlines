@@ -2,6 +2,8 @@
   <div class="login-page">
     <div class="login-card">
 
+      <RouterLink to="/admin/users" class="back-arrow">&#8592; Volver</RouterLink>
+
       <h2 class="login-title">Crear Nuevo Usuario</h2>
       <p class="login-subtitle">Registro de empleados Mushu Airlines</p>
 
@@ -177,6 +179,15 @@ export default {
   width: 700px;
   padding: 30px;
   border-radius: 15px;
+}
+
+.back-arrow {
+  display: inline-block;
+  margin-bottom: 16px;
+  color: #e74c3c;
+  font-weight: bold;
+  text-decoration: none;
+  font-size: 14px;
 }
 
 .login-title{
