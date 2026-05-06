@@ -177,20 +177,24 @@
             </small>
           </div>
 
-          <div class="form-group" :class="{ 'has-error': submitted && errors.name }">
+          <div class="form-group" :class="{ 'has-error': submitted && (errors.nameRequired || errors.nameInvalid) }">
             <label for="airportName">Nombre del Aeropuerto <span>*</span></label>
             <input
               id="airportName"
               v-model.trim="form.airportName"
               type="text"
               maxlength="200"
-              placeholder="Ej: Aeropuerto Internacional Benito Juárez"
+              placeholder="Ej: Aeropuerto Internacional Juan Santamaría"
             />
 
             <div class="helper-row">
               <small>{{ airportNameLength }}/200 caracteres</small>
-              <small v-if="submitted && errors.name" class="error-text">
+              <small v-if="submitted && errors.nameRequired" class="error-text">
                 Debe ingresar el nombre del aeropuerto.
+              </small>
+
+              <small v-if="submitted && errors.nameInvalid" class="error-text">
+                El nombre del aeropuerto no debe contener caracteres especiales como #, !, %, $.
               </small>
             </div>
           </div>
@@ -202,12 +206,12 @@
               v-model="form.code"
               type="text"
               maxlength="3"
-              placeholder="EJ: MEX"
+              placeholder="EJ: SJO"
               @input="formatCode"
             />
 
             <div class="helper-row">
-              <small>3 caracteres en mayúsculas (Ej: MEX, MAD, JFK)</small>
+              <small>3 caracteres en mayúsculas (Ej: SJO, MAD, MEX)</small>
               <small v-if="submitted && errors.code" class="error-text">
                 El código debe tener exactamente 3 letras.
               </small>
@@ -326,6 +330,7 @@ export default {
     validateForm() {
       this.errors = {};
 
+      const airportNameRegex = /^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s.'-]+$/;
       if (!this.form.country) {
         this.errors.country = true;
       }
@@ -335,7 +340,9 @@ export default {
       }
 
       if (!this.form.airportName.trim()) {
-        this.errors.name = true;
+        this.errors.nameRequired = true;
+      } else if (!airportNameRegex.test(this.form.airportName.trim())) {
+        this.errors.nameInvalid = true;
       }
 
       if (!this.form.code || this.form.code.length !== 3) {
