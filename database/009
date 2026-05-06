@@ -1,0 +1,7 @@
+USE MushuAirlines;
+
+ALTER TABLE Route
+ADD StartDate NVARCHAR(20),
+    FinalizationDate NVARCHAR(20),
+	EconomyClassCapacity INT NOT NULL,
+	FirstClassCapacity INT NOT NULL;
