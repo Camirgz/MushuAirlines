@@ -1,0 +1,155 @@
+codigo,ciudad,pais
+SJO,San José,Costa Rica
+MIA,Miami,Estados Unidos
+JFK,Nueva York,Estados Unidos
+LAX,Los Ángeles,Estados Unidos
+ORD,Chicago,Estados Unidos
+ATL,Atlanta,Estados Unidos
+DFW,Dallas,Estados Unidos
+SEA,Seattle,Estados Unidos
+SFO,San Francisco,Estados Unidos
+BOS,Boston,Estados Unidos
+LHR,Londres,Reino Unido
+LGW,Londres,Reino Unido
+MAN,Mánchester,Reino Unido
+CDG,París,Francia
+ORY,París,Francia
+FRA,Fráncfort,Alemania
+MUC,Múnich,Alemania
+AMS,Ámsterdam,Países Bajos
+MAD,Madrid,España
+BCN,Barcelona,España
+FCO,Roma,Italia
+MXP,Milán,Italia
+ZRH,Zúrich,Suiza
+VIE,Viena,Austria
+BRU,Bruselas,Bélgica
+CPH,Copenhague,Dinamarca
+ARN,Estocolmo,Suecia
+OSL,Oslo,Noruega
+HEL,Helsinki,Finlandia
+DUB,Dublín,Irlanda
+LIS,Lisboa,Portugal
+ATH,Atenas,Grecia
+WAW,Varsovia,Polonia
+PRG,Praga,República Checa
+BUD,Budapest,Hungría
+OTP,Bucarest,Rumanía
+SOF,Sofía,Bulgaria
+IST,Estambul,Turquía
+SVO,Moscú,Rusia
+DME,Moscú,Rusia
+LED,San Petersburgo,Rusia
+GRU,São Paulo,Brasil
+GIG,Río de Janeiro,Brasil
+BSB,Brasilia,Brasil
+EZE,Buenos Aires,Argentina
+AEP,Buenos Aires,Argentina
+SCL,Santiago,Chile
+BOG,Bogotá,Colombia
+MDE,Medellín,Colombia
+LIM,Lima,Perú
+UIO,Quito,Ecuador
+GYE,Guayaquil,Ecuador
+MVD,Montevideo,Uruguay
+ASU,Asunción,Paraguay
+LPB,La Paz,Bolivia
+CCS,Caracas,Venezuela
+PTY,Ciudad de Panamá,Panamá
+SAL,San Salvador,El Salvador
+TGU,Tegucigalpa,Honduras
+MGA,Managua,Nicaragua
+GUA,Ciudad de Guatemala,Guatemala
+BZE,Ciudad de Belice,Belice
+MEX,Ciudad de México,México
+CUN,Cancún,México
+GDL,Guadalajara,México
+MTY,Monterrey,México
+HAV,La Habana,Cuba
+SDQ,Santo Domingo,República Dominicana
+SJU,San Juan,Puerto Rico
+NAS,Nassau,Bahamas
+KIN,Kingston,Jamaica
+POS,Puerto España,Trinidad y Tobago
+YYZ,Toronto,Canadá
+YVR,Vancouver,Canadá
+YUL,Montreal,Canadá
+YYC,Calgary,Canadá
+YEG,Edmonton,Canadá
+YOW,Ottawa,Canadá
+DXB,Dubái,Emiratos Árabes Unidos
+AUH,Abu Dabi,Emiratos Árabes Unidos
+DOH,Doha,Catar
+RUH,Riad,Arabia Saudita
+JED,Yeda,Arabia Saudita
+KWI,Kuwait,Kuwait
+BAH,Baréin,Baréin
+MCT,Mascate,Omán
+BEY,Beirut,Líbano
+AMM,Amán,Jordania
+TLV,Tel Aviv,Israel
+CAI,El Cairo,Egipto
+CMN,Casablanca,Marruecos
+RAK,Marrakech,Marruecos
+ALG,Argel,Argelia
+TUN,Túnez,Túnez
+TRI,Trípoli,Libia
+ADD,Adís Abeba,Etiopía
+NBO,Nairobi,Kenia
+DAR,Dar es Salaam,Tanzania
+JNB,Johannesburgo,Sudáfrica
+CPT,Ciudad del Cabo,Sudáfrica
+DUR,Durban,Sudáfrica
+LOS,Lagos,Nigeria
+ABV,Abuya,Nigeria
+ACC,Acra,Ghana
+DKR,Dakar,Senegal
+ABJ,Abiyán,Costa de Marfil
+CMN,Casablanca,Marruecos
+PEK,Pekín,China
+PVG,Shanghái,China
+CAN,Cantón,China
+CTU,Chengdu,China
+HKG,Hong Kong,China
+MFM,Macao,China
+TPE,Taipéi,Taiwán
+NRT,Tokio,Japón
+HND,Tokio,Japón
+KIX,Osaka,Japón
+ICN,Seúl,Corea del Sur
+GMP,Seúl,Corea del Sur
+BKK,Bangkok,Tailandia
+DMK,Bangkok,Tailandia
+SIN,Singapur,Singapur
+KUL,Kuala Lumpur,Malasia
+CGK,Yakarta,Indonesia
+MNL,Manila,Filipinas
+SGN,Ho Chi Minh,Vietnam
+HAN,Hanói,Vietnam
+PNH,Nom Pen,Camboya
+RGN,Rangún,Myanmar
+DEL,Nueva Delhi,India
+BOM,Bombay,India
+MAA,Chennai,India
+CCU,Calcuta,India
+BLR,Bengaluru,India
+HYD,Hyderabad,India
+CMB,Colombo,Sri Lanka
+DAC,Daca,Bangladés
+KTM,Katmandú,Nepal
+KHI,Karachi,Pakistán
+LHE,Lahore,Pakistán
+ISB,Islamabad,Pakistán
+KBL,Kabul,Afganistán
+TAS,Taskent,Uzbekistán
+ALA,Almaty,Kazajistán
+SYD,Sídney,Australia
+MEL,Melbourne,Australia
+BNE,Brisbane,Australia
+PER,Perth,Australia
+ADL,Adelaida,Australia
+AKL,Auckland,Nueva Zelanda
+CHC,Christchurch,Nueva Zelanda
+WLG,Wellington,Nueva Zelanda
+PPT,Papeete,Polinesia Francesa
+HNL,Honolulu,Estados Unidos
