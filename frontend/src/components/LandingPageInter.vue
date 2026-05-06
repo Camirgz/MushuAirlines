@@ -31,7 +31,7 @@
         </a>
 
         <!-- Management button with dropdown -->
-        <div class="management-wrapper">
+        <div v-if="isAdmin" class="management-wrapper">
           <button class="management-btn" @click="toggleDropdown">
             <i class="bi bi-gear me-2"></i>
             Gestión
@@ -88,11 +88,10 @@
             </RouterLink>
           </div>
         </div>
-
-        <RouterLink to="/" class="logout-btn">
+        <button class="logout-btn" @click="logout">
           <i class="bi bi-box-arrow-right me-2"></i>
           Logout
-        </RouterLink>
+        </button>
       </div>
     </nav>
 
@@ -108,7 +107,7 @@
       </section>
 
       <!-- Panel -->
-      <section class="admin-card">
+      <section v-if="isAdmin" class="admin-card">
         <h2>Administración de vuelos de la aerolínea</h2>
 
         <div class="option-list">
@@ -181,25 +180,63 @@
 </template>
 
 <script>
-  export default {
-    name: "LandingPageInter",
+export default {
+  name: "LandingPageInter",
 
-    data() {
-      return {
-        isDropdownOpen: false,
-      };
+  data() {
+    return {
+      isDropdownOpen: false,
+      userRole: null,
+    };
+  },
+
+  computed: {
+    isAdmin() {
+      return this.userRole === "Administrator";
+    },
+  },
+
+  mounted() {
+    this.userRole = this.getRoleFromToken();
+
+    console.log("Rol actual:", this.userRole);
+  },
+
+  methods: {
+    getRoleFromToken() {
+      const token = localStorage.getItem("token");
+
+      if (!token) return null;
+
+      try {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+
+        return (
+          payload["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] ||
+          payload.role ||
+          payload.Role ||
+          null
+        );
+      } catch (error) {
+        console.error("Error leyendo el token:", error);
+        return null;
+      }
     },
 
-    methods: {
-      toggleDropdown() {
-        this.isDropdownOpen = !this.isDropdownOpen;
-      },
-
-      closeDropdown() {
-        this.isDropdownOpen = false;
-      },
+    toggleDropdown() {
+      this.isDropdownOpen = !this.isDropdownOpen;
     },
-  };
+
+    closeDropdown() {
+      this.isDropdownOpen = false;
+    },
+
+    logout() {
+      localStorage.removeItem("token");
+      this.$router.push("/");
+    },
+  },
+};
 </script>
 
 <style scoped>
