@@ -50,6 +50,8 @@ CREATE TABLE Employee (
         REFERENCES Person(Id),
 
 );
+ALTER TABLE Employee
+DROP COLUMN Url;
 
 
 CREATE TABLE AccountEmployee (
@@ -308,8 +310,8 @@ INSERT INTO Person (Id,FirstName, LastName, Ssn, Nationality)
 VALUES (1 ,'Leo', 'Sibaja', '208648887', 'Costa Rica');
 
 
-INSERT INTO Employee (Id, Url, Salary, WorkSchedule, Permissions)
-VALUES (1, 'admin.png', 850000, 'Lunes a Viernes 8am-5pm', 'ALL');
+INSERT INTO Employee (Id, Salary, WorkSchedule, Permissions)
+VALUES (1, 850000, 'Lunes a Viernes 8am-5pm', 'ALL');
 
 
 INSERT INTO Administrator (Id)
