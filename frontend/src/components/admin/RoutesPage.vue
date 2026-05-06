@@ -27,7 +27,7 @@
                     <img src="@/assets/Gestion.png" width="16" />
                     Gestión
                 </a>
-                <a href="/logout" class="btn btn-outline-danger rounded-pill px-3 py-1">
+                <a href="/" class="btn btn-outline-danger rounded-pill px-3 py-1">
                     <img src="@/assets/Usuario.png" width="16" />
                     Logout
                 </a>
