@@ -1,5 +1,3 @@
-USE master;
-DROP DATABASE MushuAirlines;
 CREATE DATABASE MushuAirlines;
 USE MushuAirlines;
 
