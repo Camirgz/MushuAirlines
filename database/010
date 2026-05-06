@@ -1,0 +1,5 @@
+USE MushuAirlines;
+
+ALTER TABLE Route
+ADD OriginCity VARCHAR(85);
+	DestinationCity VARCHAR(85);
