@@ -175,8 +175,8 @@
                 if (!Query) return this.AircraftTypes;
                 return this.AircraftTypes.filter(
                     (A) =>
-                        A.Model.toLowerCase().includes(Query) ||
-                        A.Type.toLowerCase().includes(Query)
+                        (A.model ?? "").toLowerCase().includes(Query) ||
+                        (A.type ?? "").toLowerCase().includes(Query)
                 );
             },
             TotalPages() {
