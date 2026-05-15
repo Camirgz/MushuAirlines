@@ -55,10 +55,10 @@
           </div>
         </div>
 
-        <RouterLink to="/" class="logout-btn">
+        <button class="logout-btn" @click="Logout">
           <i class="bi bi-box-arrow-right me-2"></i>
           Logout
-        </RouterLink>
+        </button>
       </div>
     </nav>
 
@@ -126,28 +126,28 @@
 
           <hr class="section-divider" />
 
-          <!-- Economy class -->
-          <h3 class="section-title">Clase Turista</h3>
+          <!-- First class -->
+          <h3 class="section-title">Primera Clase</h3>
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">Cantidad de filas <span class="required">*</span></label>
               <input
-                v-model.number="Form.EconomyClass.RowCount"
+                v-model.number="Form.FirstClass.RowCount"
                 type="number"
                 class="form-input"
-                placeholder="Ej: 20"
-                min="1"
+                placeholder="Ej: 4"
+                min="0"
                 required
               />
             </div>
             <div class="form-group">
               <label class="form-label">Asientos por fila <span class="required">*</span></label>
               <input
-                v-model.number="Form.EconomyClass.SeatsPerRow"
+                v-model.number="Form.FirstClass.SeatsPerRow"
                 type="number"
                 class="form-input"
-                placeholder="Ej: 6"
-                min="1"
+                placeholder="Ej: 4"
+                min="0"
                 required
               />
             </div>
@@ -155,27 +155,27 @@
 
           <hr class="section-divider" />
 
-          <!-- First class -->
-          <h3 class="section-title">Primera Clase</h3>
+          <!-- Economy class -->
+          <h3 class="section-title">Clase Turista</h3>
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">Cantidad de filas</label>
               <input
-                v-model.number="Form.FirstClass.RowCount"
+                v-model.number="Form.EconomyClass.RowCount"
                 type="number"
                 class="form-input"
-                placeholder="Ej: 4"
-                min="1"
+                placeholder="Ej: 20"
+                min="0"
               />
             </div>
             <div class="form-group">
               <label class="form-label">Asientos por fila</label>
               <input
-                v-model.number="Form.FirstClass.SeatsPerRow"
+                v-model.number="Form.EconomyClass.SeatsPerRow"
                 type="number"
                 class="form-input"
-                placeholder="Ej: 4"
-                min="1"
+                placeholder="Ej: 6"
+                min="0"
               />
             </div>
           </div>
@@ -287,8 +287,8 @@ export default {
         Model: this.Form.Model,
         Type: this.Form.Type,
         WeightKg: this.Form.WeightKg,
-        EconomyRows: this.Form.EconomyClass.RowCount,
-        EconomySeatsPerRow: this.Form.EconomyClass.SeatsPerRow,
+        EconomyRows: this.Form.EconomyClass.RowCount || 0,
+        EconomySeatsPerRow: this.Form.EconomyClass.SeatsPerRow || 0,
         FirstClassRows: this.Form.FirstClass.RowCount,
         FirstClassSeatsPerRow: this.Form.FirstClass.SeatsPerRow,
       };
@@ -297,18 +297,50 @@ export default {
         .then(() => {
           this.$router.push("/admin/aircraft-types");
         })
-        .catch((Error) => {
-          const ServerMessage = Error.response?.data;
-          this.ErrorMessage = ServerMessage
-            ? `Error del servidor: ${ServerMessage}`
-            : `Error de red: ${Error.message}`;
+        .catch((Err) => {
+          this.ErrorMessage = this.ParseError(Err);
         })
         .finally(() => {
           this.IsSubmitting = false;
         });
     },
+    ParseError(Err) {
+      if (!Err.response) {
+        return "No se pudo conectar con el servidor. Verifique su conexión e intente de nuevo.";
+      }
+
+      const Data = Err.response.data;
+
+      if (Data && typeof Data === "object") {
+        if (Data.errors) {
+          const Messages = Object.values(Data.errors).flat();
+          if (Messages.length) return Messages.join(" ");
+        }
+        if (Data.title) return Data.title;
+        return "Ocurrió un error inesperado. Intente de nuevo.";
+      }
+
+      if (typeof Data === "string") {
+        if (Data.startsWith("Ya existe")) return Data;
+        if (Data.startsWith("La capacidad total")) return Data;
+        if (Data.includes("CHK_SeatsPerRow"))
+          return "El número de asientos por fila no está dentro del rango permitido para este tipo de aeronave.";
+        if (Data.includes("CHECK constraint"))
+          return "Los datos ingresados no cumplen las restricciones de la aeronave. Verifique los valores e intente de nuevo.";
+        if (Data.includes("PRIMARY KEY") || Data.includes("UNIQUE KEY"))
+          return "Ya existe una aeronave registrada con esos datos.";
+        if (Data.includes("FOREIGN KEY"))
+          return "Uno de los valores ingresados no corresponde a un registro existente.";
+      }
+
+      return "Ocurrió un error al guardar la aeronave. Verifique los datos e intente de nuevo.";
+    },
     Cancel() {
       this.$router.push("/admin/aircraft-types");
+    },
+    Logout() {
+      localStorage.removeItem("token");
+      this.$router.push("/");
     },
   },
 };

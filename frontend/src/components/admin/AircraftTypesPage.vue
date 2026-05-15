@@ -55,10 +55,10 @@
                     </div>
                 </div>
 
-                <RouterLink to="/" class="logout-btn">
+                <button class="logout-btn" @click="Logout">
                     <i class="bi bi-box-arrow-right me-2"></i>
                     Logout
-                </RouterLink>
+                </button>
             </div>
         </nav>
 
@@ -175,8 +175,8 @@
                 if (!Query) return this.AircraftTypes;
                 return this.AircraftTypes.filter(
                     (A) =>
-                        A.Model.toLowerCase().includes(Query) ||
-                        A.Type.toLowerCase().includes(Query)
+                        (A.model ?? "").toLowerCase().includes(Query) ||
+                        (A.type ?? "").toLowerCase().includes(Query)
                 );
             },
             TotalPages() {
@@ -235,6 +235,10 @@
             GoToPage(Page) {
                 if (Page < 1 || Page > this.TotalPages) return;
                 this.CurrentPage = Page;
+            },
+            Logout() {
+                localStorage.removeItem("token");
+                this.$router.push("/");
             },
         },
     };
