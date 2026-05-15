@@ -10,8 +10,7 @@ namespace backend.Model
         public string Ssn { get; set; }
         public string Nationality { get; set; }
 
-        public string Url { get; set; }
-        public double Salary { get; set; }
+        public double? Salary { get; set; }
         public string WorkSchedule { get; set; }
         public string Permissions { get; set; }
 
