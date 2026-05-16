@@ -103,6 +103,11 @@ export default {
         );
 
         this.message = response.data;
+        if (response.data === "Employee account created successfully") {
+          setTimeout(() => {
+            window.location.href = "/login";
+          }, 1500);
+        }
       } catch (error) {
         this.message = error.response?.data || "Error";
       } finally {

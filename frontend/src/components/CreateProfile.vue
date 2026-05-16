@@ -1,104 +1,200 @@
 <template>
-  <div class="login-page">
-    <div class="login-card">
-
-      <RouterLink to="/admin/users" class="back-arrow">&#8592; Volver</RouterLink>
-
-      <h2 class="login-title">Crear Nuevo Usuario</h2>
-      <p class="login-subtitle">Registro de empleados Mushu Airlines</p>
-
-      <form @submit.prevent="createEmployee">
-
-        <div class="grid">
-
-          <div class="input-group-custom">
-            <label>Nombre</label>
-            <div class="input-box">
-              <i class="bi bi-person"></i>
-              <input v-model="form.firstName" required />
-            </div>
-          </div>
-
-          <div class="input-group-custom">
-            <label>Apellido</label>
-            <div class="input-box">
-              <i class="bi bi-person"></i>
-              <input v-model="form.lastName" required />
-            </div>
-          </div>
-
-          <div class="input-group-custom full">
-            <label>Correo</label>
-            <div class="input-box">
-              <i class="bi bi-envelope"></i>
-              <input v-model="form.email" type="email" required />
-            </div>
-          </div>
-
-          <div class="input-group-custom">
-            <label>SSN</label>
-            <div class="input-box">
-              <i class="bi bi-card-text"></i>
-              <input v-model="form.ssn" required />
-            </div>
-          </div>
-
-          <div class="input-group-custom">
-            <label>Nacionalidad</label>
-            <div class="input-box">
-              <i class="bi bi-globe"></i>
-              <input v-model="form.nationality" required />
-            </div>
-          </div>
-
-          <div class="input-group-custom">
-            <label>Salario</label>
-            <div class="input-box">
-              <i class="bi bi-currency-dollar"></i>
-              <input v-model="form.salary" type="number" />
-            </div>
-          </div>
-
-          <div class="input-group-custom">
-            <label>Horario</label>
-            <div class="input-box">
-              <i class="bi bi-clock"></i>
-              <input v-model="form.workSchedule" />
-            </div>
-          </div>
-
-          <div class="input-group-custom full">
-            <label>Permisos</label>
-            <div class="input-box">
-              <i class="bi bi-shield"></i>
-              <input v-model="form.permissions" />
-            </div>
-          </div>
-
+  <div class="page-container">
+    <nav class="navbar bg-white shadow-sm px-4 py-2">
+      <RouterLink
+        to="/"
+        class="navbar-brand d-flex align-items-center gap-2"
+      >
+        <img
+          src="@/assets/logo.png"
+          width="42"
+          height="42"
+          class="rounded-2"
+        />
+        <div>
+          <div class="brand-name">Mushu Airlines</div>
+          <div class="brand-tagline">Vuela con el dragón</div>
         </div>
+      </RouterLink>
 
-        <div class="input-group-custom">
-          <label>Rol</label>
-          <div class="input-box">
-            <select v-model="form.role">
-              <option>Administrator</option>
-              <option>Operator</option>
-            </select>
-          </div>
-        </div>
+      <div class="d-flex align-items-center gap-3">
 
-        <button type="submit" class="login-btn" :disabled="loading">
-          {{ loading ? "Creando..." : "Crear Usuario" }}
-        </button>
+        <RouterLink to="/admin" class="btn btn-gradient">
+          Gestión
+        </RouterLink>
 
-      </form>
+        <RouterLink
+          to="/"
+          class="btn btn-outline-danger rounded-pill px-3 py-2"
+        >
+          Logout
+        </RouterLink>
 
-      <div v-if="message" :class="['alert-box', isError ? 'alert-error' : 'alert-success']">
-        <i :class="['bi', isError ? 'bi-exclamation-circle-fill' : 'bi-check-circle-fill']"></i>
-        {{ message }}
       </div>
+    </nav>
 
+    <div class="container mt-5">
+      <div class="admin-banner">
+        <RouterLink
+          to="/admin/users"
+          class="text-white text-decoration-none fw-bold"
+        >
+          ← Volver
+        </RouterLink>
+
+        <h1 class="mt-3">
+          Gestión de Usuarios
+        </h1>
+
+        <p>
+          Registro de empleados Mushu Airlines
+        </p>
+
+      </div>
     </div>
+
+    <div class="container mt-4 mb-5">
+
+      <div class="flight-card">
+
+        <h2 class="mb-4 fw-bold">
+          Crear Nuevo Usuario
+        </h2>
+
+        <!-- ALERT -->
+
+        <div
+          v-if="message"
+          :class="isError
+            ? 'alert-error-custom'
+            : 'alert-success-custom'"
+        >
+          {{ message }}
+        </div>
+        <form @submit.prevent="createEmployee">
+
+          <div class="row">
+
+            <div class="col-md-6 form-group mb-3">
+              <label>Nombre *</label>
+
+              <input
+                v-model="form.firstName"
+                type="text"
+                placeholder="Ej: Juan"
+                required
+              />
+            </div>
+
+            <div class="col-md-6 form-group mb-3">
+              <label>Apellido *</label>
+
+              <input
+                v-model="form.lastName"
+                type="text"
+                placeholder="Ej: Pérez"
+                required
+              />
+            </div>
+
+            <div class="col-md-12 form-group mb-3">
+              <label>Correo *</label>
+
+              <input
+                v-model="form.email"
+                type="email"
+                placeholder="correo@ejemplo.com"
+                required
+              />
+            </div>
+
+            <div class="col-md-6 form-group mb-3">
+              <label>SSN *</label>
+
+              <input
+                v-model="form.ssn"
+                type="text"
+                required
+              />
+            </div>
+
+            <div class="col-md-6 form-group mb-3">
+              <label>Nacionalidad *</label>
+
+              <input
+                v-model="form.nationality"
+                type="text"
+                required
+              />
+            </div>
+
+            <div class="col-md-6 form-group mb-3">
+              <label>Salario *</label>
+
+              <input
+                type="number"
+                min="0"
+                v-model.number="form.salary"
+                placeholder="₡ 0"
+              />
+            </div>
+
+            <div class="col-md-6 form-group mb-3">
+              <label>Horario *</label>
+
+              <input
+                v-model="form.workSchedule"
+                type="text"
+                placeholder="Ej: L-V 8AM a 5PM"
+              />
+            </div>
+
+            <div class="col-md-12 form-group mb-3">
+              <label>Permisos *</label>
+
+              <input
+                v-model="form.permissions"
+                type="text"
+                placeholder="Ej: Gestión de vuelos"
+              />
+            </div>
+
+            <div class="col-md-12 form-group mb-4">
+              <label>Rol *</label>
+
+              <select v-model="form.role">
+
+                <option value="Administrator">
+                  Administrator
+                </option>
+
+                <option value="Operator">
+                  Operator
+                </option>
+
+              </select>
+            </div>
+
+          </div>
+
+          <button
+            type="submit"
+            class="search-btn"
+            :disabled="loading"
+          >
+
+            {{ loading
+              ? "Creando..."
+              : "Crear Usuario"
+            }}
+
+          </button>
+
+        </form>
+
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -115,8 +211,7 @@ export default {
         lastName: "",
         ssn: "",
         nationality: "",
-        url: "",
-        salary: 0,
+        salary: null,
         workSchedule: "",
         permissions: "",
         email: "",
@@ -166,112 +261,126 @@ export default {
   }
 };
 </script>
-
 <style scoped>
-.login-page{
+
+.page-container {
   min-height: 100vh;
-  background: linear-gradient(#d63031, #f39c12);
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  background: #f8f9fa;
 }
 
-.login-card{
-  background: white;
-  width: 700px;
-  padding: 30px;
-  border-radius: 15px;
+.navbar {
+  border-bottom: 1px solid #e5e7eb;
 }
 
-.back-arrow {
-  display: inline-block;
-  margin-bottom: 16px;
-  color: #e74c3c;
-  font-weight: bold;
-  text-decoration: none;
-  font-size: 14px;
-  padding: 8px 16px;
-  border: 1px solid #f1948a;
-  border-radius: 10px;
-  background: #fdf2f2;
+.brand-name {
+  font-weight: 800;
+  font-size: 1.1rem;
 }
 
-.login-title{
-  text-align: center;
-  font-weight: bold;
+.brand-tagline {
+  font-size: 0.75rem;
+  color: #6b7280;
 }
 
-.login-subtitle{
-  text-align: center;
-  color: gray;
-  margin-bottom: 25px;
-}
-
-.input-group-custom{
-  margin-bottom: 18px;
-}
-
-.input-group-custom label{
-  display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
-}
-
-.input-box{
-  border: 1px solid lightgray;
-  border-radius: 8px;
-  padding: 10px;
-  display: flex;
-  gap: 8px;
-}
-
-.input-box input,
-.input-box select{
-  border: none;
-  outline: none;
-  width: 100%;
-}
-
-.login-btn{
-  width: 100%;
-  padding: 12px;
-  border: none;
-  border-radius: 8px;
-  background: linear-gradient(to right, #e74c3c, #f39c12);
+.btn-gradient {
+  background: linear-gradient(135deg, #f01818, #ff5a00, #ffc400);
   color: white;
-  font-weight: bold;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-weight: 700;
 }
 
-.grid{
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 15px;
+.btn-gradient:hover {
+  color: white;
+  opacity: 0.95;
 }
 
-.full{
-  grid-column: span 2;
+.admin-banner {
+  background: linear-gradient(135deg, #f01818, #ff5a00, #ffc400);
+  color: white;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.12);
 }
 
-.alert-box {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 16px;
-  padding: 12px 16px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
+.admin-banner h1 {
+  margin-bottom: 8px;
+  font-weight: 900;
 }
 
-.alert-success {
-  background: #eafaf1;
-  color: #1e8449;
-  border: 1px solid #a9dfbf;
+.admin-banner p {
+  margin: 0;
+  opacity: 0.95;
 }
 
-.alert-error {
-  background: #fdf2f2;
-  color: #c0392b;
-  border: 1px solid #f1948a;
+.flight-card {
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
 }
+
+.form-group label {
+  font-weight: 700;
+  margin-bottom: 8px;
+  display: block;
+  color: #1f2937;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  height: 48px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 0 14px;
+  outline: none;
+  transition: 0.2s ease;
+  background: white;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  border-color: #ff5a00;
+  box-shadow: 0 0 0 3px rgba(255,90,0,0.12);
+}
+
+.search-btn {
+  width: 100%;
+  height: 50px;
+  border: none;
+  border-radius: 10px;
+  background: #ff5a00;
+  color: white;
+  font-weight: 800;
+  transition: 0.2s ease;
+}
+
+.search-btn:hover:not(:disabled) {
+  background: #f01818;
+}
+
+.search-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+.alert-success-custom {
+  background: #ecfdf5;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 20px;
+}
+
+.alert-error-custom {
+  background: #fff7ed;
+  color: #9a3412;
+  border: 1px solid #fed7aa;
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 20px;
+}
+
 </style>

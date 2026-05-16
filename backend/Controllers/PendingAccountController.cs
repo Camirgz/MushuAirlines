@@ -22,8 +22,12 @@ namespace backend.Controllers
             {
                 return BadRequest();
             }
-
             var result = pendingAccountService.CreateInvitation(model);
+
+            if (result.Contains("Error:"))
+            {
+                return BadRequest(result);
+            }
 
             return Ok(result);
         }
@@ -38,7 +42,7 @@ namespace backend.Controllers
 
             var result = pendingAccountService.CompleteRegister(model);
 
-            if (result == "Invalid or expired token")
+            if (result == "Invalid or expired token" || result.Contains("Error:"))
             {
                 return BadRequest(result);
             }

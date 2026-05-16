@@ -47,13 +47,12 @@ namespace backend.Repositories
         {
             using var connection = new SqlConnection(_connectionString);
 
-            string query = @"INSERT INTO Employee (Id, Url, Salary, WorkSchedule, Permissions)
-                             VALUES (@Id, @Url, @Salary, @WorkSchedule, @Permissions)";
+            string query = @"INSERT INTO Employee (Id, Salary, WorkSchedule, Permissions)
+                             VALUES (@Id, @Salary, @WorkSchedule, @Permissions)";
 
             connection.Execute(query, new
             {
                 Id = id,
-                model.Url,
                 model.Salary,
                 model.WorkSchedule,
                 model.Permissions

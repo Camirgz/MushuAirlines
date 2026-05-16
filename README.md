@@ -1,2 +1,2 @@
 # MushuAirliness
-Repositorio para el curso de Proyecto Integrador de Ingeniería de Software y Bases de Datos de la Universidad de Costa Rica, cursado en el I Semestre de 2026
+Repository for the Integrative Project course in Software Engineering and Databases at the University of Costa Rica, taken in the first semester of 2026.
