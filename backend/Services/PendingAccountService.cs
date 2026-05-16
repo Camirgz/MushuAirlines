@@ -39,7 +39,11 @@ namespace backend.Services
 
                 if (string.IsNullOrWhiteSpace(model.WorkSchedule))
                     return "Error: Horario requerido";
-
+        
+                string workScheduleRegexPattern = @"^([a-zA-Z]+-[a-zA-Z]+) (0?[1-9]|1[0-2])(:[0-5][0-9])?(am|AM|PM|pm)\s+a\s+(0?[1-9]|1[0-2])(:[0-5][0-9])?(AM|pm|am|pm)$";
+                var workScheduleRegex = new Regex(workScheduleRegexPattern);
+                if (!workScheduleRegex.IsMatch(model.WorkSchedule))
+                    return "Error: Horario inválido";
                 if (string.IsNullOrWhiteSpace(model.Permissions))
                     return "Error: Nota de los Permisos requeridos";
             
