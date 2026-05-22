@@ -131,8 +131,7 @@ namespace backend.Repositories
            using var connection = new SqlConnection(_connectionString);
 
             return connection.QueryFirstOrDefault<int?>(@"
-                SELECT Id FROM ScheduledFlight
-                WHERE RouteCode = @RouteCode AND DepartureDate = @Date",
+                SELECT dbo.GetExistingScheduledFlight(@RouteCode,@Date)",
                 new
                 {
                     RouteCode = routeCode,
@@ -199,16 +198,10 @@ namespace backend.Repositories
         {
             using var connection = new SqlConnection(_connectionString);
 
-            int? aircraftCode = connection.QueryFirstOrDefault<int?>(@"
-                SELECT TOP 1 a.Code
-                FROM Aircraft a
-                JOIN AircraftType t
-                    ON a.Type = t.Id
-                WHERE t.AircraftType = @Type",
-                new
-                {
-                    Type = aircraftType
-                });
+            int? aircraftCode = connection.QueryFirstOrDefault<int?>(@"SELECT dbo.GetAircraftCode(@Type)", new
+            {
+                Type = aircraftType
+            });
 
             if (aircraftCode == null)
             {
