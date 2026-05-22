@@ -1,0 +1,7 @@
+USE MushuAirlines;
+-- ScheduledFlight needs to know the route code
+ALTER TABLE ScheduledFlight
+ADD RouteCode varchar(100) NOT NULL DEFAULT '',
+CONSTRAINT FK_SF_Route 
+    FOREIGN KEY (RouteCode) 
+    REFERENCES Route(Code);
