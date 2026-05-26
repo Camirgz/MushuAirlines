@@ -63,8 +63,9 @@ export default {
             })
             .catch(function(error) {
                 console.log("ERROR COMPLETO:", error);
-                console.log("RESPUESTA BACKEND:", error.response.data);
-                alert(error.response.data);
+                const msg = error.response?.data || "Error de conexión con el servidor";
+                console.log("RESPUESTA BACKEND:", msg);
+                alert(msg);
             });
         },
     },

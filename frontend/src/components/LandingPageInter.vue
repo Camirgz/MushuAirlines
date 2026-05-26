@@ -243,8 +243,8 @@ export default {
 /* General page layout */
 .admin-page {
   min-height: 100vh;
-  background: #f8f9fa;
-  color: #111827;
+  background: var(--bg-page);
+  color: var(--text-dark);
 }
 
 /* Navbar */
@@ -252,12 +252,12 @@ export default {
   position: sticky;
   top: 0;
   z-index: 100;
-  min-height: 72px;
+  min-height: var(--navbar-min-height);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
+  background: var(--navbar-bg);
+  border-bottom: var(--navbar-border);
 }
 
 .navbar-brand {
@@ -276,13 +276,13 @@ export default {
 .brand-name {
   font-weight: 800;
   font-size: 1.25rem;
-  color: #111827;
+  color: var(--text-dark);
   line-height: 1.1;
 }
 
 .brand-tagline {
   font-size: 0.78rem;
-  color: #6b7280;
+  color: var(--text-medium);
 }
 
 .nav-actions {
@@ -293,7 +293,7 @@ export default {
 
 .nav-link-item {
   text-decoration: none;
-  color: #111827;
+  color: var(--text-dark);
   font-size: 0.95rem;
   font-weight: 600;
   display: flex;
@@ -307,12 +307,9 @@ export default {
   transition: 0.2s ease;
 }
 
-.nav-link-item:hover {
-  color: #f01818;
-}
-
+.nav-link-item:hover,
 .nav-link-item:hover i {
-  color: #f01818;
+  color: var(--color-primary-hover);
 }
 
 /* Management dropdown wrapper */
@@ -322,21 +319,21 @@ export default {
 
 .management-btn {
   padding: 11px 18px;
-  background: linear-gradient(135deg, #f01818 0%, #ff5a00 45%, #ffc400 100%);
+  background: var(--gradient-brand-diagonal);
   color: #ffffff;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--radius-btn);
   font-weight: 800;
   cursor: pointer;
   display: flex;
   align-items: center;
-  box-shadow: 0 8px 18px rgba(240, 24, 24, 0.22);
+  box-shadow: var(--shadow-btn-primary);
   transition: 0.2s ease;
 }
 
 .management-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 10px 22px rgba(240, 24, 24, 0.28);
+  box-shadow: var(--shadow-btn-primary-hover);
 }
 
 .management-btn:active {
@@ -349,10 +346,10 @@ export default {
   top: 56px;
   right: 0;
   width: 340px;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.16);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-dropdown);
   padding: 8px;
   z-index: 200;
 }
@@ -362,7 +359,7 @@ export default {
   align-items: center;
   gap: 12px;
   text-decoration: none;
-  color: #111827;
+  color: var(--text-dark);
   padding: 12px 14px;
   border-radius: 9px;
   font-size: 0.9rem;
@@ -371,20 +368,20 @@ export default {
 }
 
 .dropdown-item-custom i {
-  color: #ff3b00;
+  color: var(--color-accent-soft);
   font-size: 1rem;
   transition: 0.2s ease;
 }
 
 .dropdown-item-custom:hover {
-  background: #fff4ed;
-  color: #ff3b00;
+  background: var(--bg-dropdown-hover);
+  color: var(--color-accent-soft);
 }
 
 .dropdown-item-custom.router-link-active,
 .dropdown-item-custom.router-link-exact-active,
 .dropdown-item-custom.active {
-  background: linear-gradient(135deg, #f01818 0%, #ff5a00 45%, #ffc400 100%);
+  background: var(--gradient-brand-diagonal);
   color: #ffffff;
 }
 
@@ -399,33 +396,33 @@ export default {
   text-decoration: none;
   padding: 10px 18px;
   border: 1px solid #ff4b4b;
-  color: #f01818;
-  border-radius: 10px;
+  color: var(--color-primary-hover);
+  border-radius: var(--radius-btn);
   font-weight: 800;
   display: flex;
   align-items: center;
-  background: #ffffff;
+  background: var(--bg-card);
   transition: 0.2s ease;
 }
 
 .logout-btn:hover {
-  background: #f01818;
+  background: var(--color-primary-hover);
   color: #ffffff;
   box-shadow: 0 8px 18px rgba(240, 24, 24, 0.18);
 }
 
 /* Main content container */
 .admin-main {
-  max-width: 1120px;
+  max-width: var(--content-max-width);
   margin: 0 auto;
-  padding: 34px 24px 80px;
+  padding: var(--content-padding);
 }
 
 /* Hero banner */
 .admin-hero {
-  background: linear-gradient(135deg, #f00000 0%, #ff4b00 45%, #ffc400 100%);
+  background: var(--gradient-hero);
   color: #ffffff;
-  border-radius: 16px;
+  border-radius: var(--radius-card);
   padding: 34px 38px;
   display: flex;
   align-items: center;
@@ -452,10 +449,10 @@ export default {
 
 /* Main admin card */
 .admin-card {
-  background: #ffffff;
-  border-radius: 16px;
+  background: var(--bg-card);
+  border-radius: var(--radius-card);
   padding: 32px;
-  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+  box-shadow: var(--shadow-card);
 }
 
 .admin-card h2 {
@@ -473,19 +470,19 @@ export default {
 
 .admin-option {
   text-decoration: none;
-  color: #111827;
+  color: var(--text-dark);
   border: 1px solid #e2e8f0;
-  border-radius: 10px;
+  border-radius: var(--radius-btn);
   padding: 16px 18px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #ffffff;
+  background: var(--bg-card);
   transition: 0.2s ease;
 }
 
 .admin-option:hover {
-  border-color: #ff7a00;
+  border-color: var(--color-accent-warm);
   background: #fffaf0;
   box-shadow: 0 8px 18px rgba(255, 122, 0, 0.12);
   transform: translateY(-1px);
@@ -493,7 +490,7 @@ export default {
 
 .admin-option.router-link-active,
 .admin-option.router-link-exact-active {
-  border-color: #ff7a00;
+  border-color: var(--color-accent-warm);
   background: #fffaf0;
 }
 
@@ -507,7 +504,7 @@ export default {
 .option-icon {
   width: 38px;
   height: 38px;
-  background: linear-gradient(135deg, #f01818 0%, #ff5a00 45%, #ffc400 100%);
+  background: var(--gradient-brand-diagonal);
   color: #ffffff;
   border-radius: 9px;
   display: flex;
@@ -523,13 +520,13 @@ export default {
 }
 
 .admin-option:hover .option-arrow {
-  color: #ff5a00;
+  color: var(--color-accent-warm);
   transform: translateX(3px);
 }
 
 .section-line {
   border: none;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--border-color);
   margin: 26px 0;
 }
 
@@ -537,7 +534,7 @@ export default {
 .empty-reports {
   border: 1px dashed #cbd5e1;
   background: #f8fafc;
-  border-radius: 12px;
+  border-radius: var(--radius-panel);
   padding: 22px 24px;
 }
 
@@ -550,7 +547,7 @@ export default {
 
 .empty-reports p {
   margin: 0;
-  color: #6b7280;
+  color: var(--text-medium);
   font-size: 0.92rem;
   line-height: 1.5;
 }

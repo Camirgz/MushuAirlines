@@ -416,12 +416,18 @@ function durationToLabel(dur) {
   return minutes === 0 ? `${hours}h` : `${hours}h ${minutes}min`
 }
 
+// Maps JS Date.getDay() (0=Sunday) to the Spanish day names stored in the DB
+const WEEKDAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
 
-function parseAirportsCsv(text) {
-  return text.trim().split('\n').slice(1).filter(l => l.trim()).map(line => {
-    const parts = line.split(',')
-    return { code: parts[0].trim(), city: parts[1].trim(), country: parts[2].trim() }
-  })
+// Pure function — easy to unit-test independently of Vue
+// Returns true when no date is provided (shows all) or when the flight operates on that weekday
+function flightOperatesOnDate(flight, dateStr) {
+  if (!dateStr || !flight.frequency || flight.frequency.length === 0) return true
+  // Construct date locally (year, month-1, day) to avoid UTC-offset day-shift bugs
+  const [year, month, day] = dateStr.split('-').map(Number)
+  const date = new Date(year, month - 1, day)
+  const dayName = WEEKDAY_NAMES[date.getDay()]
+  return flight.frequency.includes(dayName)
 }
 
 function routeToFlight(r) {
@@ -444,6 +450,10 @@ function routeToFlight(r) {
     bagPrice: r.bagPrice,
     bagWeight: r.bagWeight,
     bagMultiplier: r.bagMultiplier,
+    // Normalise frequency to always be an array of Spanish day names
+    frequency: Array.isArray(r.frequency)
+      ? r.frequency
+      : (r.frequency || '').split(',').map(d => d.trim()).filter(Boolean),
   }
 }
 
@@ -485,17 +495,17 @@ export default {
 
   async created() {
     try {
-      const airportRes = await fetch('/data/Airports.csv')
-      this.airports = parseAirportsCsv(await airportRes.text())
+      const airportRes = await fetch('http://localhost:5103/api/AirportCreation')
+      this.airports = await airportRes.json()
     } catch (e) {
       console.error('Error cargando aeropuertos:', e)
     }
     try {
-      const routesRes = await fetch('http://localhost:5103/api/routecreation')
-      const routes = await routesRes.json()
-      this.flights = routes.map(routeToFlight)
+      const flightsRes = await fetch('http://localhost:5103/api/flights')
+      const flights = await flightsRes.json()
+      this.flights = flights.map(routeToFlight)
     } catch (e) {
-      console.error('Error cargando rutas:', e)
+      console.error('Error cargando vuelos:', e)
     }
   },
 
@@ -588,6 +598,7 @@ export default {
 
       this.searchedFlights = this.flights
         .filter(f => f.origin === origin && f.destination === destination)
+        .filter(f => flightOperatesOnDate(f, this.departureDate))
         .map(f => ({ ...f, date: this.departureDate, arrivalDate: this.departureDate }))
 
       const maxPrice = this.searchedFlights.length > 0
@@ -665,12 +676,12 @@ export default {
   display: flex;
   align-items: center;
 }
-.nav-link-item:hover { color: #e74c3c; }
+.nav-link-item:hover { color: var(--color-primary); }
 
 .admin-btn {
   font-size: 0.88rem;
-  border-color: #e74c3c;
-  color: #e74c3c;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 .admin-btn:hover {
   background: #e74c3c;
@@ -754,7 +765,7 @@ export default {
 }
 .input-box.focused,
 .input-box:focus-within {
-  border-color: #e74c3c;
+  border-color: var(--color-primary);
 }
 
 .field-icon {
@@ -816,7 +827,7 @@ export default {
 .airport-code {
   font-weight: 700;
   font-size: 15px;
-  color: #e74c3c;
+  color: var(--color-primary);
   min-width: 48px;
   flex-shrink: 0;
   letter-spacing: 0.5px;
@@ -842,7 +853,7 @@ export default {
 }
 
 .error-msg {
-  color: #e74c3c;
+  color: var(--color-primary);
   font-size: 0.83rem;
   margin-bottom: 12px;
   margin-top: -8px;
@@ -851,7 +862,7 @@ export default {
 .search-btn {
   width: 100%;
   padding: 14px;
-  background: linear-gradient(to right, #e74c3c, #f39c12);
+  background: var(--gradient-brand);
   color: white;
   font-size: 1rem;
   font-weight: 600;
@@ -910,13 +921,13 @@ export default {
 
 .filter-value {
   font-weight: 400;
-  color: #e74c3c;
+  color: var(--color-primary);
   font-size: 0.82rem;
 }
 
 .range-slider {
   width: 100%;
-  accent-color: #e74c3c;
+  accent-color: var(--color-primary);
   cursor: pointer;
 }
 
@@ -978,7 +989,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #e74c3c;
+  color: var(--color-primary);
   font-size: 0.9rem;
 }
 
@@ -995,14 +1006,14 @@ export default {
 .price-label {
   display: block;
   font-size: 0.72rem;
-  color: #e74c3c;
+  color: var(--color-primary);
   margin-bottom: 2px;
 }
 
 .price-amount {
   font-size: 1.5rem;
   font-weight: 800;
-  background: linear-gradient(to right, #e74c3c, #f39c12);
+  background: var(--gradient-brand);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -1071,7 +1082,7 @@ export default {
 }
 
 .select-btn {
-  background: linear-gradient(to right, #e74c3c, #f39c12);
+  background: var(--gradient-brand);
   color: white;
   border: none;
   border-radius: 8px;
@@ -1097,7 +1108,7 @@ export default {
   font-size: 1.1rem;
   line-height: 1;
   cursor: pointer;
-  color: #e74c3c;
+  color: var(--color-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1106,7 +1117,7 @@ export default {
 }
 .passenger-btn:hover {
   background: #fff0ee;
-  border-color: #e74c3c;
+  border-color: var(--color-primary);
 }
 
 .passenger-count {
@@ -1202,7 +1213,7 @@ export default {
   font-size: 0.85rem;
   transition: background 0.15s, color 0.15s;
 }
-.modal-close-btn:hover { background: #ffe5e2; color: #e74c3c; }
+.modal-close-btn:hover { background: #ffe5e2; color: var(--color-primary); }
 
 .modal-airline-header {
   display: flex;
@@ -1259,7 +1270,7 @@ export default {
 
 .modal-iata {
   font-size: 0.8rem;
-  color: #e74c3c;
+  color: var(--color-primary);
   font-weight: 700;
   margin-top: 2px;
 }
@@ -1310,7 +1321,7 @@ export default {
 .modal-route-plane {
   background: white;
   padding: 0 6px;
-  color: #e74c3c;
+  color: var(--color-primary);
   font-size: 0.9rem;
   z-index: 1;
   position: relative;
@@ -1371,7 +1382,7 @@ export default {
 .modal-price-amount {
   font-size: 1.5rem;
   font-weight: 800;
-  background: linear-gradient(to right, #e74c3c, #f39c12);
+  background: var(--gradient-brand);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -1407,7 +1418,7 @@ export default {
 .modal-cart-btn {
   flex: 2;
   padding: 12px;
-  background: linear-gradient(to right, #e74c3c, #f39c12);
+  background: var(--gradient-brand);
   color: white;
   border: none;
   border-radius: 8px;
@@ -1465,7 +1476,7 @@ export default {
 
 .modal-class-warning {
   font-size: 0.75rem;
-  color: #e74c3c;
+  color: var(--color-primary);
   margin: 6px 0 0;
 }
 
@@ -1483,7 +1494,7 @@ export default {
   border: none;
   font-size: 1.1rem;
   font-weight: 700;
-  color: #e74c3c;
+  color: var(--color-primary);
   cursor: pointer;
   padding: 0;
   line-height: 1;
@@ -1529,7 +1540,7 @@ export default {
 
 .receipt-total span:last-child {
   font-size: 1.25rem;
-  background: linear-gradient(to right, #e74c3c, #f39c12);
+  background: var(--gradient-brand);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

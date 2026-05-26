@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sqllocaldb info *)",
+      "Bash(sqlcmd -S \"\\(localdb\\)\\\\MSSQLLocalDB\" -Q \"SELECT name FROM sys.databases WHERE name = 'MushuAirlines'\")",
+      "Bash(sqlcmd -S \"\\(localdb\\)\\\\MSSQLLocalDB\" -Q \"SELECT name FROM sys.databases\")",
+      "Bash(sqlcmd -S \"localhost\" -Q \"SELECT @@SERVERNAME, @@VERSION\")",
+      "Bash(sqlcmd -S \".\\\\SQLEXPRESS\" -Q \"SELECT @@SERVERNAME\")",
+      "Bash(sqlcmd -S \"CAMITOP\" -Q \"SELECT @@SERVERNAME\")",
+      "Bash(sqlcmd -S \".\\\\SQLEXPRESS\" -Q \"SELECT name FROM sys.databases WHERE name = 'MushuAirlines'\")"
+    ]
+  }
+}

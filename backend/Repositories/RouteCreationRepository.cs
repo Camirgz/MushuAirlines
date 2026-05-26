@@ -5,7 +5,7 @@ using System.Data.SqlClient;
 
 namespace backend.Repositories
 {
-    public class RouteCreationRepository
+    public class RouteCreationRepository : IFlightRepository
     {
         private readonly string _connectionString;
 
@@ -14,6 +14,17 @@ namespace backend.Repositories
             var builder = WebApplication.CreateBuilder();
             _connectionString =
                 builder.Configuration.GetConnectionString("LoginContext");
+        }
+
+        public RouteCreationRepository(IConfiguration configuration)
+        {
+            _connectionString = configuration.GetConnectionString("LoginContext");
+        }
+
+        public IEnumerable<RouteDbModel> GetAll()
+        {
+            using var connection = new SqlConnection(_connectionString);
+            return connection.Query<RouteDbModel>("SELECT * FROM Route").ToList();
         }
 
         public void InsertRoute(RouteCreationModel route)

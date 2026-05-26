@@ -1,3 +1,6 @@
+using backend.Repositories;
+using backend.Services;
+
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +14,10 @@ builder.Services.AddCors(options =>
                             .AllowAnyMethod();
                     });
 });
+// Dependency injection for the public flight search endpoint
+builder.Services.AddScoped<IFlightRepository, RouteCreationRepository>();
+builder.Services.AddScoped<FlightAggregatorService>();
+
 // Add services to the container.
 builder.Services.AddControllers()
     .AddJsonOptions(options =>

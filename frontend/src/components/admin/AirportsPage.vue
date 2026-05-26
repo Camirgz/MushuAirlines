@@ -341,8 +341,8 @@ export default {
 /* General page layout */
 .airports-page {
   min-height: 100vh;
-  background: #f8f9fa;
-  color: #111827;
+  background: var(--bg-page);
+  color: var(--text-dark);
 }
 
 /* Navbar */
@@ -350,12 +350,12 @@ export default {
   position: sticky;
   top: 0;
   z-index: 100;
-  min-height: 72px;
+  min-height: var(--navbar-min-height);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
+  background: var(--navbar-bg);
+  border-bottom: var(--navbar-border);
 }
 
 .navbar-brand {
@@ -374,13 +374,13 @@ export default {
 .brand-name {
   font-weight: 800;
   font-size: 1.25rem;
-  color: #111827;
+  color: var(--text-dark);
   line-height: 1.1;
 }
 
 .brand-tagline {
   font-size: 0.78rem;
-  color: #6b7280;
+  color: var(--text-medium);
 }
 
 .nav-actions {
@@ -391,7 +391,7 @@ export default {
 
 .nav-link-item {
   text-decoration: none;
-  color: #111827;
+  color: var(--text-dark);
   font-size: 0.95rem;
   font-weight: 600;
   display: flex;
@@ -407,7 +407,7 @@ export default {
 
 .nav-link-item:hover,
 .nav-link-item:hover i {
-  color: #f01818;
+  color: var(--color-primary-hover);
 }
 
 /* Management dropdown */
@@ -417,21 +417,21 @@ export default {
 
 .management-btn {
   padding: 11px 18px;
-  background: linear-gradient(135deg, #f01818 0%, #ff5a00 45%, #ffc400 100%);
+  background: var(--gradient-brand-diagonal);
   color: #ffffff;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--radius-btn);
   font-weight: 800;
   cursor: pointer;
   display: flex;
   align-items: center;
-  box-shadow: 0 8px 18px rgba(240, 24, 24, 0.22);
+  box-shadow: var(--shadow-btn-primary);
   transition: 0.2s ease;
 }
 
 .management-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 10px 22px rgba(240, 24, 24, 0.28);
+  box-shadow: var(--shadow-btn-primary-hover);
 }
 
 .management-dropdown {
@@ -439,10 +439,10 @@ export default {
   top: 56px;
   right: 0;
   width: 340px;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.16);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-dropdown);
   padding: 8px;
   z-index: 200;
 }
@@ -452,7 +452,7 @@ export default {
   align-items: center;
   gap: 12px;
   text-decoration: none;
-  color: #111827;
+  color: var(--text-dark);
   padding: 12px 14px;
   border-radius: 9px;
   font-size: 0.9rem;
@@ -461,19 +461,19 @@ export default {
 }
 
 .dropdown-item-custom i {
-  color: #ff3b00;
+  color: var(--color-accent-soft);
   font-size: 1rem;
   transition: 0.2s ease;
 }
 
 .dropdown-item-custom:hover {
-  background: #fff4ed;
-  color: #ff3b00;
+  background: var(--bg-dropdown-hover);
+  color: var(--color-accent-soft);
 }
 
 .dropdown-item-custom.router-link-active,
 .dropdown-item-custom.router-link-exact-active {
-  background: linear-gradient(135deg, #f01818 0%, #ff5a00 45%, #ffc400 100%);
+  background: var(--gradient-brand-diagonal);
   color: #ffffff;
 }
 
@@ -487,33 +487,33 @@ export default {
   text-decoration: none;
   padding: 10px 18px;
   border: 1px solid #ff4b4b;
-  color: #f01818;
-  border-radius: 10px;
+  color: var(--color-primary-hover);
+  border-radius: var(--radius-btn);
   font-weight: 800;
   display: flex;
   align-items: center;
-  background: #ffffff;
+  background: var(--bg-card);
   transition: 0.2s ease;
 }
 
 .logout-btn:hover {
-  background: #f01818;
+  background: var(--color-primary-hover);
   color: #ffffff;
   box-shadow: 0 8px 18px rgba(240, 24, 24, 0.18);
 }
 
 /* Main content */
 .airports-main {
-  max-width: 1120px;
+  max-width: var(--content-max-width);
   margin: 0 auto;
-  padding: 34px 24px 80px;
+  padding: var(--content-padding);
 }
 
 .airports-hero,
 .details-hero {
-  background: linear-gradient(135deg, #f00000 0%, #ff4b00 45%, #ffc400 100%);
+  background: var(--gradient-hero);
   color: #ffffff;
-  border-radius: 16px;
+  border-radius: var(--radius-card);
   padding: 32px 38px;
   box-shadow: 0 18px 32px rgba(15, 23, 42, 0.16);
   margin-bottom: 32px;
@@ -593,9 +593,9 @@ export default {
 
 /* List card */
 .airports-card {
-  background: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+  background: var(--bg-card);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
   overflow: hidden;
 }
 
@@ -617,10 +617,10 @@ export default {
 .create-airport-btn,
 .empty-create-btn {
   text-decoration: none;
-  background: #ff5a00;
+  background: var(--color-accent-warm);
   color: #ffffff;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--radius-btn);
   padding: 11px 18px;
   font-weight: 800;
   display: inline-flex;
@@ -631,7 +631,7 @@ export default {
 .create-airport-btn:hover,
 .empty-create-btn:hover {
   color: #ffffff;
-  background: #f01818;
+  background: var(--color-primary-hover);
   transform: translateY(-1px);
   box-shadow: 0 8px 18px rgba(240, 24, 24, 0.18);
 }
@@ -701,7 +701,7 @@ export default {
   justify-content: center;
   background: #ffedd5;
   color: #c2410c;
-  border-radius: 5px;
+  border-radius: var(--radius-tag);
   padding: 4px 9px;
   font-size: 0.78rem;
   font-weight: 700;
@@ -716,7 +716,7 @@ export default {
 .view-btn {
   border: none;
   background: transparent;
-  color: #ff3b00;
+  color: var(--color-accent-soft);
   font-weight: 800;
   padding: 0;
   cursor: pointer;
@@ -725,7 +725,7 @@ export default {
 }
 
 .view-btn:hover {
-  color: #f01818;
+  color: var(--color-primary-hover);
   text-decoration: underline;
 }
 
@@ -770,10 +770,10 @@ export default {
 .details-card {
   max-width: 672px;
   margin: 0 auto;
-  background: #ffffff;
-  border-radius: 16px;
+  background: var(--bg-card);
+  border-radius: var(--radius-card);
   padding: 32px;
-  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+  box-shadow: var(--shadow-card);
 }
 
 .detail-grid {
@@ -803,7 +803,7 @@ export default {
 
 .details-line {
   border: none;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--border-color);
   margin: 24px 0 16px;
 }
 

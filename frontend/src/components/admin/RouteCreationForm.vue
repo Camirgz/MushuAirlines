@@ -414,7 +414,10 @@
                         firstClassCapacity: 0
                     };
                 } catch (err) {
-                    this.errorMessage = err.response?.data?.title || "Error al crear el vuelo";
+                    this.errorMessage =
+                        err.response?.data?.title ||
+                        (typeof err.response?.data === "string" ? err.response.data : null) ||
+                        "Error al crear el vuelo";
                 }
             },
 
