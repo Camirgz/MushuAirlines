@@ -1,63 +1,46 @@
-using backend.Model;
-using backend.Repositories;
+using backend.Services;
 
 namespace backend.Services
 {
     public class PurchaseService
     {
         private readonly RouteCreationService routeService;
-        private readonly PurchaseRepository purchaseRepository;
 
         public PurchaseService()
         {
+        //it uses routecreationSrvice to prepare the purchase of a flight, by ensuring that the corresponding scheduled flight exists
+        // To do:dont break Solid(DIP)
             routeService = new RouteCreationService();
-            purchaseRepository = new PurchaseRepository();
         }
 
-        public string Purchase(
+      
+        // Obtains the ScheduledFlight Id for a purchase.
+        // If the ScheduledFlight does not exist,
+        // it is automatically created.
+        // you need to used it for obtain the ScheduledFlightId for creating tickets
+   
+
+        // use like this: you need the route code that could be XX0000(you created it in route creation) 
+        // and the date of the flight that you want to purchase, and it will return the scheduled flight id that you need for create the ticket
+        public int PrepareFlightPurchase(
             string routeCode,
-            DateTime flightDate,
-            int passengerId,
-            int seatNumber)
+            DateTime flightDate)
         {
-            try
-            {
-                // 1. Obtener o crear el vuelo específico
-                int scheduledFlightId =
-                    routeService.GetOrCreateScheduledFlight(
-                        routeCode,
-                        flightDate
-                    );
-
-                // 2. Obtener información de la ruta
-                RouteCreationModel route =
-                    routeService.GetRouteByCode(routeCode);
-
-                // 3. Generar QR simple
-                string qr =
-                    Guid.NewGuid().ToString();
-
-                // 4. Crear ticket
-                purchaseRepository.CreateTicket(
-                    scheduledFlightId,
-                    qr,
-                    passengerId,
-                    seatNumber
-                );
-
-                // 5. Retornar mensaje simple para probar
-                return
-                    "Purchase completed successfully.\n" +
-                    "Route: " + route.Code + "\n" +
-                    "From: " + route.OriginAirport + "\n" +
-                    "To: " + route.DestinationAirport + "\n" +
-                    "Flight Id: " + scheduledFlightId + "\n" +
-                    "QR: " + qr;
-            }
-            catch (Exception ex)
-            {
-                return "ERROR: " + ex.Message;
-            }
+            return routeService.GetOrCreateScheduledFlight(
+                routeCode,
+                flightDate
+            );
         }
+        //todo delete this example
+        /*
+            PurchaseService purchaseService =
+                new PurchaseService();
+
+            int scheduledFlightId =
+                purchaseService.PrepareFlightPurchase(
+                    "XX0000",
+                    new DateTime(2026, 5, 22)
+                );
+        */
     }
 }
