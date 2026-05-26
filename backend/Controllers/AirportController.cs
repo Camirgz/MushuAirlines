@@ -6,26 +6,26 @@ namespace backend.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class AirportCreationController : ControllerBase
+public class AirportController : ControllerBase
 {
-    private readonly AirportCreationService airportCreationService;
+    private readonly AirportService airportService;
 
-    public AirportCreationController()
+    public AirportController()
     {
-        airportCreationService = new AirportCreationService();
+        airportService = new AirportService();
     }
 
     [HttpGet]
     public ActionResult GetAirports()
     {
-        var airports = airportCreationService.GetAirports();
+        var airports = airportService.GetAirports();
         return Ok(airports);
     }
 
     [HttpGet("countries")]
     public ActionResult GetCountries()
     {
-        var countries = airportCreationService.GetCountries();
+        var countries = airportService.GetCountries();
         return Ok(countries);
     }
 
@@ -37,19 +37,19 @@ public class AirportCreationController : ControllerBase
             return BadRequest("Debe seleccionar un país.");
         }
 
-        var cities = airportCreationService.GetCitiesByCountry(country);
+        var cities = airportService.GetCitiesByCountry(country);
         return Ok(cities);
     }
 
     [HttpPost]
-    public ActionResult CreateAirport([FromBody] AirportCreationModel airport)
+    public ActionResult CreateAirport([FromBody] AirportModel airport)
     {
         if (airport == null)
         {
             return BadRequest("Debe ingresar los datos del aeropuerto.");
         }
 
-        var result = airportCreationService.CreateAirport(airport);
+        var result = airportService.CreateAirport(airport);
 
         if (string.IsNullOrEmpty(result))
         {

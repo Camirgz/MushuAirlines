@@ -5,15 +5,15 @@ using System.Data.SqlClient;
 
 namespace backend.Repositories
 {
-    public class AirportCreationRepository
+    public class AirportRepository
     {
         private readonly string _connectionString;
 
-        public AirportCreationRepository()
+        public AirportRepository()
         {
             var builder = WebApplication.CreateBuilder();
             _connectionString =
-                builder.Configuration.GetConnectionString("LoginContext");
+                builder.Configuration.GetConnectionString("AirportContext");
         }
 
         public List<string> GetCountries()
@@ -97,7 +97,7 @@ namespace backend.Repositories
             return count > 0;
         }
 
-        public void InsertAirport(AirportCreationModel airport)
+        public void InsertAirport(AirportModel airport)
         {
             string query = @"
                 INSERT INTO Airport
@@ -127,7 +127,7 @@ namespace backend.Repositories
             });
         }
 
-        public List<AirportCreationModel> GetAirports()
+        public List<AirportModel> GetAirports()
         {
             string query = @"
                 SELECT
@@ -140,7 +140,7 @@ namespace backend.Repositories
             ";
 
             using var connection = new SqlConnection(_connectionString);
-            return connection.Query<AirportCreationModel>(query).ToList();
+            return connection.Query<AirportModel>(query).ToList();
         }
     }
 }
