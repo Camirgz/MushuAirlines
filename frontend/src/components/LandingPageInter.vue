@@ -1,97 +1,94 @@
 <template>
-  <div class="admin-page">
-    <AdminNavbar />
+  <AdminPageLayout>
+    <AdminHero
+      title="Panel de administración"
+      subtitle="Panel de administración para operadores de Mushu Airlines"
+      icon="bi bi-airplane"
+    />
 
-    <main class="admin-main">
-      <section class="admin-hero">
-        <i class="bi bi-airplane hero-icon"></i>
+    <AdminCard v-if="isInternalUser">
+      <h2>Administración de vuelos de la aerolínea</h2>
 
-        <div>
-          <h1>Panel de administración</h1>
-          <p>Panel de administración para operadores de Mushu Airlines</p>
-        </div>
-      </section>
-
-      <section v-if="isInternalUser" class="admin-card">
-        <h2>Administración de vuelos de la aerolínea</h2>
-
-        <div class="option-list">
-          <RouterLink to="/admin/aircraft-types" class="admin-option">
-            <div class="option-left">
-              <div class="option-icon">
-                <i class="bi bi-airplane"></i>
-              </div>
-              <span>Tipos de aeronaves</span>
+      <div class="option-list">
+        <RouterLink to="/admin/aircraft-types" class="admin-option">
+          <div class="option-left">
+            <div class="option-icon">
+              <i class="bi bi-airplane"></i>
             </div>
-
-            <i class="bi bi-chevron-right option-arrow"></i>
-          </RouterLink>
-
-          <RouterLink to="/admin/routes" class="admin-option">
-            <div class="option-left">
-              <div class="option-icon">
-                <i class="bi bi-geo-alt"></i>
-              </div>
-              <span>Rutas</span>
-            </div>
-
-            <i class="bi bi-chevron-right option-arrow"></i>
-          </RouterLink>
-
-          <RouterLink to="/admin/airports" class="admin-option">
-            <div class="option-left">
-              <div class="option-icon">
-                <i class="bi bi-airplane-engines"></i>
-              </div>
-              <span>Aeropuertos</span>
-            </div>
-
-            <i class="bi bi-chevron-right option-arrow"></i>
-          </RouterLink>
-        </div>
-
-        <hr class="section-line" />
-
-        <h2>Administración de usuarios de la aerolínea</h2>
-
-        <div class="option-list">
-          <RouterLink to="/admin/users" class="admin-option">
-            <div class="option-left">
-              <div class="option-icon">
-                <i class="bi bi-people"></i>
-              </div>
-              <span>Usuarios administradores y operarios</span>
-            </div>
-
-            <i class="bi bi-chevron-right option-arrow"></i>
-          </RouterLink>
-        </div>
-
-        <hr class="section-line" />
-
-        <h2>Sistema de reportes</h2>
-
-        <div class="empty-reports">
-          <div>
-            <h3>Reportes no disponibles por el momento</h3>
-            <p>
-              Esta sección estará disponible en una futura actualización del sistema.
-            </p>
+            <span>Tipos de aeronaves</span>
           </div>
+
+          <i class="bi bi-chevron-right option-arrow"></i>
+        </RouterLink>
+
+        <RouterLink to="/admin/routes" class="admin-option">
+          <div class="option-left">
+            <div class="option-icon">
+              <i class="bi bi-geo-alt"></i>
+            </div>
+            <span>Rutas</span>
+          </div>
+
+          <i class="bi bi-chevron-right option-arrow"></i>
+        </RouterLink>
+
+        <RouterLink to="/admin/airports" class="admin-option">
+          <div class="option-left">
+            <div class="option-icon">
+              <i class="bi bi-airplane-engines"></i>
+            </div>
+            <span>Aeropuertos</span>
+          </div>
+
+          <i class="bi bi-chevron-right option-arrow"></i>
+        </RouterLink>
+      </div>
+
+      <hr class="section-line" />
+
+      <h2>Administración de usuarios de la aerolínea</h2>
+
+      <div class="option-list">
+        <RouterLink to="/admin/users" class="admin-option">
+          <div class="option-left">
+            <div class="option-icon">
+              <i class="bi bi-people"></i>
+            </div>
+            <span>Usuarios administradores y operarios</span>
+          </div>
+
+          <i class="bi bi-chevron-right option-arrow"></i>
+        </RouterLink>
+      </div>
+
+      <hr class="section-line" />
+
+      <h2>Sistema de reportes</h2>
+
+      <div class="empty-reports">
+        <div>
+          <h3>Reportes no disponibles por el momento</h3>
+          <p>
+            Esta sección estará disponible en una futura actualización del sistema.
+          </p>
         </div>
-      </section>
-    </main>
-  </div>
+      </div>
+    </AdminCard>
+  </AdminPageLayout>
 </template>
 
 <script>
-import AdminNavbar from "@/components/layout/AdminNavbar.vue";
+import AdminPageLayout from "@/components/layout/AdminPageLayout.vue";
+import AdminHero from "@/components/admin/ui/AdminHero.vue";
+import AdminCard from "@/components/admin/ui/AdminCard.vue"
 
 export default {
   name: "LandingPageInter",
 
   components: {
-    AdminNavbar,
+    AdminPageLayout,
+    AdminHero,
+    AdminCard,
   },
 
   data() {
