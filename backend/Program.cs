@@ -21,6 +21,10 @@ builder.Services.AddScoped<
     PurchaseConfirmationRepository>();
 
 builder.Services.AddScoped<
+    IQrService, 
+    QrService>();
+
+builder.Services.AddScoped<
     IEmailPurchaseService,
     EmailPurchaseService>();
 
