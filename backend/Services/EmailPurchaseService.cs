@@ -1,7 +1,10 @@
 using backend.Interfaces;
 using backend.Model;
+using System.IO;
 using System.Net;
+using backend.Templates;
 using System.Net.Mail;
+using System.Net.Mime;
 using System.Text;
 
 namespace backend.Services
@@ -10,11 +13,13 @@ namespace backend.Services
     {
         private readonly string from;
         private readonly string password;
+        private readonly IQrService qrService;
 
-        public EmailPurchaseService(IConfiguration configuration)
+        public EmailPurchaseService(IConfiguration configuration, IQrService qrService)
         {
             from =configuration["EmailSettings:From"];
             password =configuration["EmailSettings:Password"];
+            this.qrService = qrService;
         }
 
         public void SendPurchaseConfirmationEmail(PurchaseConfirmationModel model)
@@ -24,48 +29,26 @@ namespace backend.Services
                 EnableSsl = true, Credentials = new NetworkCredential(from,password)
             };
 
-            var body = new StringBuilder();
+            // view of the email body with purchase details
+            string body = PurchaseEmailTemplate.Build(model);
+            
+            // Qr code image as byte array from reservation code to use in the html body
+            byte[] qrImage = qrService.GenerateQr(model.ReservationCode);
+            MemoryStream stream = new MemoryStream(qrImage);
+            LinkedResource qrResource = new LinkedResource(stream, "image/png");
+            qrResource.ContentId = "qrcode";
 
-            body.AppendLine($"Hola {model.FullName}");
-            body.AppendLine("");
-            body.AppendLine("Su compra fue realizada correctamente.");
-            body.AppendLine("");
-            body.AppendLine($"Código de reserva: {model.ReservationCode}");
-            body.AppendLine($"QR: {model.ReservationCode}");
-            body.AppendLine($"Número de factura: {model.InvoiceNumber}");
-            body.AppendLine("");
-            body.AppendLine("INFORMACIÓN DEL CLIENTE");
-            body.AppendLine($"Nombre: {model.FullName}");
-            body.AppendLine($"Pasaporte: {model.PassportNumber}");
-            body.AppendLine("");
-            body.AppendLine("INFORMACIÓN DEL VUELO");
-            body.AppendLine($"Número de vuelo: {model.FlightNumber}");
-            body.AppendLine($"Tipo de avión: {model.AircraftType}");
-            body.AppendLine($"Origen: {model.OriginAirport}");
-            body.AppendLine($"Destino: {model.DestinationAirport}");
-            body.AppendLine($"Salida: {model.DepartureDate}");
-            body.AppendLine($"Llegada: {model.ArrivalDate}");
-            body.AppendLine($"Escalas: {model.Layover}");
-            body.AppendLine("");
-            body.AppendLine("DESGLOSE DE ASIENTOS");
-            foreach (var detail in model.Details)
-            {
-                body.AppendLine($"{detail.SeatClass}: " + $"{detail.SeatCount} " + $"Subtotal: ${detail.Subtotal}");
-            }
-            body.AppendLine("");
-            body.AppendLine($"Cantidad total de asientos: " +$"{model.TotalSeats}");
-            body.AppendLine($"Metodo de pago: " + $"{model.PaymentMethod}");
-            body.AppendLine($"Total pagado: " +$"${model.TotalPaid}");
-            body.AppendLine("");
-            body.AppendLine("Gracias por volar con Mushu Airlines.");
+            // create the view of the email body with the QR code as linked resource
+            AlternateView htmlView = AlternateView.CreateAlternateViewFromString(body,Encoding.UTF8,MediaTypeNames.Text.Html);
+            htmlView.LinkedResources.Add(qrResource);
             var mail = new MailMessage
             {
                 From = new MailAddress(from),
                 Subject = $"Confirmación de compra - " +$"{model.ReservationCode}",
-                Body = body.ToString(),
-                IsBodyHtml = false
+                IsBodyHtml = true
             };
             mail.To.Add(model.Email);
+            mail.AlternateViews.Add(htmlView);
             client.Send(mail);
         }
     }
