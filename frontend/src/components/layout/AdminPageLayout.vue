@@ -5,17 +5,21 @@
     <main class="admin-main">
       <slot></slot>
     </main>
+
+    <AppFooter />
   </div>
 </template>
 
 <script>
 import AdminNavbar from "@/components/layout/AdminNavbar.vue";
+import AppFooter from "@/components/layout/AppFooter.vue";
 
 export default {
   name: "AdminPageLayout",
 
   components: {
     AdminNavbar,
+    AppFooter,
   },
 };
 </script>
