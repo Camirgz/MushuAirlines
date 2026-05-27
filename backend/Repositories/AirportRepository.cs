@@ -13,7 +13,7 @@ namespace backend.Repositories
         {
             var builder = WebApplication.CreateBuilder();
             _connectionString =
-                builder.Configuration.GetConnectionString("AirportContext");
+                builder.Configuration.GetConnectionString("LoginContext");
         }
 
         public List<string> GetCountries()
