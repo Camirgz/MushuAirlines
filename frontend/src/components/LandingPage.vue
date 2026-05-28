@@ -200,31 +200,31 @@
 
         <div class="flights-panel">
 
-          <!-- Direct results -->
-          <template v-if="flightSearchMode === 'direct'">
-            <p class="results-count">{{ filteredDirectFlights.length }} vuelos directos disponibles</p>
+          <!-- Direct flights — always visible -->
+          <p class="results-count">{{ filteredDirectFlights.length }} {{ filteredDirectFlights.length === 1 ? 'vuelo directo disponible' : 'vuelos directos disponibles' }}</p>
 
-            <div v-if="filteredDirectFlights.length === 0" class="no-results">
-              <i class="bi bi-airplane"></i>
-              <p>No hay vuelos directos disponibles para esta búsqueda.</p>
-            </div>
+          <div v-if="filteredDirectFlights.length === 0" class="no-results">
+            <i class="bi bi-airplane"></i>
+            <p>No hay vuelos directos disponibles para esta búsqueda.</p>
+          </div>
 
-            <FlightResultCard
-              v-for="flight in filteredDirectFlights"
-              :key="flight.id"
-              result-type="direct"
-              :direct-flight="flight"
-              :passenger-count="passengerCount"
-              @select="openFlightDetails"
-            />
-          </template>
+          <FlightResultCard
+            v-for="flight in filteredDirectFlights"
+            :key="flight.id"
+            result-type="direct"
+            :direct-flight="flight"
+            :passenger-count="passengerCount"
+            @select="openFlightDetails"
+          />
 
-          <!-- Stopover results -->
-          <template v-else>
-            <p class="results-count">{{ filteredStopoverResults.length }} itinerarios con escala disponibles</p>
+          <!-- Stopover itineraries — only when mode is 'stopover' -->
+          <template v-if="flightSearchMode === 'stopover'">
+            <p class="results-count results-count--section">
+              {{ filteredStopoverResults.length }} {{ filteredStopoverResults.length === 1 ? 'itinerario con escala disponible' : 'itinerarios con escala disponibles' }}
+            </p>
 
             <div v-if="filteredStopoverResults.length === 0" class="no-results">
-              <i class="bi bi-airplane"></i>
+              <i class="bi bi-arrow-left-right"></i>
               <p>No hay itinerarios con escala disponibles para esta búsqueda.</p>
             </div>
 
@@ -1155,6 +1155,12 @@ export default {
   font-weight: 700;
   color: #1a1a1a;
   margin-bottom: 16px;
+}
+
+.results-count--section {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
 }
 
 .no-results {
