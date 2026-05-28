@@ -150,8 +150,53 @@
     <div class="results-section" v-if="hasSearched">
       <div class="results-layout">
 
-        <aside class="filters-panel">
-          <h3 class="filters-title">Filtros</h3>
+        <div class="sidebar-col">
+
+        <aside class="side-card">
+          <h3 class="side-card-title"><i class="bi bi-sort-down me-2"></i>Ordenar por</h3>
+          <div class="sort-row-list">
+            <button
+              class="sort-row"
+              :class="{ 'sort-row--active': sortBy === 'price-economy' }"
+              @click="sortBy = 'price-economy'"
+            >
+              <i class="bi bi-ticket-perforated"></i> Precio Turista
+            </button>
+            <button
+              class="sort-row"
+              :class="{ 'sort-row--active': sortBy === 'price-business' }"
+              @click="sortBy = 'price-business'"
+            >
+              <i class="bi bi-briefcase"></i> Precio Business
+            </button>
+            <button
+              class="sort-row"
+              :class="{ 'sort-row--active': sortBy === 'duration-asc' }"
+              @click="sortBy = 'duration-asc'"
+            >
+              <i class="bi bi-clock"></i> Duración
+            </button>
+            <button
+              v-if="flightSearchMode === 'stopover'"
+              class="sort-row"
+              :class="{ 'sort-row--active': sortBy === 'layover-asc' }"
+              @click="sortBy = 'layover-asc'"
+            >
+              <i class="bi bi-hourglass-split"></i> Escala más corta
+            </button>
+            <button
+              v-if="flightSearchMode === 'stopover'"
+              class="sort-row"
+              :class="{ 'sort-row--active': sortBy === 'layover-desc' }"
+              @click="sortBy = 'layover-desc'"
+            >
+              <i class="bi bi-hourglass"></i> Escala más larga
+            </button>
+          </div>
+        </aside>
+
+        <aside class="side-card filters-panel">
+          <h3 class="side-card-title">Filtros</h3>
 
           <div class="filter-group">
             <div class="filter-header">
@@ -197,6 +242,8 @@
             />
           </div>
         </aside>
+
+        </div><!-- end .sidebar-col -->
 
         <div class="flights-panel">
 
@@ -505,6 +552,7 @@ export default {
       filterPriceClass: 'economy',
       maxEconomyPrice: 100000,
       maxBusinessPrice: 200000,
+      sortBy: 'price-economy',
 
       passengerCount: 1,
       errorMsg: '',
@@ -564,9 +612,10 @@ export default {
           return true
         })
         .sort((a, b) => {
-          const priceA = isBusiness ? a.priceFirstClass : a.priceEconomy
-          const priceB = isBusiness ? b.priceFirstClass : b.priceEconomy
-          return priceA - priceB
+          if (this.sortBy === 'price-economy') return a.priceEconomy - b.priceEconomy
+          if (this.sortBy === 'price-business') return a.priceFirstClass - b.priceFirstClass
+          if (this.sortBy === 'duration-asc' || this.sortBy === 'layover-asc' || this.sortBy === 'layover-desc') return a.durationHours - b.durationHours
+          return a.priceEconomy - b.priceEconomy
         })
     },
 
@@ -583,13 +632,18 @@ export default {
           return true
         })
         .sort((a, b) => {
-          const priceA = isBusiness
-            ? a.leg1.priceFirstClass + a.leg2.priceFirstClass
-            : a.leg1.priceEconomy + a.leg2.priceEconomy
-          const priceB = isBusiness
-            ? b.leg1.priceFirstClass + b.leg2.priceFirstClass
-            : b.leg1.priceEconomy + b.leg2.priceEconomy
-          return priceA - priceB
+          const durA = a.leg1.durationHours + a.leg2.durationHours
+          const durB = b.leg1.durationHours + b.leg2.durationHours
+          const econA = a.leg1.priceEconomy + a.leg2.priceEconomy
+          const econB = b.leg1.priceEconomy + b.leg2.priceEconomy
+          const busA = a.leg1.priceFirstClass + a.leg2.priceFirstClass
+          const busB = b.leg1.priceFirstClass + b.leg2.priceFirstClass
+          if (this.sortBy === 'price-economy') return econA - econB
+          if (this.sortBy === 'price-business') return busA - busB
+          if (this.sortBy === 'duration-asc') return durA - durB
+          if (this.sortBy === 'layover-asc') return a.layoverMinutes - b.layoverMinutes
+          if (this.sortBy === 'layover-desc') return b.layoverMinutes - a.layoverMinutes
+          return econA - econB
         })
     },
 
@@ -1077,17 +1131,7 @@ export default {
 
 
 .filters-panel {
-  background: white;
-  border-radius: 12px;
-  padding: 20px 22px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
-}
-
-.filters-title {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #1a1a1a;
-  margin-bottom: 20px;
+  /* visual card styles are provided by .side-card */
 }
 
 .filter-group {
@@ -1148,6 +1192,73 @@ export default {
 .flights-panel {
   display: flex;
   flex-direction: column;
+}
+
+/* ─── Sidebar column ─────────────────────────────────────── */
+.sidebar-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.side-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px 22px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
+}
+
+.side-card-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 16px;
+}
+
+/* ─── Sort rows inside the sort card ─────────────────────── */
+.sort-row-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sort-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #555;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s, color 0.15s;
+}
+
+.sort-row i {
+  font-size: 0.9rem;
+  width: 16px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.sort-row:hover {
+  background: #fff0ee;
+  color: var(--color-primary);
+}
+
+.sort-row--active {
+  background: #fff0ee;
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.sort-row--active i {
+  color: var(--color-primary);
 }
 
 .results-count {
