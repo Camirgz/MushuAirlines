@@ -471,7 +471,7 @@
 
             async loadAirports() {
                 try {
-                    const response = await axios.get("http://localhost:5103/api/AirportCreation");
+                    const response = await axios.get("http://localhost:5103/api/airport");
                     this.airports = response.data.map(a => ({
                         code: a.code ?? a.Code,
                         airportName: a.airportName ?? a.AirportName,

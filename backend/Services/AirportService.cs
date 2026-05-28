@@ -3,31 +3,31 @@ using backend.Repositories;
 
 namespace backend.Services
 {
-    public class AirportCreationService
+    public class AirportService
     {
-        private readonly AirportCreationRepository airportCreationRepository;
+        private readonly AirportRepository airportRepository;
 
-        public AirportCreationService()
+        public AirportService()
         {
-            airportCreationRepository = new AirportCreationRepository();
+            airportRepository = new AirportRepository();
         }
 
         public List<string> GetCountries()
         {
-            return airportCreationRepository.GetCountries();
+            return airportRepository.GetCountries();
         }
 
         public List<string> GetCitiesByCountry(string country)
         {
-            return airportCreationRepository.GetCitiesByCountry(country);
+            return airportRepository.GetCitiesByCountry(country);
         }
 
-        public List<AirportCreationModel> GetAirports()
+        public List<AirportModel> GetAirports()
         {
-            return airportCreationRepository.GetAirports();
+            return airportRepository.GetAirports();
         }
 
-        public string CreateAirport(AirportCreationModel airport)
+        public string CreateAirport(AirportModel airport)
         {
             try
             {
@@ -66,17 +66,17 @@ namespace backend.Services
                     return "El código del aeropuerto debe tener exactamente 3 caracteres.";
                 }
 
-                if (!airportCreationRepository.CityBelongsToCountry(airport.Country, airport.City))
+                if (!airportRepository.CityBelongsToCountry(airport.Country, airport.City))
                 {
                     return "La ciudad seleccionada no pertenece al país seleccionado.";
                 }
 
-                if (airportCreationRepository.AirportCodeExists(airport.Code))
+                if (airportRepository.AirportCodeExists(airport.Code))
                 {
                     return "Ya existe un aeropuerto con ese código.";
                 }
 
-                if (airportCreationRepository.AirportNameExists(
+                if (airportRepository.AirportNameExists(
                     airport.AirportName,
                     airport.Country,
                     airport.City
@@ -85,7 +85,7 @@ namespace backend.Services
                     return "Ya existe un aeropuerto con ese nombre en la misma ciudad y país.";
                 }
 
-                airportCreationRepository.InsertAirport(airport);
+                airportRepository.InsertAirport(airport);
 
                 return "";
             }
