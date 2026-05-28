@@ -192,7 +192,7 @@ export default {
       this.loading = true;
 
       try {
-        const response = await fetch("http://localhost:5103/api/AirportCreation");
+        const response = await fetch("http://localhost:5103/api/airport");
 
         if (!response.ok) {
           throw new Error("No se pudieron cargar los aeropuertos.");
