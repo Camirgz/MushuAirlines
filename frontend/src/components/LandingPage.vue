@@ -2,7 +2,6 @@
   <div>
 
     <nav class="navbar bg-white shadow-sm px-4 py-2">
-
       <a class="navbar-brand d-flex align-items-center gap-2" href="#">
         <img src="@/assets/logo.png" alt="Logo" width="42" height="42" class="rounded-2" />
         <div>
@@ -25,7 +24,6 @@
     </nav>
 
     <div class="hero-section">
-
       <div class="hero-plane-bg">✈</div>
 
       <div class="hero-content">
@@ -33,20 +31,11 @@
         <p class="hero-subtitle">Viaja con Mushu Airlines a más de 100 destinos alrededor del mundo</p>
 
         <div class="search-card">
-
           <div class="search-fields">
 
-            <div class="field-group">
-              <label class="field-label"><i class="bi bi-people me-1"></i>Pasajeros</label>
-              <div class="input-box passenger-selector">
-                <button class="passenger-btn" type="button" @click="passengerCount = Math.max(1, passengerCount - 1)">−</button>
-                <span class="passenger-count">{{ passengerCount }}</span>
-                <button class="passenger-btn" type="button" @click="passengerCount = Math.min(9, passengerCount + 1)">+</button>
-              </div>
-            </div>
-
+            <!-- Origin -->
             <div class="field-group autocomplete-wrapper">
-              <label class="field-label">Origen</label>
+              <label class="field-label"><i class="bi bi-geo-alt me-1"></i>Origen</label>
               <div class="input-box" :class="{ focused: showOriginDropdown }">
                 <i class="bi bi-geo-alt field-icon"></i>
                 <input
@@ -75,8 +64,9 @@
               </div>
             </div>
 
+            <!-- Destination -->
             <div class="field-group autocomplete-wrapper">
-              <label class="field-label">Destino</label>
+              <label class="field-label"><i class="bi bi-geo-alt-fill me-1"></i>Destino</label>
               <div class="input-box" :class="{ focused: showDestinationDropdown }">
                 <i class="bi bi-geo-alt field-icon"></i>
                 <input
@@ -105,17 +95,44 @@
               </div>
             </div>
 
+            <!-- Date -->
             <div class="field-group">
-              <label class="field-label">Fecha de ida</label>
+              <label class="field-label"><i class="bi bi-calendar3 me-1"></i>Fecha de salida</label>
               <div class="input-box">
                 <input type="date" v-model="departureDate" />
               </div>
             </div>
 
+            <!-- Passengers -->
             <div class="field-group">
-              <label class="field-label">Fecha de regreso</label>
-              <div class="input-box">
-                <input type="date" v-model="returnDate" />
+              <label class="field-label"><i class="bi bi-people me-1"></i>Pasajeros</label>
+              <div class="input-box passenger-selector">
+                <button class="passenger-btn" type="button" @click="passengerCount = Math.max(1, passengerCount - 1)">−</button>
+                <span class="passenger-count">{{ passengerCount }}</span>
+                <button class="passenger-btn" type="button" @click="passengerCount = Math.min(9, passengerCount + 1)">+</button>
+              </div>
+            </div>
+
+            <!-- Flight type toggle -->
+            <div class="field-group toggle-field-group">
+              <label class="field-label"><i class="bi bi-airplane me-1"></i>Tipo de vuelo</label>
+              <div class="flight-type-toggle" role="group" aria-label="Tipo de vuelo">
+                <button
+                  class="toggle-option"
+                  :class="{ active: flightSearchMode === 'direct' }"
+                  type="button"
+                  @click="flightSearchMode = 'direct'"
+                >
+                  <i class="bi bi-arrow-right me-1"></i>Directo
+                </button>
+                <button
+                  class="toggle-option"
+                  :class="{ active: flightSearchMode === 'stopover' }"
+                  type="button"
+                  @click="flightSearchMode = 'stopover'"
+                >
+                  <i class="bi bi-arrow-left-right me-1"></i>Con escala
+                </button>
               </div>
             </div>
 
@@ -126,7 +143,6 @@
           <button class="search-btn" @click="searchFlights">
             <i class="bi bi-search me-2"></i>Buscar vuelos
           </button>
-
         </div>
       </div>
     </div>
@@ -141,6 +157,20 @@
             <div class="filter-header">
               <span>Precio</span>
               <span class="filter-value">₡{{ filterPriceMin.toLocaleString() }} - ₡{{ filterPriceMax.toLocaleString() }}</span>
+            </div>
+            <div class="price-class-toggle" role="group" aria-label="Clase de precio">
+              <button
+                class="price-class-btn"
+                :class="{ active: filterPriceClass === 'economy' }"
+                type="button"
+                @click="setFilterPriceClass('economy')"
+              >Turista</button>
+              <button
+                class="price-class-btn"
+                :class="{ active: filterPriceClass === 'business' }"
+                type="button"
+                @click="setFilterPriceClass('business')"
+              >Business</button>
             </div>
             <input
               type="range"
@@ -166,72 +196,52 @@
               class="range-slider"
             />
           </div>
-
         </aside>
 
         <div class="flights-panel">
 
-          <p class="results-count">{{ filteredFlights.length }} vuelos disponibles</p>
+          <!-- Direct results -->
+          <template v-if="flightSearchMode === 'direct'">
+            <p class="results-count">{{ filteredDirectFlights.length }} vuelos directos disponibles</p>
 
-          <div v-if="filteredFlights.length === 0" class="no-results">
-            <i class="bi bi-airplane"></i>
-            <p>No hay vuelos disponibles para esta búsqueda.</p>
-          </div>
-
-          <div v-for="flight in filteredFlights" :key="flight.id" class="flight-card" @click="openFlightDetails(flight)">
-
-            <div class="flight-card-header">
-              <div class="airline-info">
-                <div class="airline-icon">
-                  <i class="bi bi-airplane-fill"></i>
-                </div>
-                <span class="airline-name">Mushu Airlines</span>
-              </div>
-              <div class="price-section">
-                <span class="price-label">Clase Turista / persona</span>
-                <span class="price-amount">₡{{ flight.price.toLocaleString() }}</span>
-                <div class="price-total-row">
-                  <span class="price-total-label">{{ passengerCount }} {{ passengerCount === 1 ? 'pasajero' : 'pasajeros' }}</span>
-                  <span class="price-total-amount">₡{{ (flight.price * passengerCount).toLocaleString() }}</span>
-                </div>
-              </div>
+            <div v-if="filteredDirectFlights.length === 0" class="no-results">
+              <i class="bi bi-airplane"></i>
+              <p>No hay vuelos directos disponibles para esta búsqueda.</p>
             </div>
 
-            <div class="flight-row">
-              <div class="flight-time-info">
-                <div class="time">{{ flight.departureTime }}</div>
-                <div class="airport-code-small">
-                  <i class="bi bi-geo-alt-fill" style="font-size:0.7rem;margin-right:2px;"></i>{{ flight.origin }}
-                </div>
-              </div>
+            <FlightResultCard
+              v-for="flight in filteredDirectFlights"
+              :key="flight.id"
+              result-type="direct"
+              :direct-flight="flight"
+              :passenger-count="passengerCount"
+              @select="openFlightDetails"
+            />
+          </template>
 
-              <div class="flight-middle">
-                <span class="duration-text">{{ flight.durationLabel }}</span>
-                <div class="flight-line"></div>
-              </div>
+          <!-- Stopover results -->
+          <template v-else>
+            <p class="results-count">{{ filteredStopoverResults.length }} itinerarios con escala disponibles</p>
 
-              <div class="flight-time-info text-end">
-                <div class="time">{{ flight.arrivalTime }}</div>
-                <div class="airport-code-small">
-                  <i class="bi bi-geo-alt-fill" style="font-size:0.7rem;margin-right:2px;"></i>{{ flight.destination }}
-                </div>
-              </div>
-
-              <div class="select-section">
-                <button class="select-btn" @click.stop="openFlightDetails(flight)">
-                  <i class="bi bi-cart3 me-1"></i>Seleccionar
-                </button>
-              </div>
+            <div v-if="filteredStopoverResults.length === 0" class="no-results">
+              <i class="bi bi-airplane"></i>
+              <p>No hay itinerarios con escala disponibles para esta búsqueda.</p>
             </div>
 
-            <div class="flight-footer">
-              <i class="bi bi-clock" style="font-size:0.78rem;margin-right:4px;color:#888;"></i>
-              <span class="duration-footer">Duración total: {{ flight.durationLabel }}</span>
-            </div>
+            <FlightResultCard
+              v-for="(connection, index) in filteredStopoverResults"
+              :key="index"
+              result-type="stopover"
+              :leg1="connection.leg1"
+              :leg2="connection.leg2"
+              :layover-minutes="connection.layoverMinutes"
+              :connection-city="connection.connectionCity"
+              :passenger-count="passengerCount"
+              @select="handleStopoverSelect"
+            />
+          </template>
 
-          </div>
         </div>
-
       </div>
     </div>
 
@@ -240,6 +250,7 @@
       <p class="adventure-subtitle">Comienza tu búsqueda arriba y descubre nuestras mejores ofertas</p>
     </div>
 
+    <!-- Booking modal — direct flights only -->
     <Transition name="modal-fade">
       <div class="modal-overlay" v-if="selectedFlight" @click.self="closeFlightDetails">
         <div class="flight-modal">
@@ -304,7 +315,7 @@
             </div>
           </div>
 
-          <!-- Distribución de clase -->
+          <!-- Seat class distribution -->
           <div class="modal-section-block">
             <div class="modal-section-title">Distribución de clase</div>
             <div class="modal-class-row">
@@ -332,7 +343,7 @@
             </p>
           </div>
 
-          <!-- Equipaje -->
+          <!-- Luggage -->
           <div class="modal-section-block">
             <div class="modal-section-title">Equipaje</div>
             <div class="modal-class-row">
@@ -361,7 +372,7 @@
             </div>
           </div>
 
-          <!-- Recibo/Resumen de compra -->
+          <!-- Purchase summary -->
           <div class="modal-receipt">
             <div class="modal-section-title">Resumen</div>
 
@@ -405,6 +416,9 @@
 </template>
 
 <script>
+import FlightResultCard from './FlightResultCard.vue'
+import { findStopoverConnections, isOvernightFlight, addDaysToDateString } from '@/services/connectionFinder.js'
+
 function durationToHours(dur) {
   const [h, m] = dur.split(':')
   return parseInt(h) + parseInt(m) / 60
@@ -416,14 +430,12 @@ function durationToLabel(dur) {
   return minutes === 0 ? `${hours}h` : `${hours}h ${minutes}min`
 }
 
-// Maps JS Date.getDay() (0=Sunday) to the Spanish day names stored in the DB
+// Maps JS Date.getDay() (0=Sunday) to the Spanish day names stored in the DB.
 const WEEKDAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
 
-// Pure function — easy to unit-test independently of Vue
-// Returns true when no date is provided (shows all) or when the flight operates on that weekday
+// Returns true when no date is provided or the flight runs on that weekday.
 function flightOperatesOnDate(flight, dateStr) {
   if (!dateStr || !flight.frequency || flight.frequency.length === 0) return true
-  // Construct date locally (year, month-1, day) to avoid UTC-offset day-shift bugs
   const [year, month, day] = dateStr.split('-').map(Number)
   const date = new Date(year, month - 1, day)
   const dayName = WEEKDAY_NAMES[date.getDay()]
@@ -436,6 +448,8 @@ function routeToFlight(r) {
     id: r.code,
     origin: r.originAirport,
     destination: r.destinationAirport,
+    originCity: r.originCity,
+    destinationCity: r.destinationCity,
     duration: r.duration,
     departureTime: r.departureTime,
     arrivalTime: r.arrivalTime,
@@ -450,7 +464,7 @@ function routeToFlight(r) {
     bagPrice: r.bagPrice,
     bagWeight: r.bagWeight,
     bagMultiplier: r.bagMultiplier,
-    // Normalise frequency to always be an array of Spanish day names
+    // Normalise frequency to always be an array of Spanish day names.
     frequency: Array.isArray(r.frequency)
       ? r.frequency
       : (r.frequency || '').split(',').map(d => d.trim()).filter(Boolean),
@@ -460,13 +474,14 @@ function routeToFlight(r) {
 export default {
   name: 'LandingPage',
 
+  components: { FlightResultCard },
+
   data() {
     return {
       airports: [],
       flights: [],
 
       departureDate: '',
-      returnDate: '',
 
       originQuery: '',
       selectedOrigin: null,
@@ -476,13 +491,20 @@ export default {
       selectedDestination: null,
       showDestinationDropdown: false,
 
+      // 'direct' shows direct routes; 'stopover' shows two-leg connections.
+      flightSearchMode: 'direct',
+
       hasSearched: false,
-      searchedFlights: [],
+      directFlightResults: [],
+      stopoverResults: [],
 
       filterPriceMin: 0,
       filterPriceMax: 500,
       priceSliderRange: 500,
       filterDurationMax: 24,
+      filterPriceClass: 'economy',
+      maxEconomyPrice: 100000,
+      maxBusinessPrice: 200000,
 
       passengerCount: 1,
       errorMsg: '',
@@ -512,7 +534,7 @@ export default {
   computed: {
     originSuggestions() {
       if (!this.originQuery) return []
-      const normalize = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '') // strip accents for fuzzy match
+      const normalize = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
       const query = normalize(this.originQuery)
       return this.airports.filter(a =>
         a.code.toLowerCase().startsWith(query) ||
@@ -523,7 +545,7 @@ export default {
 
     destinationSuggestions() {
       if (!this.destinationQuery) return []
-      const normalize = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '') // strip accents for fuzzy match
+      const normalize = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
       const query = normalize(this.destinationQuery)
       return this.airports.filter(a =>
         a.code.toLowerCase().startsWith(query) ||
@@ -532,12 +554,43 @@ export default {
       ).slice(0, 8)
     },
 
-    filteredFlights() {
-      return this.searchedFlights.filter(f => {
-        if (f.price > this.filterPriceMax) return false
-        if (f.durationHours > this.filterDurationMax) return false
-        return true
-      })
+    filteredDirectFlights() {
+      const isBusiness = this.filterPriceClass === 'business'
+      return this.directFlightResults
+        .filter(f => {
+          const price = isBusiness ? f.priceFirstClass : f.priceEconomy
+          if (price > this.filterPriceMax) return false
+          if (f.durationHours > this.filterDurationMax) return false
+          return true
+        })
+        .sort((a, b) => {
+          const priceA = isBusiness ? a.priceFirstClass : a.priceEconomy
+          const priceB = isBusiness ? b.priceFirstClass : b.priceEconomy
+          return priceA - priceB
+        })
+    },
+
+    filteredStopoverResults() {
+      const isBusiness = this.filterPriceClass === 'business'
+      return this.stopoverResults
+        .filter(conn => {
+          const combinedPrice = isBusiness
+            ? conn.leg1.priceFirstClass + conn.leg2.priceFirstClass
+            : conn.leg1.priceEconomy + conn.leg2.priceEconomy
+          const combinedDuration = conn.leg1.durationHours + conn.leg2.durationHours
+          if (combinedPrice > this.filterPriceMax) return false
+          if (combinedDuration > this.filterDurationMax) return false
+          return true
+        })
+        .sort((a, b) => {
+          const priceA = isBusiness
+            ? a.leg1.priceFirstClass + a.leg2.priceFirstClass
+            : a.leg1.priceEconomy + a.leg2.priceEconomy
+          const priceB = isBusiness
+            ? b.leg1.priceFirstClass + b.leg2.priceFirstClass
+            : b.leg1.priceEconomy + b.leg2.priceEconomy
+          return priceA - priceB
+        })
     },
 
     economyCount() {
@@ -560,7 +613,6 @@ export default {
       this.showOriginDropdown = true
     },
     onOriginBlur() {
-      // Delay lets the user click a suggestion before the dropdown hides
       setTimeout(() => { this.showOriginDropdown = false }, 200)
     },
     selectOrigin(airport) {
@@ -596,25 +648,68 @@ export default {
       const origin = this.selectedOrigin.code
       const destination = this.selectedDestination.code
 
-      this.searchedFlights = this.flights
+      // Direct flights —————————————————————————————————————
+      this.directFlightResults = this.flights
         .filter(f => f.origin === origin && f.destination === destination)
         .filter(f => flightOperatesOnDate(f, this.departureDate))
-        .map(f => ({ ...f, date: this.departureDate, arrivalDate: this.departureDate }))
+        .map(f => ({
+          ...f,
+          date: this.departureDate,
+          arrivalDate: isOvernightFlight(f)
+            ? addDaysToDateString(this.departureDate, 1)
+            : this.departureDate,
+        }))
 
-      const maxPrice = this.searchedFlights.length > 0
-        ? Math.max(...this.searchedFlights.map(f => f.price))
-        : 100000
-      const maxDuration = this.searchedFlights.length > 0
-        ? Math.max(...this.searchedFlights.map(f => f.durationHours))
-        : 24
+      // Stopover connections ————————————————————————————————
+      const rawConnections = findStopoverConnections(this.flights, origin, destination, this.departureDate)
 
-      this.priceSliderRange = maxPrice + 5000
-      this.filterPriceMax = maxPrice + 5000
+      this.stopoverResults = rawConnections.map(conn => {
+        const leg1IsOvernight = isOvernightFlight(conn.leg1)
+        const leg1ArrivalDate = leg1IsOvernight
+          ? addDaysToDateString(this.departureDate, 1)
+          : this.departureDate
+
+        const leg2IsOvernight = isOvernightFlight(conn.leg2)
+        const leg2ArrivalDate = leg2IsOvernight
+          ? addDaysToDateString(leg1ArrivalDate, 1)
+          : leg1ArrivalDate
+
+        return {
+          leg1: { ...conn.leg1, date: this.departureDate, arrivalDate: leg1ArrivalDate },
+          leg2: { ...conn.leg2, date: leg1ArrivalDate, arrivalDate: leg2ArrivalDate },
+          layoverMinutes: conn.layoverMinutes,
+          connectionCity: conn.connectionCity,
+          connectionAirportCode: conn.connectionAirportCode,
+        }
+      })
+
+      // Compute per-class price maxes across both result sets.
+      const allEconomyPrices = [
+        ...this.directFlightResults.map(f => f.priceEconomy),
+        ...this.stopoverResults.map(c => c.leg1.priceEconomy + c.leg2.priceEconomy),
+      ]
+      const allBusinessPrices = [
+        ...this.directFlightResults.map(f => f.priceFirstClass),
+        ...this.stopoverResults.map(c => c.leg1.priceFirstClass + c.leg2.priceFirstClass),
+      ]
+      const allDurations = [
+        ...this.directFlightResults.map(f => f.durationHours),
+        ...this.stopoverResults.map(c => c.leg1.durationHours + c.leg2.durationHours),
+      ]
+
+      this.maxEconomyPrice = allEconomyPrices.length > 0 ? Math.max(...allEconomyPrices) : 100000
+      this.maxBusinessPrice = allBusinessPrices.length > 0 ? Math.max(...allBusinessPrices) : 200000
+
+      const activeMax = this.filterPriceClass === 'business' ? this.maxBusinessPrice : this.maxEconomyPrice
+      const maxDuration = allDurations.length > 0 ? Math.max(...allDurations) : 24
+
+      this.priceSliderRange = activeMax + 5000
+      this.filterPriceMax = activeMax + 5000
       this.filterPriceMin = 0
       this.filterDurationMax = Math.ceil(maxDuration) + 1
+
       this.hasSearched = true
 
-      // wait for Vue to render results before scrolling
       this.$nextTick(() => {
         const el = document.querySelector('.results-section')
         if (el) el.scrollIntoView({ behavior: 'smooth' })
@@ -632,6 +727,18 @@ export default {
     closeFlightDetails() {
       this.selectedFlight = null
       document.body.style.overflow = ''
+    },
+
+    handleStopoverSelect(connection) {
+      // Stopover booking flow — available in a future update.
+      console.log('Itinerario con escala seleccionado:', connection)
+    },
+
+    setFilterPriceClass(className) {
+      this.filterPriceClass = className
+      const max = className === 'business' ? this.maxBusinessPrice : this.maxEconomyPrice
+      this.priceSliderRange = max + 5000
+      this.filterPriceMax = max + 5000
     },
 
     getAirportCity(code) {
@@ -688,6 +795,7 @@ export default {
   color: white;
 }
 
+/* ─── Hero ────────────────────────────────────────────────── */
 .hero-section {
   background: linear-gradient(135deg, #c0392b 0%, #e74c3c 35%, #e67e22 70%, #f0a500 100%);
   min-height: 460px;
@@ -731,6 +839,7 @@ export default {
   margin-bottom: 28px;
 }
 
+/* ─── Search card ─────────────────────────────────────────── */
 .search-card {
   background: white;
   border-radius: 16px;
@@ -740,9 +849,10 @@ export default {
 
 .search-fields {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: 1fr 1fr 1fr auto auto;
   gap: 16px;
   margin-bottom: 20px;
+  align-items: end;
 }
 
 .field-label {
@@ -792,6 +902,78 @@ export default {
   cursor: pointer;
 }
 
+/* ─── Passenger stepper ───────────────────────────────────── */
+.passenger-selector {
+  justify-content: space-between;
+  padding: 8px 12px;
+}
+
+.passenger-btn {
+  background: none;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.passenger-btn:hover {
+  background: #fff0ee;
+  border-color: var(--color-primary);
+}
+
+.passenger-count {
+  font-size: 1rem;
+  font-weight: 400;
+  color: #1a1a1a;
+  min-width: 20px;
+  text-align: center;
+}
+
+/* ─── Flight type toggle ──────────────────────────────────── */
+.toggle-field-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.flight-type-toggle {
+  display: flex;
+  background: #f3f4f6;
+  border-radius: var(--radius-pill);
+  padding: 4px;
+  gap: 2px;
+}
+
+.toggle-option {
+  padding: 9px 14px;
+  border-radius: var(--radius-pill);
+  border: none;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #666;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.toggle-option.active {
+  background: white;
+  color: var(--color-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+/* ─── Autocomplete ────────────────────────────────────────── */
 .autocomplete-wrapper {
   position: relative;
 }
@@ -806,7 +988,7 @@ export default {
   border: 1.5px solid #ddd;
   border-top: none;
   border-radius: 0 0 10px 10px;
-  box-shadow: 0 8px 28px rgba(0,0,0,0.15);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.15);
   z-index: 200;
   max-height: 400px;
   overflow-y: auto;
@@ -852,6 +1034,7 @@ export default {
   line-height: 1.3;
 }
 
+/* ─── Misc form elements ──────────────────────────────────── */
 .error-msg {
   color: var(--color-primary);
   font-size: 0.83rem;
@@ -876,6 +1059,7 @@ export default {
 }
 .search-btn:hover { opacity: 0.9; }
 
+/* ─── Results section ─────────────────────────────────────── */
 .results-section {
   background: #f4f6f9;
   min-height: 400px;
@@ -891,11 +1075,12 @@ export default {
   align-items: start;
 }
 
+
 .filters-panel {
   background: white;
   border-radius: 12px;
   padding: 20px 22px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
 }
 
 .filters-title {
@@ -925,6 +1110,35 @@ export default {
   font-size: 0.82rem;
 }
 
+/* ─── Price class toggle inside filters panel ─────────────── */
+.price-class-toggle {
+  display: flex;
+  background: #f3f4f6;
+  border-radius: var(--radius-pill);
+  padding: 3px;
+  gap: 2px;
+  margin-bottom: 10px;
+}
+
+.price-class-btn {
+  flex: 1;
+  padding: 6px 10px;
+  border-radius: var(--radius-pill);
+  border: none;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #666;
+  background: transparent;
+  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.price-class-btn.active {
+  background: white;
+  color: var(--color-primary);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.12);
+}
+
 .range-slider {
   width: 100%;
   accent-color: var(--color-primary);
@@ -934,7 +1148,6 @@ export default {
 .flights-panel {
   display: flex;
   flex-direction: column;
-  gap: 0;
 }
 
 .results-count {
@@ -957,204 +1170,7 @@ export default {
   margin-bottom: 12px;
 }
 
-.flight-card {
-  background: white;
-  border-radius: 12px;
-  padding: 18px 22px 14px;
-  margin-bottom: 12px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
-  transition: box-shadow 0.2s;
-  cursor: pointer;
-}
-.flight-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.12); }
-
-.flight-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 14px;
-}
-
-.airline-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.airline-icon {
-  width: 32px;
-  height: 32px;
-  background: #fff0ee;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-primary);
-  font-size: 0.9rem;
-}
-
-.airline-name {
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: #333;
-}
-
-.price-section {
-  text-align: right;
-}
-
-.price-label {
-  display: block;
-  font-size: 0.72rem;
-  color: var(--color-primary);
-  margin-bottom: 2px;
-}
-
-.price-amount {
-  font-size: 1.5rem;
-  font-weight: 800;
-  background: var(--gradient-brand);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.flight-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.flight-time-info {
-  min-width: 60px;
-}
-
-.time {
-  font-size: 1.35rem;
-  font-weight: 700;
-  color: #1a1a1a;
-  line-height: 1;
-}
-
-.airport-code-small {
-  font-size: 0.78rem;
-  color: #888;
-  margin-top: 3px;
-}
-
-.flight-middle {
-  flex: 1;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
-
-.duration-text {
-  font-size: 0.78rem;
-  color: #888;
-}
-
-.flight-line {
-  width: 100%;
-  height: 1.5px;
-  background: #e0e0e0;
-  position: relative;
-}
-.flight-line::before,
-.flight-line::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #ccc;
-}
-.flight-line::before { left: 0; }
-.flight-line::after { right: 0; }
-
-.select-section {
-  min-width: 110px;
-  text-align: right;
-}
-
-.select-btn {
-  background: var(--gradient-brand);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 18px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-.select-btn:hover { opacity: 0.88; }
-
-.passenger-selector {
-  justify-content: space-between;
-  padding: 8px 12px;
-}
-
-.passenger-btn {
-  background: none;
-  border: 1.5px solid #e0e0e0;
-  border-radius: 6px;
-  width: 28px;
-  height: 28px;
-  font-size: 1.1rem;
-  line-height: 1;
-  cursor: pointer;
-  color: var(--color-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: background 0.15s, border-color 0.15s;
-}
-.passenger-btn:hover {
-  background: #fff0ee;
-  border-color: var(--color-primary);
-}
-
-.passenger-count {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #1a1a1a;
-  min-width: 24px;
-  text-align: center;
-}
-
-.price-total-row {
-  margin-top: 4px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 1px;
-}
-
-.price-total-label {
-  font-size: 0.7rem;
-  color: #aaa;
-}
-
-.price-total-amount {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #888;
-}
-
-.flight-footer {
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid #f0f0f0;
-  font-size: 0.78rem;
-  color: #aaa;
-}
-
+/* ─── Promo section ───────────────────────────────────────── */
 .adventure-section {
   text-align: center;
   padding: 64px 24px;
@@ -1173,6 +1189,7 @@ export default {
   font-size: 0.95rem;
 }
 
+/* ─── Booking modal ───────────────────────────────────────── */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -1226,6 +1243,18 @@ export default {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.airline-icon {
+  width: 32px;
+  height: 32px;
+  background: #fff0ee;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary);
+  font-size: 0.9rem;
 }
 
 .modal-airline-name {
@@ -1352,86 +1381,6 @@ export default {
   color: #1a1a1a;
 }
 
-.modal-price-block {
-  background: #fff8f7;
-  border: 1px solid #fde8e5;
-  border-radius: 10px;
-  padding: 16px 20px;
-  margin-bottom: 20px;
-}
-
-.modal-price-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.88rem;
-  color: #555;
-}
-
-.modal-price-row + .modal-price-row {
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px dashed #f5c5be;
-}
-
-.modal-price-label {
-  font-size: 0.8rem;
-  color: #aaa;
-}
-
-.modal-price-amount {
-  font-size: 1.5rem;
-  font-weight: 800;
-  background: var(--gradient-brand);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.modal-price-total { font-weight: 600; color: #333; }
-
-.modal-total-amount {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #888;
-}
-
-.modal-actions {
-  display: flex;
-  gap: 12px;
-}
-
-.modal-cancel-btn {
-  flex: 1;
-  padding: 12px;
-  background: white;
-  color: #555;
-  border: 1.5px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.modal-cancel-btn:hover { background: #f4f6f9; }
-
-.modal-cart-btn {
-  flex: 2;
-  padding: 12px;
-  background: var(--gradient-brand);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: opacity 0.2s;
-}
-.modal-cart-btn:hover { opacity: 0.88; }
-
 .modal-section-block {
   border: 1px solid #f0f0f0;
   border-radius: 10px;
@@ -1546,11 +1495,44 @@ export default {
   background-clip: text;
 }
 
-.modal-cart-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+.modal-actions {
+  display: flex;
+  gap: 12px;
 }
 
+.modal-cancel-btn {
+  flex: 1;
+  padding: 12px;
+  background: white;
+  color: #555;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.modal-cancel-btn:hover { background: #f4f6f9; }
+
+.modal-cart-btn {
+  flex: 2;
+  padding: 12px;
+  background: var(--gradient-brand);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s;
+}
+.modal-cart-btn:hover { opacity: 0.88; }
+.modal-cart-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ─── Modal transition ────────────────────────────────────── */
 .modal-fade-enter-active,
 .modal-fade-leave-active {
   transition: opacity 0.22s ease;
