@@ -10,14 +10,44 @@
         </div>
       </a>
 
-      <div class="d-flex align-items-center gap-4">
+      <div class="nav-actions">
         <a href="#" class="nav-link-item">
           <i class="bi bi-briefcase me-1"></i>Mis vuelos
         </a>
         <a href="#" class="nav-link-item">
           <i class="bi bi-calendar-check me-1"></i>Check-in
         </a>
-        <a href="/login" class="btn btn-outline-danger rounded-pill px-3 py-1 admin-btn">
+
+        <!-- Management dropdown — admins only -->
+        <div v-if="isAdmin" class="management-wrapper">
+          <button class="management-btn" @click="toggleDropdown">
+            <i class="bi bi-gear me-2"></i>Gestión
+            <i class="bi ms-2" :class="isDropdownOpen ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+          </button>
+          <div v-if="isDropdownOpen" class="management-dropdown">
+            <RouterLink to="/admin" class="dropdown-item-custom" @click="closeDropdown">
+              <i class="bi bi-grid"></i><span>Página principal interna</span>
+            </RouterLink>
+            <RouterLink to="/admin/aircraft-types" class="dropdown-item-custom" @click="closeDropdown">
+              <i class="bi bi-airplane"></i><span>Tipos de aeronaves</span>
+            </RouterLink>
+            <RouterLink to="/admin/routes" class="dropdown-item-custom" @click="closeDropdown">
+              <i class="bi bi-geo-alt"></i><span>Rutas</span>
+            </RouterLink>
+            <RouterLink to="/admin/airports" class="dropdown-item-custom" @click="closeDropdown">
+              <i class="bi bi-airplane-engines"></i><span>Aeropuertos</span>
+            </RouterLink>
+            <RouterLink to="/admin/users" class="dropdown-item-custom" @click="closeDropdown">
+              <i class="bi bi-people"></i><span>Usuarios administradores y operarios</span>
+            </RouterLink>
+          </div>
+        </div>
+
+        <!-- Logged-in: logout button; logged-out: admin login link -->
+        <button v-if="isLoggedIn" class="logout-btn" @click="logout">
+          <i class="bi bi-box-arrow-right me-2"></i>Logout
+        </button>
+        <a v-else href="/login" class="btn btn-outline-danger rounded-pill px-3 py-1 admin-btn">
           <i class="bi bi-person me-1"></i>Admin Login
         </a>
       </div>
@@ -525,6 +555,9 @@ export default {
 
   data() {
     return {
+      userRole: null,
+      isDropdownOpen: false,
+
       airports: [],
       flights: [],
 
@@ -580,6 +613,14 @@ export default {
   },
 
   computed: {
+    isLoggedIn() {
+      return this.userRole !== null
+    },
+
+    isAdmin() {
+      return this.userRole === 'Administrator'
+    },
+
     originSuggestions() {
       if (!this.originQuery) return []
       const normalize = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -661,7 +702,41 @@ export default {
     },
   },
 
+  mounted() {
+    this.userRole = this.getRoleFromToken()
+  },
+
   methods: {
+    getRoleFromToken() {
+      const token = localStorage.getItem('token')
+      if (!token) return null
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]))
+        return (
+          payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ||
+          payload.role ||
+          payload.Role ||
+          null
+        )
+      } catch {
+        return null
+      }
+    },
+
+    toggleDropdown() {
+      this.isDropdownOpen = !this.isDropdownOpen
+    },
+
+    closeDropdown() {
+      this.isDropdownOpen = false
+    },
+
+    logout() {
+      localStorage.removeItem('token')
+      this.userRole = null
+      this.isDropdownOpen = false
+    },
+
     onOriginInput() {
       this.selectedOrigin = null
       this.showOriginDropdown = true
@@ -830,12 +905,20 @@ export default {
   color: #888;
 }
 
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
 .nav-link-item {
   text-decoration: none;
   color: #333;
   font-size: 0.92rem;
+  font-weight: 600;
   display: flex;
   align-items: center;
+  transition: color 0.2s;
 }
 .nav-link-item:hover { color: var(--color-primary); }
 
@@ -847,6 +930,88 @@ export default {
 .admin-btn:hover {
   background: #e74c3c;
   color: white;
+}
+
+/* ─── Management dropdown ─────────────────────────────────── */
+.management-wrapper {
+  position: relative;
+}
+
+.management-btn {
+  padding: 10px 18px;
+  background: var(--gradient-brand-diagonal);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-btn);
+  font-size: 0.9rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  box-shadow: var(--shadow-btn-primary);
+  transition: 0.2s ease;
+}
+
+.management-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-btn-primary-hover);
+}
+
+.management-dropdown {
+  position: absolute;
+  top: 50px;
+  right: 0;
+  width: 320px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-dropdown);
+  padding: 8px;
+  z-index: 200;
+}
+
+.dropdown-item-custom {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: var(--text-dark);
+  padding: 11px 14px;
+  border-radius: 9px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  transition: 0.2s ease;
+}
+
+.dropdown-item-custom i {
+  color: var(--color-accent-soft);
+  font-size: 1rem;
+}
+
+.dropdown-item-custom:hover {
+  background: var(--bg-dropdown-hover);
+  color: var(--color-accent-soft);
+}
+
+/* ─── Logout button ───────────────────────────────────────── */
+.logout-btn {
+  padding: 9px 18px;
+  border: 1px solid #ff4b4b;
+  color: var(--color-primary-hover);
+  border-radius: var(--radius-btn);
+  font-size: 0.9rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  background: var(--bg-card);
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.logout-btn:hover {
+  background: var(--color-primary-hover);
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(240, 24, 24, 0.18);
 }
 
 /* ─── Hero ────────────────────────────────────────────────── */
