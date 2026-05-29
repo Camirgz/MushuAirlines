@@ -5,8 +5,7 @@ namespace backend.Templates
 {
     public static class PurchaseEmailTemplate
     {
-        public static string Build(
-            PurchaseConfirmationModel model)
+        public static string Build(PurchaseConfirmationModel model)
         {
             return $@"
             <!DOCTYPE html>

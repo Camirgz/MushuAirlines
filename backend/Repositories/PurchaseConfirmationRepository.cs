@@ -56,7 +56,7 @@ namespace backend.Repositories
 
         }
 
-        public List<PurchaseDetailModel>GetPurchaseDetails(int purchaseId)
+        public List<SeatClassSubtotal>GetPurchaseDetails(int purchaseId)
         {
             using var connection =new SqlConnection(connectionString);
             string query = @"
@@ -65,7 +65,7 @@ namespace backend.Repositories
             WHERE PurchaseId = @PurchaseId
             ";
 
-            return connection.Query<PurchaseDetailModel>(query,new{PurchaseId = purchaseId}).ToList();
+            return connection.Query<SeatClassSubtotal>(query,new{PurchaseId = purchaseId}).ToList();
         }
     }
 }

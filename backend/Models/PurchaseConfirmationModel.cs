@@ -18,6 +18,6 @@ namespace backend.Model
         public DateTime DepartureDate { get; set; }
         public DateTime ArrivalDate { get; set; }
         public string Layover { get; set; }
-        public List<PurchaseDetailModel> Details { get; set; } = new();
+        public List<SeatClassSubtotal> Details { get; set; } = new();
     }
 }

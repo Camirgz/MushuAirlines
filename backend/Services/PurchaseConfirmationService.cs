@@ -26,6 +26,7 @@ namespace backend.Services
                 throw new Exception("Correo invalido.");
             }
             emailPurchaseService.SendPurchaseConfirmationEmail(purchase);
+            emailPurchaseService.SendInvoiceEmail(purchase);
             return purchase;
         }
 
@@ -37,6 +38,7 @@ namespace backend.Services
                 throw new Exception("Compra no encontrada.");
             }
             emailPurchaseService.SendPurchaseConfirmationEmail(purchase);
+            emailPurchaseService.SendInvoiceEmail(purchase);
         }
     }
 }
