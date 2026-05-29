@@ -13,7 +13,9 @@ import RouteCreationForm from './components/admin/RouteCreationForm.vue';
 import AirportsPage from './components/admin/AirportsPage.vue';
 import AirportCreationForm from './components/admin/AirportCreationForm.vue';
 import UsersPage from './components/admin/UsersPage.vue';
+import PassengerInfoPage from './components/PassengerInfoPage.vue';
 import PurchaseConfirmation from './components/PurchaseConfirmation.vue';
+
 
 import "@/assets/styles/admin-shared.css";
 
@@ -32,6 +34,7 @@ const router = createRouter({
         { path: "/admin/airports", name: "Airports", component: AirportsPage, meta: { requiresAuth: true, allowedRoles: ["Administrator"]} },
         { path: "/admin/airports/create-airport", name: "AirportCreation", component: AirportCreationForm, meta: { requiresAuth: true, allowedRoles: ["Administrator"] } },
         { path: "/admin/users", name: "Users", component: UsersPage, meta: { requiresAuth: true, allowedRoles: ["Administrator"] } },
+        { path: "/purchase/passengers", name: "PassengerInfo", component: PassengerInfoPage },
         { path: "/purchase-confirmation/:id", name: "PurchaseConfirmation", component: PurchaseConfirmation }
     ],
 });

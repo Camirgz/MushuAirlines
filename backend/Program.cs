@@ -39,6 +39,11 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Purchase repositories
+builder.Services.AddScoped<backend.Interfaces.IPassengerRepository,  backend.Repositories.PassengerRepository>();
+builder.Services.AddScoped<backend.Interfaces.IItineraryRepository,  backend.Repositories.ItineraryRepository>();
+builder.Services.AddScoped<backend.Interfaces.IPurchaseRepository,   backend.Repositories.PurchaseRepository>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
