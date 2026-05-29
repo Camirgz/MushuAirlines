@@ -281,7 +281,7 @@ export default {
 
     async loadCountries() {
       try {
-        const response = await fetch("http://localhost:5103/api/AirportCreation/countries");
+        const response = await fetch("http://localhost:5103/api/Airport/countries");
 
         if (!response.ok) {
           throw new Error("No se pudieron cargar los países.");
@@ -305,7 +305,7 @@ export default {
 
       try {
         const response = await fetch(
-          `http://localhost:5103/api/AirportCreation/cities?country=${encodeURIComponent(this.form.country)}`
+          `http://localhost:5103/api/Airport/cities?country=${encodeURIComponent(this.form.country)}`
         );
 
         if (!response.ok) {
@@ -368,7 +368,7 @@ export default {
       this.isSubmitting = true;
 
       try {
-        const response = await fetch("http://localhost:5103/api/AirportCreation", {
+        const response = await fetch("http://localhost:5103/api/airport", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

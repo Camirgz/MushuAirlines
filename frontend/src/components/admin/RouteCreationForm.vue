@@ -2,39 +2,73 @@
     <div>
 
         <nav class="navbar bg-white shadow-sm px-4 py-2">
-            <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+            <RouterLink class="navbar-brand d-flex align-items-center gap-2" to="#">
                 <img src="@/assets/logo.png" width="42" height="42" class="rounded-2" />
                 <div>
                     <div class="brand-name">Mushu Airlines</div>
                     <div class="brand-tagline">Vuela con el dragón</div>
                 </div>
-            </a>
+            </RouterLink>
 
             <div class="d-flex align-items-center gap-4">
-                <a href="#" class="nav-link-item">
-                    <img src="@/assets/BuscarVuelos.png" width="16" />
+                <RouterLink to="#" class="nav-link-item">
+                    <i class="bi bi-search me-2"></i>
                     Buscar vuelos
-                </a>
-                <a href="#" class="nav-link-item">
-                    <img src="@/assets/MisVuelos.png" width="16" />
+                </RouterLink>
+
+                <RouterLink to="#" class="nav-link-item">
+                    <i class="bi bi-briefcase me-2"></i>
                     Mis vuelos
-                </a>
-                <a href="#" class="nav-link-item">
-                    <img src="@/assets/CheckIn.png" width="16" />
+                </RouterLink>
+
+                <RouterLink to="#" class="nav-link-item">
+                    <i class="bi bi-calendar-check me-2"></i>
                     Check-in
-                </a>
-                <a href="/admin" class="btn btn-gradient">
-                    <img src="@/assets/Gestion.png" width="16" />
-                    Gestión
-                </a>
-                <a href="/" class="btn btn-outline-danger rounded-pill px-3 py-1">
-                    <img src="@/assets/Usuario.png" width="16" />
+                </RouterLink>
+
+                <div class="position-relative">
+                    <button class="management-btn" type="button" @click="toggleDropdown">
+                        <i class="bi bi-gear me-2"></i>
+                        Gestión
+                        <i class="bi ms-2" :class="isDropdownOpen ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                    </button>
+
+                    <div v-if="isDropdownOpen" class="management-dropdown">
+                        <RouterLink to="/admin" class="dropdown-item-custom" @click="closeDropdown">
+                            <i class="bi bi-grid"></i>
+                            <span>Página principal interna</span>
+                        </RouterLink>
+
+                        <RouterLink to="/admin/aircraft-types" class="dropdown-item-custom" @click="closeDropdown">
+                            <i class="bi bi-airplane"></i>
+                            <span>Tipos de aeronaves</span>
+                        </RouterLink>
+
+                        <RouterLink to="/admin/routes" class="dropdown-item-custom" @click="closeDropdown">
+                            <i class="bi bi-geo-alt"></i>
+                            <span>Rutas</span>
+                        </RouterLink>
+
+                        <RouterLink to="/admin/airports" class="dropdown-item-custom" @click="closeDropdown">
+                            <i class="bi bi-airplane-engines"></i>
+                            <span>Aeropuertos</span>
+                        </RouterLink>
+
+                        <RouterLink to="/admin/users" class="dropdown-item-custom" @click="closeDropdown">
+                            <i class="bi bi-people"></i>
+                            <span>Usuarios administradores y operarios</span>
+                        </RouterLink>
+                    </div>
+                </div>
+
+                <RouterLink to="/" class="logout-btn">
+                    <i class="bi bi-box-arrow-right me-2"></i>
                     Logout
-                </a>
+                </RouterLink>
             </div>
         </nav>
 
-        <div class="admin-header container mt-5">
+        <main class="admin-header container mt-5">
             <div class="admin-banner">
                 <h1 style="font-weight: bold">
                     <img src="@/assets/GestionBox.png" width="44" class="me-2" />
@@ -42,7 +76,7 @@
                 </h1>
                 <p>Panel de administración para operadores de Mushu Airlines</p>
             </div>
-        </div>
+        </main>
 
         <div class="container mt-4 mb-5 flight-container">
             <div class="flight-card">
@@ -56,7 +90,7 @@
                     <h3 style="font-weight: bold;">+ Crear nueva ruta</h3>
                     <div class="row">
                         <div class="col-md-6 form-group">
-                            <label>Aeropuerto de Origen*</label>
+                            <label>Aeropuerto de Origen<span>*</span></label>
                             <select v-model="form.originAirport" class="form-control" required>
                                 <option value="" disabled>Seleccione un aeropuerto</option>
                                 <option v-for="a in airports" :key="a.code" :value="a.code">{{ a.airportName }} ({{ a.city }})</option>
@@ -64,7 +98,7 @@
                         </div>
 
                         <div class="col-md-6 form-group">
-                            <label>Aeropuerto de Destino*</label>
+                            <label>Aeropuerto de Destino<span>*</span></label>
                             <select v-model="form.destinationAirport" class="form-control" required>
                                 <option value="" disabled>Seleccione un aeropuerto</option>
                                 <option v-for="a in airports" :key="a.code" :value="a.code">{{ a.airportName }} ({{ a.city }})</option>
@@ -72,21 +106,21 @@
                         </div>
 
                         <div class="col-md-4 form-group">
-                            <label>Hora de Salida*</label>
+                            <label>Hora de Salida<span>*</span></label>
                             <div class="input-box">
                                 <input type="time" v-model="form.departureTime" placeholder="00:00" required />
                             </div>
                         </div>
 
                         <div class="col-md-4 form-group">
-                            <label>Hora de Llegada*</label>
+                            <label>Hora de Llegada<span>*</span></label>
                             <div class="input-box">
                                 <input type="time" v-model="form.arrivalTime" placeholder="00:00" required />
                             </div>
                         </div>
 
                         <div class="col-md-4 form-group">
-                            <label>Duración*</label>
+                            <label>Duración<span>*</span></label>
                             <div class="input-box">
                                 <input type="text" v-model="form.duration" placeholder="00:00" required @keypress="onlyNumbersDuration" @input="formatDuration" />
                             </div>
@@ -95,24 +129,24 @@
 
                     <div class="row mt-3">
                         <div class="col-md-6 form-group">
-                            <label>Tipo de Aeronave*</label>
+                            <label>Tipo de Aeronave<span>*</span></label>
                             <select v-model="form.aircraftTypeId" class="form-control" required>
                                 <option value="" disabled>Seleccione un tipo de aeronave</option>
-                                <option v-for="type in aircraftTypes" :key="type.id" :value="type.name">
-                                    {{ type.name }}
+                                <option v-for="type in aircraftTypes" :key="type.model" :value="type.model">
+                                    {{ type.model }}
                                 </option>
                             </select>
                         </div>
                         <div class="col-md-6 form-group">
-                            <label>Código**</label>
+                            <label>Código<span>*</span></label>
                             <div class="input-box">
-                                <input type="text" minlength="6" maxlength="6" v-model="form.code" placeholder="XX0000" required />
+                                <input type="text" minlength="6" maxlength="6" v-model="form.code" placeholder="XX0000" required @input="isValidCode($event)" />
                             </div>
                         </div>
                     </div>
 
                     <div class="form-group mt-4">
-                        <label>Frecuencia*</label>
+                        <label>Frecuencia<span>*</span></label>
                         <div class="day-container">
                             <label v-for="dia in days"
                                    :key="dia.val"
@@ -126,13 +160,13 @@
 
                     <div class="row mt-3">
                         <div class="col-md-6 form-group">
-                            <label>Fecha de inicio*</label>
+                            <label>Fecha de inicio<span>*</span></label>
                             <div class="input-box">
                                 <input type="date" v-model="form.startDate" required />
                             </div>
                         </div>
                         <div class="col-md-6 form-group">
-                            <label>Fecha de finalización*</label>
+                            <label>Fecha de finalización<span>*</span></label>
                             <div class="input-box">
                                 <input type="date" v-model="form.finalizationDate" required />
                             </div>
@@ -142,14 +176,14 @@
                     <h5 class="mt-4" style="font-weight: bold; font-size: x-large">Tarifas</h5>
                     <div class="row">
                         <div class="col-md-6 form-group">
-                            <label>Primera Clase ₡*</label>
+                            <label>Primera Clase ₡<span>*</span></label>
                             <div class="input-box">
                                 <input type="number" min="0" step="0.01" v-model.number="form.priceFirstClass" placeholder="₡ 0.00" @keypress="onlyNumbers" />
                             </div>
                         </div>
 
                         <div class="col-md-6 form-group">
-                            <label>Clase Turista ₡*</label>
+                            <label>Clase Turista ₡<span>*</span></label>
                             <div class="input-box">
                                 <input type="number" min="0" step="0.01" v-model.number="form.priceEconomy" placeholder="₡ 0.00" @keypress="onlyNumbers" />
                             </div>
@@ -159,37 +193,37 @@
                     <h5 class="mt-4">Políticas de Equipaje</h5>
                     <div class="row">
                         <div class="col-md-3 form-group">
-                            <label>Precio equipaje de mano ₡*</label>
+                            <label>Precio equipaje de mano ₡<span>*</span></label>
                             <div class="input-box">
                                 <input type="number" min="0" step="0.01" v-model.number="form.handBagPrice" placeholder="₡ 0.00" @keypress="onlyNumbers" />
                             </div>
                         </div>
 
                         <div class="col-md-3 form-group">
-                            <label>Peso equipaje de mano (kg)*</label>
+                            <label>Peso equipaje de mano (kg)<span>*</span></label>
                             <div class="input-box">
                                 <input type="number" min="0" step="0.01" v-model.number="form.handBagWeight" placeholder="0.00" @keypress="onlyNumbers" />
                             </div>
                         </div>
 
                         <div class="col-md-3 form-group">
-                            <label>Precio equipaje documentado ₡*</label>
+                            <label>Precio equipaje documentado ₡<span>*</span></label>
                             <div class="input-box">
                                 <input type="number" min="0" step="0.01" v-model.number="form.bagPrice" placeholder="₡ 0.00" @keypress="onlyNumbers" />
                             </div>
                         </div>
 
                         <div class="col-md-3 form-group">
-                            <label>Peso equipaje documentado (kg)*</label>
+                            <label>Peso equipaje documentado (kg)<span>*</span></label>
                             <div class="input-box">
                                 <input type="number" min="0" step="0.01" v-model.number="form.bagWeight" placeholder="0.00" @keypress="onlyNumbers" />
                             </div>
                         </div>
 
                         <div class="col-md-4 form-group mt-2">
-                            <label>Multiplicador*</label>
+                            <label>Multiplicador<span>*</span></label>
                             <div class="input-box">
-                                <input type="number" min="0" v-model.number="form.bagMultiplier" placeholder="0.00" @keypress="onlyNumbers" />
+                                <input type="number" min="0" step="0.01" v-model.number="form.bagMultiplier" placeholder="0.00" @keypress="onlyNumbers" />
                             </div>
                         </div>
                     </div>
@@ -325,7 +359,8 @@
                 ],
                 airports: [],
                 aircraftTypes: [],
-                routes: []
+                routes: [],
+                isDropdownOpen: false
             };
         },
 
@@ -349,12 +384,8 @@
 
         methods: {
             validateForm() {
-                if (!this.isValidDuration(this.form.duration)) {
-                    this.errorMessage = "Duración inválida (HH:mm)";
-                    return false;
-                }
 
-                return (
+                const filledData = (
                     this.form.originAirport !== "" &&
                     this.form.destinationAirport !== "" &&
                     this.form.departureTime !== "" &&
@@ -367,6 +398,26 @@
                     this.form.startDate !== "" &&
                     this.form.finalizationDate !== ""
                 );
+
+                if (!filledData) {
+                    this.errorMessage = "Todos los campos son requeridos";
+                    return false;
+                }
+
+                if (this.form.destinationAirport === this.form.originAirport) {
+                    this.errorMessage = "El aeropuerto de destino no puede ser el mismo que el de origen";
+                    return false;
+                }
+
+                if (!this.isValidDuration(this.form.duration)) {
+                    this.errorMessage = "Duración inválida (HH:mm)";
+                    return false;
+                }
+                if (!this.validateDates()) {
+                    return false;
+                }
+
+                return true;
             },
 
             async saveFlight() {
@@ -374,7 +425,6 @@
                 this.errorMessage = "";
 
                 if (!this.validateForm()) {
-                    this.errorMessage = "Todos los campos son requeridos";
                     return;
                 }
 
@@ -391,6 +441,7 @@
 
                     this.successMessage = "Vuelo creado correctamente.";
                     await this.loadRoutes();
+                    this.$router.push("/admin/routes");
 
                     this.form = {
                         code: "",
@@ -420,7 +471,7 @@
 
             async loadAirports() {
                 try {
-                    const response = await axios.get("http://localhost:5103/api/AirportCreation");
+                    const response = await axios.get("http://localhost:5103/api/airport");
                     this.airports = response.data.map(a => ({
                         code: a.code ?? a.Code,
                         airportName: a.airportName ?? a.AirportName,
@@ -471,7 +522,7 @@
 
             async loadAircraftTypes() {
                 try {
-                    const response = await axios.get("http://localhost:5103/api/aircraft-type");
+                    const response = await axios.get("http://localhost:5103/api/aircraft");
                     this.aircraftTypes = response.data;
                 } catch (error) {
                     this.errorMessage = "No se pudieron cargar los tipos de avión.";
@@ -507,7 +558,57 @@
                 let minutes = raw.slice(2, 4);
                 if (minutes.length === 2 && Number(minutes) > 59) minutes = '59';
                 this.form.duration = minutes ? `${hours}:${minutes}` : hours;
+            },
+            toggleDropdown() {
+                this.isDropdownOpen = !this.isDropdownOpen;
+            },
+            closeDropdown() {
+                this.isDropdownOpen = false;
+            },
+            goToPage(page) {
+                if (page >= 1 && page <= this.totalPages) this.currentPage = page;
+            },
+            isValidCode(event) {
+                let value = event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                let letters = value.slice(0, 2).replace(/[^A-Z]/g, '');
+                let numbers = value.slice(2, 6).replace(/[^0-9]/g, '');
+                this.form.code = letters + numbers;
+                const regex = /^[A-Z]{2}\d{4}$/;
+                return regex.test(this.form.code);
+            },
+            validateDates() {
+                if (!this.form.startDate || !this.form.finalizationDate) {
+                    this.errorMessage = "Ambas fechas son obligatorias";
+                    return false;
+                }
+
+                const start = new Date(this.form.startDate);
+                const end = new Date(this.form.finalizationDate);
+
+                if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+                    this.errorMessage = "El formato de las fechas no es válido (use MM/DD/YYYY)";
+                    return false;
+                }
+
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                start.setHours(0, 0, 0, 0);
+                end.setHours(0, 0, 0, 0);
+
+                if (start.getTime() < today.getTime()) {
+                    this.errorMessage = "La fecha de inicio no puede ser anterior a la fecha de hoy";
+                    return false;
+                }
+
+                if (end.getTime() <= start.getTime()) {
+                    this.errorMessage = "La fecha de finalización debe ser posterior a la fecha de inicio";
+                    return false;
+                }
+
+                this.errorMessage = "";
+                return true;
             }
+
         }
     };
 </script>
@@ -560,14 +661,160 @@
         color: #888;
     }
 
-    .nav-link-item {
-        color: #333;
-        font-size: 0.9rem;
-        text-decoration: none;
+    .navbar {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        min-height: 72px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #ffffff;
+        border-bottom: 1px solid #e5e7eb;
     }
 
-        .nav-link-item:hover {
-            color: #e74c3c;
+    .navbar-brand {
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .logo-img {
+        width: 46px;
+        height: 46px;
+        border-radius: 12px;
+        object-fit: contain;
+        border: none;
+    }
+
+    .brand-name {
+        font-weight: 800;
+        font-size: 1.25rem;
+        color: #111827;
+        line-height: 1.1;
+    }
+
+    .brand-tagline {
+        font-size: 0.78rem;
+        color: #6b7280;
+    }
+
+    .nav-actions {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+    }
+
+    .nav-link-item {
+        text-decoration: none;
+        color: #111827;
+        font-size: 0.95rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        transition: 0.2s ease;
+    }
+
+        .nav-link-item i {
+            font-size: 1.05rem;
+            color: #374151;
+            transition: 0.2s ease;
+        }
+
+        .nav-link-item:hover,
+        .nav-link-item:hover i {
+            color: #f01818;
+        }
+
+    /* Management dropdown */
+    .management-wrapper {
+        position: relative;
+    }
+
+    .management-btn {
+        padding: 11px 18px;
+        background: linear-gradient(135deg, #f01818 0%, #ff5a00 45%, #ffc400 100%);
+        color: #ffffff;
+        border: none;
+        border-radius: 10px;
+        font-weight: 800;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        box-shadow: 0 8px 18px rgba(240, 24, 24, 0.22);
+        transition: 0.2s ease;
+    }
+
+        .management-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 22px rgba(240, 24, 24, 0.28);
+        }
+
+    .management-dropdown {
+        position: absolute;
+        top: 56px;
+        right: 0;
+        width: 340px;
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        box-shadow: 0 18px 38px rgba(15, 23, 42, 0.16);
+        padding: 8px;
+        z-index: 200;
+    }
+
+    .dropdown-item-custom {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-decoration: none;
+        color: #111827;
+        padding: 12px 14px;
+        border-radius: 9px;
+        font-size: 0.9rem;
+        font-weight: 700;
+        transition: 0.2s ease;
+    }
+
+        .dropdown-item-custom i {
+            color: #ff3b00;
+            font-size: 1rem;
+            transition: 0.2s ease;
+        }
+
+        .dropdown-item-custom:hover {
+            background: #fff4ed;
+            color: #ff3b00;
+        }
+
+        .dropdown-item-custom.router-link-active,
+        .dropdown-item-custom.router-link-exact-active {
+            background: linear-gradient(135deg, #f01818 0%, #ff5a00 45%, #ffc400 100%);
+            color: #ffffff;
+        }
+
+            .dropdown-item-custom.router-link-active i,
+            .dropdown-item-custom.router-link-exact-active i {
+                color: #ffffff;
+            }
+
+    /* Logout button */
+    .logout-btn {
+        text-decoration: none;
+        padding: 10px 18px;
+        border: 1px solid #ff4b4b;
+        color: #f01818;
+        border-radius: 10px;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        background: #ffffff;
+        transition: 0.2s ease;
+    }
+
+        .logout-btn:hover {
+            background: #f01818;
+            color: #ffffff;
+            box-shadow: 0 8px 18px rgba(240, 24, 24, 0.18);
         }
 
     .btn-gradient {

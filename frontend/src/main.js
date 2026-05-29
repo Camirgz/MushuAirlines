@@ -15,6 +15,8 @@ import AirportCreationForm from './components/admin/AirportCreationForm.vue';
 import UsersPage from './components/admin/UsersPage.vue';
 import PurchaseConfirmation from './components/PurchaseConfirmation.vue';
 
+import "@/assets/styles/admin-shared.css";
+
 const router = createRouter({
     history: createWebHistory(),
     routes: [
