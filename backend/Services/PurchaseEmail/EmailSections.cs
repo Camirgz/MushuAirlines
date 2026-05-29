@@ -149,9 +149,6 @@ namespace backend.Templates
 
             foreach (var detail in model.Details)
             {
-                decimal pricePerSeat =
-                    detail.Subtotal / detail.SeatCount;
-
                 ticketsHtml.Append($@"
                     <div class='ticket-card'>
 
@@ -164,7 +161,7 @@ namespace backend.Templates
                         </div>
 
                         <div class='ticket-price'>
-                            ${pricePerSeat:N2}
+                            ${detail.PricePerSeat:N2}
                             por asiento
                         </div>
 
@@ -240,7 +237,32 @@ namespace backend.Templates
                 </div>
             ";
         }
+        public static string BuildInvoiceNoteSection()
+        {
+            return @"
+                <div style='
+                    padding:0 30px 30px 30px;
+                '>
 
+                    <div style='
+                        background:#eef5ff;
+                        border:1px solid #c7dcff;
+                        border-radius:12px;
+                        padding:22px;
+                        text-align:center;
+                        color:#4b5563;
+                        line-height:1.6;
+                    '>
+
+                        Esta factura ha sido generada automáticamente.
+                        Para cualquier aclaración, por favor contacta
+                        a nuestro equipo de soporte.
+
+                    </div>
+
+                </div>
+            ";
+        }
         public static string BuildFooterSection()
         {
             return $@"
