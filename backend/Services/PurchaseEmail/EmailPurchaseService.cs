@@ -51,5 +51,24 @@ namespace backend.Services
             mail.AlternateViews.Add(htmlView);
             client.Send(mail);
         }
+        public void SendInvoiceEmail(PurchaseConfirmationModel model)
+        {
+            var client = new SmtpClient("smtp.gmail.com",587)
+            {
+                EnableSsl = true,
+                Credentials = new NetworkCredential(from,password)
+            };
+
+            string body = InvoiceEmailTemplate.Build(model);
+            var mail = new MailMessage
+            {
+                From = new MailAddress(from),
+                Subject = $"Factura de compra - {model.InvoiceNumber}",
+                Body = body,
+                IsBodyHtml = true
+            };
+            mail.To.Add(model.Email);
+            client.Send(mail);
+        }
     }
 }
