@@ -31,18 +31,23 @@
       />
 
       <AdminCard>
+
+        <!-- ── Passenger list ── -->
         <div
           v-for="(passenger, index) in passengers"
           :key="index"
         >
           <div v-if="index > 0" class="passenger-separator">
-            <hr class="section-line" />
+            <hr />
           </div>
 
           <div class="passenger-header">
-            <h3 class="passenger-title">Pasajero {{ index + 1 }}</h3>
+            <div class="passenger-title-group">
+              <h3 class="passenger-title">Pasajero {{ index + 1 }}</h3>
+              <span v-if="index === 0" class="titular-badge">Titular de la Compra</span>
+            </div>
             <button
-              v-if="passengers.length > 1"
+              v-if="index > 0"
               class="btn-remove"
               type="button"
               @click="removePassenger(index)"
@@ -52,6 +57,7 @@
           </div>
 
           <div class="form-grid">
+
             <div class="form-group">
               <label class="field-label">Nombre <span class="required">*</span></label>
               <input
@@ -73,23 +79,32 @@
             </div>
 
             <div class="form-group">
-              <label class="field-label">Tipo de Documento <span class="required">*</span></label>
-              <select class="field-input field-select" v-model="passenger.documentType">
-                <option value="" disabled>Seleccione tipo</option>
-                <option>Pasaporte</option>
-                <option>Cédula de Identidad</option>
-                <option>Cédula de Residencia</option>
-                <option>DIMEX</option>
+              <label class="field-label">Género <span class="required">*</span></label>
+              <select class="field-input field-select" v-model="passenger.gender">
+                <option value="" disabled>Seleccione género</option>
+                <option value="Hombre">Hombre</option>
+                <option value="Mujer">Mujer</option>
+                <option value="NoEspecifica">No especifica</option>
               </select>
             </div>
 
             <div class="form-group">
-              <label class="field-label">Número de Documento <span class="required">*</span></label>
+              <label class="field-label">País del Pasaporte <span class="required">*</span></label>
               <input
                 type="text"
                 class="field-input"
-                v-model="passenger.documentNumber"
-                placeholder="Ingrese número"
+                v-model="passenger.passportCountry"
+                placeholder="Ej: Costa Rica"
+              />
+            </div>
+
+            <div class="form-group">
+              <label class="field-label">Número de Pasaporte <span class="required">*</span></label>
+              <input
+                type="text"
+                class="field-input"
+                v-model="passenger.passportNumber"
+                placeholder="Ingrese número de pasaporte"
               />
             </div>
 
@@ -102,31 +117,109 @@
               />
             </div>
 
-            <div class="form-group">
-              <label class="field-label">Correo Electrónico <span class="required">*</span></label>
-              <input
-                type="email"
-                class="field-input"
-                v-model="passenger.email"
-                placeholder="ejemplo@correo.com"
-              />
-            </div>
+            <!-- Email and phone only for the titular passenger -->
+            <template v-if="index === 0">
+              <div class="form-group">
+                <label class="field-label">Correo Electrónico <span class="required">*</span></label>
+                <input
+                  type="email"
+                  class="field-input"
+                  v-model="passenger.email"
+                  placeholder="ejemplo@correo.com"
+                />
+              </div>
 
-            <div class="form-group">
-              <label class="field-label">Teléfono <span class="required">*</span></label>
-              <input
-                type="tel"
-                class="field-input"
-                v-model="passenger.phone"
-                placeholder="+506 00000000"
-              />
-            </div>
+              <div class="form-group">
+                <label class="field-label">Teléfono <span class="required">*</span></label>
+                <input
+                  type="tel"
+                  class="field-input"
+                  v-model="passenger.phone"
+                  placeholder="+506 00000000"
+                />
+              </div>
+            </template>
+
           </div>
         </div>
 
         <button class="btn-add-passenger" type="button" @click="addPassenger">
           <i class="bi bi-plus-lg"></i> Agregar Pasajero
         </button>
+
+        <!-- ── Baggage section ── -->
+        <div class="baggage-separator">
+          <hr />
+        </div>
+
+        <div class="baggage-section">
+          <h3 class="passenger-title" style="margin-bottom: 20px;">Equipaje</h3>
+
+          <div class="baggage-grid">
+
+            <div class="baggage-type">
+              <div class="baggage-type-header">
+                <i class="bi bi-briefcase-fill"></i>
+                <span>Equipaje de Mano</span>
+              </div>
+              <div class="baggage-fields">
+                <div class="form-group">
+                  <label class="field-label">Cantidad</label>
+                  <input
+                    type="number"
+                    class="field-input"
+                    v-model.number="baggage.handCount"
+                    min="0"
+                    placeholder="0"
+                  />
+                </div>
+                <div class="form-group">
+                  <label class="field-label">Peso por pieza (kg)</label>
+                  <input
+                    type="number"
+                    class="field-input"
+                    v-model.number="baggage.handWeight"
+                    min="0"
+                    step="0.5"
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div class="baggage-type">
+              <div class="baggage-type-header">
+                <i class="bi bi-archive-fill"></i>
+                <span>Equipaje Documentado</span>
+              </div>
+              <div class="baggage-fields">
+                <div class="form-group">
+                  <label class="field-label">Cantidad</label>
+                  <input
+                    type="number"
+                    class="field-input"
+                    v-model.number="baggage.checkedCount"
+                    min="0"
+                    placeholder="0"
+                  />
+                </div>
+                <div class="form-group">
+                  <label class="field-label">Peso por pieza (kg)</label>
+                  <input
+                    type="number"
+                    class="field-input"
+                    v-model.number="baggage.checkedWeight"
+                    min="0"
+                    step="0.5"
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
       </AdminCard>
 
       <div class="action-row">
@@ -157,19 +250,26 @@ export default {
   data() {
     return {
       passengers: [this.emptyPassenger()],
+      baggage: {
+        handCount:     0,
+        handWeight:    0,
+        checkedCount:  0,
+        checkedWeight: 0,
+      },
     };
   },
 
   methods: {
     emptyPassenger() {
       return {
-        firstName: "",
-        lastName: "",
-        documentType: "",
-        documentNumber: "",
-        birthDate: "",
-        email: "",
-        phone: "",
+        firstName:       "",
+        lastName:        "",
+        gender:          "",
+        passportCountry: "",
+        passportNumber:  "",
+        birthDate:       "",
+        email:           "",
+        phone:           "",
       };
     },
 
@@ -243,7 +343,14 @@ export default {
 
 /* ── Passenger section ── */
 .passenger-separator {
-  margin-bottom: 4px;
+  margin: 8px 0;
+}
+
+.passenger-separator hr,
+.baggage-separator hr {
+  border: none;
+  border-top: 1.5px solid #f0f0f0;
+  margin: 0;
 }
 
 .passenger-header {
@@ -253,11 +360,29 @@ export default {
   margin-bottom: 20px;
 }
 
+.passenger-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .passenger-title {
   font-size: 1.05rem;
   font-weight: 700;
   color: #1a1a1a;
   margin: 0;
+}
+
+.titular-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #e74c3c 0%, #f39c12 100%);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 .btn-remove {
@@ -355,6 +480,38 @@ export default {
   background: #fff5f5;
 }
 
+/* ── Baggage section ── */
+.baggage-separator {
+  margin: 28px 0 24px;
+}
+
+.baggage-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.baggage-type-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.93rem;
+  font-weight: 700;
+  color: #374151;
+  margin-bottom: 14px;
+}
+
+.baggage-type-header i {
+  font-size: 1.1rem;
+  color: #e74c3c;
+}
+
+.baggage-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
 /* ── Action row ── */
 .action-row {
   display: flex;
@@ -400,6 +557,10 @@ export default {
 /* ── Responsive ── */
 @media (max-width: 640px) {
   .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .baggage-grid {
     grid-template-columns: 1fr;
   }
 
