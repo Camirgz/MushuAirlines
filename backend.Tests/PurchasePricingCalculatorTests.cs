@@ -129,7 +129,7 @@ public class PurchasePricingCalculatorTests
         var detail = result.DetailByClass.Single(d => d.SeatClass == "Economy");
         Assert.Multiple(() =>
         {
-            Assert.That(detail.Count,    Is.EqualTo(expectedCount));
+            Assert.That(detail.SeatCount, Is.EqualTo(expectedCount));
             Assert.That(detail.Subtotal, Is.EqualTo(expectedSubtotal));
         });
     }
@@ -155,7 +155,7 @@ public class PurchasePricingCalculatorTests
         var detail = result.DetailByClass.Single(d => d.SeatClass == "FirstClass");
         Assert.Multiple(() =>
         {
-            Assert.That(detail.Count,    Is.EqualTo(expectedCount));
+            Assert.That(detail.SeatCount, Is.EqualTo(expectedCount));
             Assert.That(detail.Subtotal, Is.EqualTo(expectedSubtotal));
         });
     }
