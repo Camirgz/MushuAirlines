@@ -25,13 +25,13 @@ public class PurchasePricingCalculator : IPricingCalculator
                              "Valores válidos: 'Economy', 'FirstClass'.")
                 };
 
-                int count = group.Count();
+                int seatcount = group.Count();
 
                 return new SeatClassSubtotal
                 {
                     SeatClass = group.Key,
-                    Count     = count,
-                    Subtotal  = count * unitPrice
+                    SeatCount = seatcount,
+                    Subtotal  = seatcount * unitPrice
                 };
             })
             .ToList();
@@ -39,7 +39,7 @@ public class PurchasePricingCalculator : IPricingCalculator
         return new PurchaseTotals
         {
             TotalPaid    = detailByClass.Sum(d => d.Subtotal),
-            TotalSeats   = detailByClass.Sum(d => d.Count),
+            TotalSeats   = detailByClass.Sum(d => d.SeatCount),
             DetailByClass = detailByClass
         };
     }
