@@ -61,7 +61,7 @@ describe('Sort bar – direct flights', () => {
     makeFlight(2, 30000, 2),
     makeFlight(3, 55000, 4),
   ]
-  const base = { hasSearched: true, directFlightResults: flights, filterPriceMax: 999999, filterDurationMax: 24, filterPriceClass: 'economy' }
+  const base = { hasSearched: true, directFlightResults: flights, filterPriceMin: 0, filterPriceMax: 999999, priceSliderRange: 999999, filterDurationMin: 0, filterDurationMax: 24, filterPriceClass: 'economy' }
 
   it('orders flights cheapest first by default', async () => {
     const wrapper = await mount({ ...base, sortBy: 'price-economy' })
@@ -89,7 +89,7 @@ describe('Sort bar – stopover flights', () => {
   }
 
   const connections = [makeConn(180), makeConn(45), makeConn(90)]
-  const base = { stopoverResults: connections, filterPriceMax: 9999999, filterDurationMax: 24, filterPriceClass: 'economy' }
+  const base = { stopoverResults: connections, filterPriceMin: 0, filterPriceMax: 9999999, priceSliderRange: 9999999, filterDurationMin: 0, filterDurationMax: 24, filterPriceClass: 'economy' }
 
   it('shows the shortest layover first when the user picks Escala más corta', async () => {
     const wrapper = await mount({ ...base, sortBy: 'layover-asc' })

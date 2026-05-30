@@ -231,7 +231,6 @@
           <div class="filter-group">
             <div class="filter-header">
               <span>Precio</span>
-              <span class="filter-value">₡{{ filterPriceMin.toLocaleString() }} - ₡{{ filterPriceMax.toLocaleString() }}</span>
             </div>
             <div class="price-class-toggle" role="group" aria-label="Clase de precio">
               <button
@@ -247,29 +246,72 @@
                 @click="setFilterPriceClass('business')"
               >Business</button>
             </div>
-            <input
-              type="range"
-              v-model.number="filterPriceMax"
-              :min="filterPriceMin"
-              :max="priceSliderRange"
-              step="100"
-              class="range-slider"
-            />
+            <div class="dual-range">
+              <div class="dual-range-track" :style="priceTrackStyle"></div>
+              <input
+                type="range"
+                v-model.number="filterPriceMin"
+                :min="0"
+                :max="priceSliderRange"
+                step="100"
+                class="range-slider"
+              />
+              <input
+                type="range"
+                v-model.number="filterPriceMax"
+                :min="0"
+                :max="priceSliderRange"
+                step="100"
+                class="range-slider"
+              />
+            </div>
+            <div class="range-inputs">
+              <div class="range-input-group">
+                <span>₡</span>
+                <input type="number" v-model.number="filterPriceMin" :min="0" :max="filterPriceMax" step="100" />
+              </div>
+              <span class="range-separator">–</span>
+              <div class="range-input-group">
+                <span>₡</span>
+                <input type="number" v-model.number="filterPriceMax" :min="filterPriceMin" :max="priceSliderRange" step="100" />
+              </div>
+            </div>
           </div>
 
           <div class="filter-group">
             <div class="filter-header">
               <span>Duración</span>
-              <span class="filter-value">0h - {{ filterDurationMax }}h</span>
             </div>
-            <input
-              type="range"
-              v-model.number="filterDurationMax"
-              min="0"
-              max="24"
-              step="0.5"
-              class="range-slider"
-            />
+            <div class="dual-range">
+              <div class="dual-range-track" :style="durationTrackStyle"></div>
+              <input
+                type="range"
+                v-model.number="filterDurationMin"
+                min="0"
+                :max="filterDurationMax"
+                step="0.5"
+                class="range-slider"
+              />
+              <input
+                type="range"
+                v-model.number="filterDurationMax"
+                :min="filterDurationMin"
+                max="24"
+                step="0.5"
+                class="range-slider"
+              />
+            </div>
+            <div class="range-inputs">
+              <div class="range-input-group">
+                <input type="number" v-model.number="filterDurationMin" min="0" :max="filterDurationMax" step="0.5" />
+                <span>h</span>
+              </div>
+              <span class="range-separator">–</span>
+              <div class="range-input-group">
+                <input type="number" v-model.number="filterDurationMax" :min="filterDurationMin" max="24" step="0.5" />
+                <span>h</span>
+              </div>
+            </div>
           </div>
         </aside>
 
@@ -581,6 +623,7 @@ export default {
       filterPriceMin: 0,
       filterPriceMax: 500,
       priceSliderRange: 500,
+      filterDurationMin: 0,
       filterDurationMax: 24,
       filterPriceClass: 'economy',
       maxEconomyPrice: 100000,
@@ -648,8 +691,8 @@ export default {
       return this.directFlightResults
         .filter(f => {
           const price = isBusiness ? f.priceFirstClass : f.priceEconomy
-          if (price > this.filterPriceMax) return false
-          if (f.durationHours > this.filterDurationMax) return false
+          if (price < this.filterPriceMin || price > this.filterPriceMax) return false
+          if (f.durationHours < this.filterDurationMin || f.durationHours > this.filterDurationMax) return false
           return true
         })
         .sort((a, b) => {
@@ -668,8 +711,8 @@ export default {
             ? conn.leg1.priceFirstClass + conn.leg2.priceFirstClass
             : conn.leg1.priceEconomy + conn.leg2.priceEconomy
           const combinedDuration = conn.leg1.durationHours + conn.leg2.durationHours
-          if (combinedPrice > this.filterPriceMax) return false
-          if (combinedDuration > this.filterDurationMax) return false
+          if (combinedPrice < this.filterPriceMin || combinedPrice > this.filterPriceMax) return false
+          if (combinedDuration < this.filterDurationMin || combinedDuration > this.filterDurationMax) return false
           return true
         })
         .sort((a, b) => {
@@ -700,10 +743,47 @@ export default {
       const checkedBags = this.checkedBagsCount * f.bagPrice * f.bagMultiplier
       return tickets + handBags + checkedBags
     },
+
+    priceTrackStyle() {
+      const range = this.priceSliderRange
+      if (!range) return {}
+      const low = (this.filterPriceMin / range) * 100
+      const high = (this.filterPriceMax / range) * 100
+      return {
+        background: `linear-gradient(to right, #e5e7eb ${low}%, var(--color-primary) ${low}%, var(--color-primary) ${high}%, #e5e7eb ${high}%)`
+      }
+    },
+
+    durationTrackStyle() {
+      const low = (this.filterDurationMin / 24) * 100
+      const high = (this.filterDurationMax / 24) * 100
+      return {
+        background: `linear-gradient(to right, #e5e7eb ${low}%, var(--color-primary) ${low}%, var(--color-primary) ${high}%, #e5e7eb ${high}%)`
+      }
+    },
   },
 
   mounted() {
     this.userRole = this.getRoleFromToken()
+  },
+
+  watch: {
+    filterPriceMin(val) {
+      const clamped = Math.max(0, Math.min(+val || 0, this.filterPriceMax))
+      if (clamped !== val) this.filterPriceMin = clamped
+    },
+    filterPriceMax(val) {
+      const clamped = Math.max(this.filterPriceMin, Math.min(+val || this.priceSliderRange, this.priceSliderRange))
+      if (clamped !== val) this.filterPriceMax = clamped
+    },
+    filterDurationMin(val) {
+      const clamped = Math.max(0, Math.min(+val || 0, this.filterDurationMax))
+      if (clamped !== val) this.filterDurationMin = clamped
+    },
+    filterDurationMax(val) {
+      const clamped = Math.max(this.filterDurationMin, Math.min(+val || 24, 24))
+      if (clamped !== val) this.filterDurationMax = clamped
+    },
   },
 
   methods: {
@@ -835,6 +915,7 @@ export default {
       this.priceSliderRange = activeMax + 5000
       this.filterPriceMax = activeMax + 5000
       this.filterPriceMin = 0
+      this.filterDurationMin = 0
       this.filterDurationMax = Math.ceil(maxDuration) + 1
 
       this.hasSearched = true
@@ -1348,10 +1429,133 @@ export default {
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.12);
 }
 
+.dual-range {
+  position: relative;
+  height: 28px;
+  margin-bottom: 2px;
+}
+
+.dual-range-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 5px;
+  border-radius: 3px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.dual-range input[type="range"] {
+  position: absolute;
+  width: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin: 0;
+  padding: 0;
+  height: 5px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  pointer-events: none;
+  outline: none;
+  z-index: 1;
+}
+
+.dual-range input[type="range"]::-webkit-slider-runnable-track {
+  background: transparent;
+  height: 5px;
+  border: none;
+}
+
+.dual-range input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: all;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.25);
+  margin-top: -5.5px;
+}
+
+.dual-range input[type="range"]::-moz-range-track {
+  background: transparent;
+  height: 5px;
+  border: none;
+}
+
+.dual-range input[type="range"]::-moz-range-thumb {
+  pointer-events: all;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.25);
+}
+
 .range-slider {
   width: 100%;
   accent-color: var(--color-primary);
   cursor: pointer;
+}
+
+.range-inputs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.range-input-group {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex: 1;
+  background: #f3f4f6;
+  border-radius: 6px;
+  padding: 4px 7px;
+  border: 1px solid #e5e7eb;
+  transition: border-color 0.15s;
+}
+
+.range-input-group:focus-within {
+  border-color: var(--color-primary);
+}
+
+.range-input-group span {
+  font-size: 0.72rem;
+  color: #888;
+  flex-shrink: 0;
+}
+
+.range-input-group input[type="number"] {
+  width: 100%;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  font-size: 0.8rem;
+  color: #333;
+  outline: none;
+  -moz-appearance: textfield;
+}
+
+.range-input-group input[type="number"]::-webkit-outer-spin-button,
+.range-input-group input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.range-separator {
+  font-size: 0.8rem;
+  color: #aaa;
+  flex-shrink: 0;
 }
 
 .flights-panel {
