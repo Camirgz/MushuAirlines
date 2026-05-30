@@ -1,0 +1,39 @@
+USE MushuAirlines;
+
+go
+CREATE FUNCTION GetExistingScheduledFlight
+(
+    @RouteCode VARCHAR(100),
+    @DepartureDate DATE
+)
+RETURNS INT
+AS
+BEGIN
+    DECLARE @FlightId INT;
+
+    SELECT @FlightId = Id
+    FROM ScheduledFlight
+    WHERE RouteCode = @RouteCode
+    AND DepartureDate = @DepartureDate;
+
+    RETURN @FlightId;
+END;
+
+go
+CREATE FUNCTION GetAircraftCode
+(
+    @AircraftType VARCHAR(20)
+)
+RETURNS INT
+AS
+BEGIN
+    DECLARE @AircraftCode INT;
+
+    SELECT TOP 1 @AircraftCode = a.Code
+    FROM Aircraft a
+    JOIN AircraftType t
+        ON a.Type = t.Id
+    WHERE t.AircraftType = @AircraftType;
+
+    RETURN @AircraftCode;
+END;
