@@ -1,3 +1,6 @@
+using backend.Interfaces;
+using backend.Repositories;
+using backend.Services;
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +14,23 @@ builder.Services.AddCors(options =>
                             .AllowAnyMethod();
                     });
 });
+// DEPENDENCY INJECTION
+
+builder.Services.AddScoped<
+    IPurchaseConfirmationRepository,
+    PurchaseConfirmationRepository>();
+
+builder.Services.AddScoped<
+    IQrService, 
+    QrService>();
+
+builder.Services.AddScoped<
+    IEmailPurchaseService,
+    EmailPurchaseService>();
+
+builder.Services.AddScoped<
+    PurchaseConfirmationService>();
+
 // Add services to the container.
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
