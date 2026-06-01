@@ -33,14 +33,14 @@ public class InternalFlightsController : ControllerBase
             string finalDestination = (!string.IsNullOrWhiteSpace(destination) ? destination : detination).Trim().ToUpper();
 
             if (string.IsNullOrWhiteSpace(finalDestination))
-                return BadRequest(new { error = "El parámetro de destino es requerido." });
+                return BadRequest(new { error = "Destination parameter is required" });
 
             var flights = _service.GetFlights(finalDestination);
             return Ok(new { flights });
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { error = "Ocurrió un error interno al procesar los vuelos." });
+            return StatusCode(500, new { error = "An internal error occurred while processing the flights." });
         }
     }
 

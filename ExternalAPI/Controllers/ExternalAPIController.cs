@@ -20,7 +20,7 @@ public class ExternalApiController : ControllerBase
         [FromQuery] string destination,
         [FromQuery] string earliestArrival,
         [FromQuery] string latestArrival,
-        [FromQuery] int quantityOfPassengers = 1,
+        [FromQuery] int quantityOfPassengers,
         [FromQuery] string apiKey = "")
     {
         if (string.IsNullOrWhiteSpace(apiKey)) return Unauthorized();
@@ -29,7 +29,9 @@ public class ExternalApiController : ControllerBase
         if (!DateTime.TryParse(earliestArrival, out var targetEarliest) || !DateTime.TryParse(latestArrival, out var targetLatest))
             return BadRequest(new { code = "INVALID_DATE_FORMAT", description = "Dates must be in ISO format YYYY-MM-DDThh:mm" });
 
-        if (quantityOfPassengers < 1) return BadRequest(new { code = "INVALID_PASSENGERS", description = "quantityOfPassengers must be >= 1" });
+        if (quantityOfPassengers == null) return BadRequest(new { code = "MISSING_PASSENGERS", description = "quantityOfPassengers is required" });
+
+        if (quantityOfPassengers < 1 || quantityOfPassengers == null) return BadRequest(new { code = "INVALID_PASSENGERS", description = "quantityOfPassengers is required and it's value must be >= 1" });
         if (targetEarliest > targetLatest) return BadRequest(new { code = "INVALID_DATE_RANGE", description = "earliestArrival must be before latestArrival" });
 
         try
@@ -40,11 +42,11 @@ public class ExternalApiController : ControllerBase
         catch (Client.BackendException ex)
         {
             if (ex.StatusCode == 401) return Unauthorized();
-            return StatusCode(500, new { code = "INTERNAL_SERVER_ERROR", description = "El backend interno respondió con error.", details = ex.Message });
+            return StatusCode(500, new { code = "INTERNAL_SERVER_ERROR", description = ex.Message });
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { code = "INTERNAL_SERVER_ERROR", exceptionMessage = ex.Message });
+            return StatusCode(500, new { code = "INTERNAL_SERVER_ERROR", description = ex.Message });
         }
     }
 
