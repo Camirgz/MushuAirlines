@@ -44,6 +44,10 @@ builder.Services.AddScoped<backend.Interfaces.IPassengerRepository,  backend.Rep
 builder.Services.AddScoped<backend.Interfaces.IItineraryRepository,  backend.Repositories.ItineraryRepository>();
 builder.Services.AddScoped<backend.Interfaces.IPurchaseRepository,   backend.Repositories.PurchaseRepository>();
 
+
+builder.Services.AddScoped<IAirportRepository, AirportRepository>();
+builder.Services.AddScoped<IAirportService, AirportService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
