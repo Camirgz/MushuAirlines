@@ -16,13 +16,15 @@
         <div class="card-header-row">
           <h2>Aeropuertos ({{ filteredAirports.length }})</h2>
 
-          <RouterLink
-            to="/admin/airports/create-airport"
-            class="create-airport-btn"
-          >
-            <i class="bi bi-plus-lg me-2"></i>
-            Crear Aeropuerto
-          </RouterLink>
+          <div v-if="isAdmin">
+            <RouterLink
+              to="/admin/airports/create-airport"
+              class="create-airport-btn"
+            >
+              <i class="bi bi-plus-lg me-2"></i>
+              Crear Aeropuerto
+            </RouterLink>
+          </div>
         </div>
 
         <div class="search-wrapper">
@@ -70,37 +72,42 @@
                       Ver
                     </button>
 
-                    <button
-                      type="button"
-                      class="edit-btn"
-                      @click="openAirportEdit(airport)"
-                    >
-                      <i class="bi bi-pencil me-1"></i>
-                      Editar
-                    </button>
+                    <div v-if="isAdmin">
+                      <button
+                        type="button"
+                        class="edit-btn"
+                        @click="openAirportEdit(airport)"
+                      >
+                        <i class="bi bi-pencil me-1"></i>
+                        Editar
+                      </button>
+                    </div>
                   </div>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
-
+          
         <div v-else class="empty-state">
-          <div class="empty-icon">
-            <i class="bi bi-airplane-engines"></i>
+          <div v-if="isAdmin">
+            <div class="empty-icon">
+              <i class="bi bi-airplane-engines"></i>
+            </div>
+  
+            <h3>{{ emptyTitle }}</h3>
+            <p>{{ emptyDescription }}</p>
+  
+            <RouterLink
+              to="/admin/airports/create-airport"
+              class="empty-create-btn"
+            >
+              <i class="bi bi-plus-lg me-2"></i>
+              Crear primer aeropuerto
+            </RouterLink>
           </div>
-
-          <h3>{{ emptyTitle }}</h3>
-          <p>{{ emptyDescription }}</p>
-
-          <RouterLink
-            to="/admin/airports/create-airport"
-            class="empty-create-btn"
-          >
-            <i class="bi bi-plus-lg me-2"></i>
-            Crear primer aeropuerto
-          </RouterLink>
         </div>
+
       </AdminCard>
     </template>
 
@@ -258,10 +265,15 @@ export default {
       saving: false,
       successMessage: "",
       errorMessage: "",
+      userRole: null,
     };
   },
 
   computed: {
+    isAdmin() {
+      return this.userRole === "Administrator";
+    },
+
     isListMode() {
       return !this.selectedAirport && !this.editingAirport;
     },
