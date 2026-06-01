@@ -4,11 +4,11 @@ using System.Data.SqlClient;
 
 namespace backend.Repositories;
 
-public class ExternalApiRepository
+public class ExternalApiRepository : IExternalApiRepository
 {
     private readonly string _connectionString;
 
-    public ExternalApiRepository()
+    public ExternalApiRepository(IConfiguration configuration)
     {
         var builder = WebApplication.CreateBuilder();
         _connectionString = builder.Configuration.GetConnectionString("LoginContext");
@@ -34,40 +34,31 @@ public class ExternalApiRepository
         );
     }
 
-    public List<dynamic> GetFlights(string origin, string destination,
-        DateTime earliestDeparture, DateTime latestDeparture)
+    public List<dynamic> GetFlights(string destination)
     {
         using var connection = new SqlConnection(_connectionString);
         return connection.Query(@"
-        SELECT
-            r.Code AS FlightGUID,
-            r.DepartureTime,
-            r.ArrivalTime,
-            r.Duration,
-            r.OriginAirport,
-            r.DestinationAirport,
-            r.PriceEconomy,
-            r.PriceFirstClass,
-            r.HandBagPrice,
-            r.BagPrice,
-            ao.AirportName AS OriginName,
-            ao.City AS OriginCity,
-            ad.AirportName AS DestinationName,
-            ad.City AS DestinationCity
-        FROM dbo.Route r
-        JOIN dbo.Airport ao ON r.OriginAirport = ao.Code
-        JOIN dbo.Airport ad ON r.DestinationAirport = ad.Code
-        WHERE r.OriginAirport = @Origin
-          AND r.DestinationAirport = @Destination
-          AND r.StartDate <= @LatestDeparture
-          AND r.FinalizationDate >= @EarliestDeparture",
-            new
-            {
-                Origin = origin,
-                Destination = destination,
-                EarliestDeparture = earliestDeparture,
-                LatestDeparture = latestDeparture
-            }
+            SELECT
+                r.Code AS FlightGUID,
+                r.DepartureTime,
+                r.ArrivalTime,
+                r.Duration,
+                r.OriginAirport,
+                r.DestinationAirport,
+                r.PriceEconomy,
+                r.PriceFirstClass,
+                r.HandBagPrice,
+                r.BagPrice,
+                ao.AirportName AS OriginName,
+                ao.City AS OriginCity,
+                ad.AirportName AS DestinationName,
+                ad.City AS DestinationCity,
+                r.Frequency
+            FROM dbo.Route r
+            LEFT JOIN dbo.Airport ao ON TRIM(r.OriginAirport) = TRIM(ao.Code)
+            LEFT JOIN dbo.Airport ad ON TRIM(r.DestinationAirport) = TRIM(ad.Code)
+            WHERE TRIM(r.DestinationAirport) = TRIM(@Destination)",
+            new { Destination = destination }
         ).ToList();
     }
 }
