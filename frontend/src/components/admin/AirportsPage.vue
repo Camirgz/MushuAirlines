@@ -439,7 +439,7 @@ export default {
           });
         }
 
-        this.successMessage = "El aeropuerto fue actualizado correctamente.";
+        this.successMessage = "El nombre del aeropuerto fue actualizado correctamente.";
 
         await this.delay(1800);
 
