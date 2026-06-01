@@ -43,40 +43,29 @@ public class Client : IClient
         if (backendResult?.Flights == null)
             return new List<object>();
 
+        var cultureEs = new System.Globalization.CultureInfo("es-ES");
         return backendResult.Flights
-            /*
-            .Where(f => {
-                if (DateTime.TryParse(f.ArrivalTime, out var flightArrival))
+            .Where(f =>
+            {
+                string searchDayEs = targetLatest.ToString("dddd", cultureEs).ToLower().Trim();
+
+                if (!string.IsNullOrWhiteSpace(f.Frequency))
                 {
-                    if (flightArrival < targetEarliest || flightArrival > targetLatest)
-                        return false;
+                    var frequencyDays = f.Frequency.ToLower()
+                                                    .Split(',')
+                                                    .Select(d => d.Trim())
+                                                    .ToList();
 
-                    if (!string.IsNullOrWhiteSpace(f.Frequency))
-                    {
-                        string diaEs = flightArrival.ToString("dddd", new CultureInfo("es-ES")).ToLower();
-                        string diaEn = flightArrival.ToString("dddd", new CultureInfo("en-US")).ToLower();
-                        string freq = f.Frequency.ToLower();
-
-                        if (diaEs.Contains("miér") || diaEs.Contains("mier")) return freq.Contains("mié") || freq.Contains("mie") || freq.Contains("wed");
-                        if (diaEs.Contains("sáb") || diaEs.Contains("sab")) return freq.Contains("sáb") || freq.Contains("sab") || freq.Contains("sat");
-
-                        return freq.Contains(diaEs) || freq.Contains(diaEn) ||
-                               (diaEn == "sunday" && freq.Contains("domingo")) ||
-                               (diaEn == "monday" && freq.Contains("lunes")) ||
-                               (diaEn == "tuesday" && freq.Contains("martes")) ||
-                               (diaEn == "thursday" && freq.Contains("jueves")) ||
-                               (diaEn == "friday" && freq.Contains("viernes"));
-                    }
-                    return true;
+                    return frequencyDays.Contains(searchDayEs);
                 }
+
                 return false;
             })
-            */
             .Select(f => (object)new
             {
                 flightGUID = f.FlightGUID,
-                departureTime = f.DepartureTime,
-                arrivalTime = f.ArrivalTime,
+                departureTime = targetEarliest.ToString("yyyy-MM-dd") + "T" + f.DepartureTime,
+                arrivalTime = targetLatest.ToString("yyyy-MM-dd") + "T" + f.ArrivalTime,
                 duration = f.Duration,
                 departureAirport = new
                 {
