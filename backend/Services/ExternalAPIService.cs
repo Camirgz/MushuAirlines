@@ -1,97 +1,76 @@
 using backend.Model;
 using backend.Repositories;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace backend.Services;
 
 public class ExternalApiService
 {
-	private readonly ExternalApiRepository _repo;
+    private readonly IExternalApiRepository _repo;
 
-	public ExternalApiService()
-	{
-		_repo = new ExternalApiRepository();
-	}
+    public ExternalApiService(IExternalApiRepository repo)
+    {
+        _repo = repo;
+    }
 
-	public bool ValidateApiKey(string apiKey)
-	{
-		var hash = HashApiKey(apiKey);
-		return _repo.ValidateApiKey(hash);
-	}
+    public bool ValidateApiKey(string apiKey)
+    {
+        if (string.IsNullOrWhiteSpace(apiKey)) return false;
+        var bytes = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(apiKey));
+        var hash = Convert.ToHexString(bytes).ToLower();
+        return _repo.ValidateApiKey(hash);
+    }
 
-	public string RegisterConsumer(string name)
-	{
+    public string RegisterConsumer(string name)
+    {
+        var randomBytes = System.Security.Cryptography.RandomNumberGenerator.GetBytes(128);
+        var apiKey = Convert.ToHexString(randomBytes).ToLower();
 
-		var randomBytes = RandomNumberGenerator.GetBytes(128);
-		var apiKey = Convert.ToHexString(randomBytes).ToLower();
+        var bytes = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(apiKey));
+        var hash = Convert.ToHexString(bytes).ToLower();
 
-		var consumer = new APIConsumerModel
-		{
-			Name = name,
-			ApiKeyHash = HashApiKey(apiKey),
-			IsActive = true
-		};
+        var consumer = new APIConsumerModel
+        {
+            Name = name,
+            ApiKeyHash = hash,
+            IsActive = true
+        };
 
-		_repo.InsertConsumer(consumer);
-		return apiKey;
-	}
+        _repo.InsertConsumer(consumer);
+        return apiKey;
+    }
 
-	public (bool valid, string errorCode, string errorDescription) ValidateQueryParams(
-		string origin, string destination, string earliestDeparture,
-		string latestDeparture, int quantityOfPassengers)
-	{
-		if (string.IsNullOrWhiteSpace(origin) || string.IsNullOrWhiteSpace(destination))
-			return (false, "MISSING_AIRPORTS", "Origin and destination airports are required");
+    public List<ExternalFlightDTO> GetFlights(string destination)
+    {
+        var rows = _repo.GetFlights(destination);
 
-		if (!DateTime.TryParse(earliestDeparture, out _) || !DateTime.TryParse(latestDeparture, out _))
-			return (false, "INVALID_DATE_FORMAT", "Dates must be in ISO format YYYY-MM-DDThh:mm");
+        return rows.Select(r => {
+            var rowDict = (IDictionary<string, object>)r;
 
-		if (quantityOfPassengers < 1)
-			return (false, "INVALID_PASSENGERS", "quantityOfPassengers must be >= 1");
-
-		if (DateTime.Parse(earliestDeparture) > DateTime.Parse(latestDeparture))
-			return (false, "INVALID_DATE_RANGE", "earliestDeparture must be before latestDeparture");
-
-		return (true, "", "");
-	}
-
-	public List<ExternalFlightDTO> GetFlights(string origin, string destination,
-		string earliestDeparture, string latestDeparture, int quantityOfPassengers)
-	{
-		var earliest = DateTime.Parse(earliestDeparture);
-		var latest = DateTime.Parse(latestDeparture);
-
-		var rows = _repo.GetFlights(origin, destination, earliest, latest);
-
-		return rows.Select(r => new ExternalFlightDTO
-		{
-			FlightGUID = r.FlightGUID,
-			DepartureTime = Convert.ToDateTime(r.DepartureTime).ToString("yyyy-MM-ddTHH:mm"),
-			ArrivalTime = Convert.ToDateTime(r.ArrivalTime).ToString("yyyy-MM-ddTHH:mm"),
-			Duration = r.Duration,
-			OriginAirport = new AirportDTO
-			{
-				Code = r.OriginAirport,
-				AirportName = r.OriginName,
-				City = r.OriginCity
-			},
-			ArrivalAirport = new AirportDTO
-			{
-				Code = r.DestinationAirport,
-				AirportName = r.DestinationName,
-				City = r.DestinationCity
-			},
-			PriceEconomyClass = r.PriceEconomy,
-			PriceFirstClass = r.PriceFirstClass,
-			HandbagPrice = r.HandBagPrice,
-			BagPrice = r.BagPrice
-		}).ToList();
-	}
-
-	private static string HashApiKey(string apiKey)
-	{
-		var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(apiKey));
-		return Convert.ToHexString(bytes).ToLower();
-	}
+            return new ExternalFlightDTO
+            {
+                FlightGUID = rowDict.ContainsKey("FlightGUID") ? Convert.ToString(rowDict["FlightGUID"])! : "UNKNOWN",
+                DepartureTime = rowDict.ContainsKey("DepartureTime") && rowDict["DepartureTime"] != null
+                    ? Convert.ToDateTime(rowDict["DepartureTime"]).ToString("yyyy-MM-ddTHH:mm") : string.Empty,
+                ArrivalTime = rowDict.ContainsKey("ArrivalTime") && rowDict["ArrivalTime"] != null
+                    ? Convert.ToDateTime(rowDict["ArrivalTime"]).ToString("yyyy-MM-ddTHH:mm") : string.Empty,
+                Duration = rowDict.ContainsKey("Duration") ? Convert.ToString(rowDict["Duration"])! : "00:00",
+                OriginAirport = new AirportDTO
+                {
+                    Code = rowDict.ContainsKey("OriginAirport") ? Convert.ToString(rowDict["OriginAirport"])! : "UNK",
+                    AirportName = rowDict.ContainsKey("OriginName") && rowDict["OriginName"] != null ? Convert.ToString(rowDict["OriginName"])! : "Default Airport",
+                    City = rowDict.ContainsKey("OriginCity") && rowDict["OriginCity"] != null ? Convert.ToString(rowDict["OriginCity"])! : "Unknown City"
+                },
+                ArrivalAirport = new AirportDTO
+                {
+                    Code = rowDict.ContainsKey("DestinationAirport") ? Convert.ToString(rowDict["DestinationAirport"])! : "UNK",
+                    AirportName = rowDict.ContainsKey("DestinationName") && rowDict["DestinationName"] != null ? Convert.ToString(rowDict["DestinationName"])! : "Default Airport",
+                    City = rowDict.ContainsKey("DestinationCity") && rowDict["DestinationCity"] != null ? Convert.ToString(rowDict["DestinationCity"])! : "Unknown City"
+                },
+                PriceEconomyClass = rowDict.ContainsKey("PriceEconomy") && rowDict["PriceEconomy"] != null ? Convert.ToDecimal(rowDict["PriceEconomy"]) : 0m,
+                PriceFirstClass = rowDict.ContainsKey("PriceFirstClass") && rowDict["PriceFirstClass"] != null ? Convert.ToDecimal(rowDict["PriceFirstClass"]) : 0m,
+                HandbagPrice = rowDict.ContainsKey("HandBagPrice") && rowDict["HandBagPrice"] != null ? Convert.ToDecimal(rowDict["HandBagPrice"]) : 0m,
+                BagPrice = rowDict.ContainsKey("BagPrice") && rowDict["BagPrice"] != null ? Convert.ToDecimal(rowDict["BagPrice"]) : 0m
+            };
+        }).ToList();
+    }
 }
