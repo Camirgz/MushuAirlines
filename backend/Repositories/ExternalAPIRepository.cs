@@ -10,8 +10,7 @@ public class ExternalApiRepository : IExternalApiRepository
 
     public ExternalApiRepository(IConfiguration configuration)
     {
-        var builder = WebApplication.CreateBuilder();
-        _connectionString = builder.Configuration.GetConnectionString("LoginContext");
+        _connectionString = configuration.GetConnectionString("LoginContext");
     }
 
     public bool ValidateApiKey(string apiKeyHashed)
