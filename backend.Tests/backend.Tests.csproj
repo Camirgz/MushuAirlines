@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <OutputPath>bin/Debug/net10.0/tests</OutputPath>
   </PropertyGroup>
 
   <ItemGroup>
