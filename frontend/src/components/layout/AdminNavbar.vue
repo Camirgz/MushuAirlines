@@ -51,7 +51,6 @@
           </RouterLink>
 
           <RouterLink
-            v-if="isAdmin"
             to="/admin/aircraft-types"
             class="dropdown-item-custom"
             @click="closeDropdown"
@@ -61,7 +60,6 @@
           </RouterLink>
 
           <RouterLink
-            v-if="isAdmin"
             to="/admin/routes"
             class="dropdown-item-custom"
             @click="closeDropdown"
@@ -71,7 +69,6 @@
           </RouterLink>
 
           <RouterLink
-            v-if="isAdmin"
             to="/admin/airports"
             class="dropdown-item-custom"
             @click="closeDropdown"
@@ -117,7 +114,7 @@ export default {
     },
 
     isOperator() {
-        return this.userrole === "Operator";
+        return this.userRole === "Operator";
     },
 
     isInternalUser() {
