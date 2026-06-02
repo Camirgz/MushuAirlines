@@ -5,6 +5,12 @@ namespace backend.Services
     public class PaymentService : IPaymentService
     {
         private const string InsufficientFundsCard = "9999 9999 9999 9999";
+        private readonly IPaymentRepository repository;
+        public PaymentService(
+            IPaymentRepository repository)
+        {
+            this.repository = repository;
+        }
 
         public int ApprovePayment(PaymentModel model)
         {
@@ -28,7 +34,24 @@ namespace backend.Services
              }
             
 
-            // TODO:
+            // TODO: Hacer algo asi
+
+            /* int purchaseId =
+             *     repository.CreatePurchase(
+             *         purchase
+             *     );
+             *
+             * 3. Crear PurchaseDetail
+             *
+             * foreach(var detail in details)
+             * {
+             *     repository.CreatePurchaseDetail(
+             *         purchaseId,
+             *         detail
+             *     );
+             * }
+            */
+
             // Cuando el backend de compra esté listo:
             //
             // Crear Purchase
@@ -37,7 +60,7 @@ namespace backend.Services
             //
             // devolver PurchaseId real en lugar de numero 1(que es un placeholder)
             // return purchaseId;
-            return 2;
+            return 1;
         }
 
         private bool IsExpired(string expiry)
