@@ -17,6 +17,7 @@ import UsersPage from './components/admin/UsersPage.vue';
 import PassengerInfoPage from './components/PassengerInfoPage.vue';
 import PurchaseConfirmation from './components/PurchaseConfirmation.vue';
 import ProfilePage from './components/admin/ProfilePage.vue';
+import PaymentForm from './components/PaymentForm.vue';
 
 import "@/assets/styles/admin-shared.css";
 
@@ -37,7 +38,8 @@ const router = createRouter({
         { path: "/admin/users", name: "Users", component: UsersPage, meta: { requiresAuth: true, allowedRoles: ["Administrator"] } },
         { path: "/purchase/passengers", name: "PassengerInfo", component: PassengerInfoPage },
         { path: "/purchase-confirmation/:id", name: "PurchaseConfirmation", component: PurchaseConfirmation },
-        { path: "/admin/profile", name: "ProfilePage", component: ProfilePage, meta: { requiresAuth: true, allowedRoles: ["Administrator", "Operator"] } }
+        { path: "/admin/profile", name: "ProfilePage", component: ProfilePage, meta: { requiresAuth: true, allowedRoles: ["Administrator", "Operator"] } },
+        { path: "/payment", name: "Payment", component: PaymentForm }
     ],
 });
 
