@@ -1,211 +1,178 @@
 <template>
-  <div class="page-container">
-    <nav class="navbar bg-white shadow-sm px-4 py-2">
-      <RouterLink
-        to="/"
-        class="navbar-brand d-flex align-items-center gap-2"
+  <AdminPageLayout>
+    <AdminHero
+      title="Gestión de Usuarios"
+      subtitle="Registro de empleados de Mushu Airlines"
+      icon="bi bi-person-plus"
+      back-to="/admin/users"
+      back-text="Volver a usuarios"
+    />
+
+    <AdminCard class="create-user-card">
+      <h2>Crear Nuevo Usuario</h2>
+
+      <div
+        v-if="message"
+        class="form-alert"
+        :class="isError ? 'warning-alert' : 'success-alert'"
       >
-        <img
-          src="@/assets/logo.png"
-          width="42"
-          height="42"
-          class="rounded-2"
-        />
+        <i
+          class="bi"
+          :class="isError ? 'bi-exclamation-triangle-fill' : 'bi-check-circle-fill'"
+        ></i>
+
         <div>
-          <div class="brand-name">Mushu Airlines</div>
-          <div class="brand-tagline">Vuela con el dragón</div>
+          <strong>{{ isError ? "No se pudo crear el usuario" : "Usuario creado" }}</strong>
+          <p>{{ message }}</p>
         </div>
-      </RouterLink>
-
-      <div class="d-flex align-items-center gap-3">
-
-        <RouterLink to="/admin" class="btn btn-gradient">
-          Gestión
-        </RouterLink>
-
-        <RouterLink
-          to="/"
-          class="btn btn-outline-danger rounded-pill px-3 py-2"
-        >
-          Logout
-        </RouterLink>
-
       </div>
-    </nav>
 
-    <div class="container mt-5">
-      <div class="admin-banner">
-        <RouterLink
-          to="/admin/users"
-          class="text-white text-decoration-none fw-bold"
-        >
-          ← Volver
-        </RouterLink>
+      <form class="user-form" @submit.prevent="createEmployee">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="firstName">Nombre <span>*</span></label>
 
-        <h1 class="mt-3">
-          Gestión de Usuarios
-        </h1>
-
-        <p>
-          Registro de empleados Mushu Airlines
-        </p>
-
-      </div>
-    </div>
-
-    <div class="container mt-4 mb-5">
-
-      <div class="flight-card">
-
-        <h2 class="mb-4 fw-bold">
-          Crear Nuevo Usuario
-        </h2>
-
-        <!-- ALERT -->
-
-        <div
-          v-if="message"
-          :class="isError
-            ? 'alert-error-custom'
-            : 'alert-success-custom'"
-        >
-          {{ message }}
-        </div>
-        <form @submit.prevent="createEmployee">
-
-          <div class="row">
-
-            <div class="col-md-6 form-group mb-3">
-              <label>Nombre *</label>
-
-              <input
-                v-model="form.firstName"
-                type="text"
-                placeholder="Ej: Juan"
-                required
-              />
-            </div>
-
-            <div class="col-md-6 form-group mb-3">
-              <label>Apellido *</label>
-
-              <input
-                v-model="form.lastName"
-                type="text"
-                placeholder="Ej: Pérez"
-                required
-              />
-            </div>
-
-            <div class="col-md-12 form-group mb-3">
-              <label>Correo *</label>
-
-              <input
-                v-model="form.email"
-                type="email"
-                placeholder="correo@ejemplo.com"
-                required
-              />
-            </div>
-
-            <div class="col-md-6 form-group mb-3">
-              <label>SSN *</label>
-
-              <input
-                v-model="form.ssn"
-                type="text"
-                required
-              />
-            </div>
-
-            <div class="col-md-6 form-group mb-3">
-              <label>Nacionalidad *</label>
-
-              <input
-                v-model="form.nationality"
-                type="text"
-                required
-              />
-            </div>
-
-            <div class="col-md-6 form-group mb-3">
-              <label>Salario *</label>
-
-              <input
-                type="number"
-                min="0"
-                v-model.number="form.salary"
-                placeholder="₡ 0"
-              />
-            </div>
-
-            <div class="col-md-6 form-group mb-3">
-              <label>Horario *</label>
-
-              <input
-                v-model="form.workSchedule"
-                type="text"
-                placeholder="Ej: L-V 8AM a 5PM"
-              />
-            </div>
-
-            <div class="col-md-12 form-group mb-3">
-              <label>Permisos *</label>
-
-              <input
-                v-model="form.permissions"
-                type="text"
-                placeholder="Ej: Gestión de vuelos"
-              />
-            </div>
-
-            <div class="col-md-12 form-group mb-4">
-              <label>Rol *</label>
-
-              <select v-model="form.role">
-
-                <option value="Administrator">
-                  Administrator
-                </option>
-
-                <option value="Operator">
-                  Operator
-                </option>
-
-              </select>
-            </div>
-
+            <input
+              id="firstName"
+              v-model.trim="form.firstName"
+              type="text"
+              placeholder="Ej: Juan"
+              required
+            />
           </div>
 
-          <button
-            type="submit"
-            class="search-btn"
-            :disabled="loading"
-          >
+          <div class="form-group">
+            <label for="lastName">Apellido <span>*</span></label>
 
-            {{ loading
-              ? "Creando..."
-              : "Crear Usuario"
-            }}
+            <input
+              id="lastName"
+              v-model.trim="form.lastName"
+              type="text"
+              placeholder="Ej: Pérez"
+              required
+            />
+          </div>
 
-          </button>
+          <div class="form-group full-width">
+            <label for="email">Correo <span>*</span></label>
 
-        </form>
+            <input
+              id="email"
+              v-model.trim="form.email"
+              type="email"
+              placeholder="correo@ejemplo.com"
+              required
+            />
+          </div>
 
-      </div>
-    </div>
+          <div class="form-group">
+            <label for="ssn">SSN <span>*</span></label>
 
-  </div>
+            <input
+              id="ssn"
+              v-model.trim="form.ssn"
+              type="text"
+              placeholder="Ej: 123456789"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="nationality">Nacionalidad <span>*</span></label>
+
+            <input
+              id="nationality"
+              v-model.trim="form.nationality"
+              type="text"
+              placeholder="Ej: Costarricense"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="salary">Salario <span>*</span></label>
+
+            <input
+              id="salary"
+              v-model.number="form.salary"
+              type="number"
+              min="0"
+              placeholder="₡ 0"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="workSchedule">Horario <span>*</span></label>
+
+            <input
+              id="workSchedule"
+              v-model.trim="form.workSchedule"
+              type="text"
+              placeholder="Ej: L-V 8am a 5pm"
+              required
+            />
+          </div>
+
+          <div class="form-group full-width">
+            <label for="permissions">Permisos <span>*</span></label>
+
+            <input
+              id="permissions"
+              v-model.trim="form.permissions"
+              type="text"
+              placeholder="Ej: Gestión de vuelos"
+              required
+            />
+          </div>
+
+          <div class="form-group full-width">
+            <label for="role">Rol <span>*</span></label>
+
+            <select id="role" v-model="form.role">
+              <option value="Administrator">Administrator</option>
+              <option value="Operator">Operator</option>
+            </select>
+          </div>
+        </div>
+
+        <button type="submit" class="submit-btn" :disabled="loading">
+          <span v-if="!loading">Crear Usuario</span>
+
+          <span v-else>
+            <i class="bi bi-hourglass-split me-2"></i>
+            Creando...
+          </span>
+        </button>
+      </form>
+    </AdminCard>
+  </AdminPageLayout>
 </template>
 
 <script>
 import axios from "axios";
 
+import AdminPageLayout from "@/components/layout/AdminPageLayout.vue";
+import AdminHero from "@/components/admin/ui/AdminHero.vue";
+import AdminCard from "@/components/admin/ui/AdminCard.vue";
+
+const BaseURL = "http://localhost:5103/api/PendingAccount";
+
 export default {
+  name: "CreateProfile",
+
+  components: {
+    AdminPageLayout,
+    AdminHero,
+    AdminCard,
+  },
+
   data() {
     return {
       loading: false,
       isError: false,
+      message: "",
+
       form: {
         firstName: "",
         lastName: "",
@@ -215,172 +182,200 @@ export default {
         workSchedule: "",
         permissions: "",
         email: "",
-        role: "Operator"
+        role: "Operator",
       },
-      message: ""
     };
   },
+
   methods: {
     async createEmployee() {
-      if (this.loading) return; //don't allow multiple submissions
+      if (this.loading) {
+        return;
+      }
+
+      this.message = "";
+      this.isError = false;
+
+      if (!this.validateEmail(this.form.email)) {
+        this.message = "El correo electrónico ingresado no es válido.";
+        this.isError = true;
+        return;
+      }
 
       this.loading = true;
+
       try {
         const token = localStorage.getItem("token");
-        if (!this.validateEmail(this.form.email)) {
-          this.message = "El correo electrónico ingresado no es válido.";
-          this.isError = true;
-          return;
-        }
-        await axios.post(
-          "http://localhost:5103/api/PendingAccount",
-          this.form,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          }
-        );
+
+        await axios.post(BaseURL, this.form, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         this.message = "Invitación enviada con éxito. El usuario recibirá un correo para completar su registro.";
         this.isError = false;
+
+        setTimeout(() => {
+          this.$router.push("/admin/users");
+        }, 1800);
       } catch (error) {
         const raw = error.response?.data || "";
-        this.message = (typeof raw === "string" && raw.startsWith("ERROR REAL:"))
-          ? "Ocurrió un error inesperado. Por favor intente de nuevo."
-          : raw || "Ocurrió un error. Por favor intente de nuevo.";
+
+        this.message =
+          typeof raw === "string" && raw.startsWith("ERROR REAL:")
+            ? "Ocurrió un error inesperado. Por favor intente de nuevo."
+            : raw || "Ocurrió un error. Por favor intente de nuevo.";
+
         this.isError = true;
       } finally {
-        this.loading = false; // allow new submissions after response
+        this.loading = false;
       }
     },
+
     validateEmail(email) {
       const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
       return regex.test(email);
-    }
-  }
+    },
+  },
 };
 </script>
+
 <style scoped>
-
-.page-container {
-  min-height: 100vh;
-  background: #f8f9fa;
+.create-user-card {
+  width: 100%;
 }
 
-.navbar {
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.brand-name {
-  font-weight: 800;
-  font-size: 1.1rem;
-}
-
-.brand-tagline {
-  font-size: 0.75rem;
-  color: #6b7280;
-}
-
-.btn-gradient {
-  background: linear-gradient(135deg, #f01818, #ff5a00, #ffc400);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  padding: 10px 18px;
+.create-user-card h2 {
+  font-size: 1rem;
   font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 22px;
 }
 
-.btn-gradient:hover {
-  color: white;
-  opacity: 0.95;
+.form-alert {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 22px;
+  border: 1px solid transparent;
 }
 
-.admin-banner {
-  background: linear-gradient(135deg, #f01818, #ff5a00, #ffc400);
-  color: white;
-  border-radius: 16px;
-  padding: 32px;
-  box-shadow: 0 10px 24px rgba(0,0,0,0.12);
+.form-alert i {
+  font-size: 1.25rem;
+  margin-top: 1px;
 }
 
-.admin-banner h1 {
-  margin-bottom: 8px;
-  font-weight: 900;
+.form-alert strong {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-bottom: 3px;
 }
 
-.admin-banner p {
+.form-alert p {
   margin: 0;
-  opacity: 0.95;
+  font-size: 0.86rem;
+  line-height: 1.45;
 }
 
-.flight-card {
-  background: white;
-  border-radius: 16px;
-  padding: 32px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+.warning-alert {
+  background: #fff7ed;
+  border-color: #fed7aa;
+  color: #9a3412;
+}
+
+.success-alert {
+  background: #ecfdf5;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+
+.user-form {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 22px;
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .form-group label {
+  font-size: 0.88rem;
   font-weight: 700;
-  margin-bottom: 8px;
-  display: block;
-  color: #1f2937;
+  color: #333;
+}
+
+.form-group label span {
+  color: #e74c3c;
 }
 
 .form-group input,
 .form-group select {
   width: 100%;
   height: 48px;
-  border: 1px solid #d1d5db;
-  border-radius: 10px;
-  padding: 0 14px;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 0 16px;
+  font-size: 0.9rem;
+  color: #333;
+  background: #ffffff;
   outline: none;
-  transition: 0.2s ease;
-  background: white;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-group input::placeholder {
+  color: #bbb;
 }
 
 .form-group input:focus,
 .form-group select:focus {
-  border-color: #ff5a00;
-  box-shadow: 0 0 0 3px rgba(255,90,0,0.12);
+  border-color: #e74c3c;
+  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.12);
 }
 
-.search-btn {
+.submit-btn {
   width: 100%;
-  height: 50px;
+  min-height: 48px;
   border: none;
-  border-radius: 10px;
-  background: #ff5a00;
-  color: white;
-  font-weight: 800;
-  transition: 0.2s ease;
+  border-radius: 8px;
+  background: linear-gradient(to right, #e74c3c, #f39c12);
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
-.search-btn:hover:not(:disabled) {
-  background: #f01818;
+.submit-btn:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
 }
 
-.search-btn:disabled {
-  opacity: 0.7;
+.submit-btn:disabled {
+  opacity: 0.75;
   cursor: not-allowed;
 }
-.alert-success-custom {
-  background: #ecfdf5;
-  color: #166534;
-  border: 1px solid #bbf7d0;
-  border-radius: 10px;
-  padding: 14px;
-  margin-bottom: 20px;
-}
 
-.alert-error-custom {
-  background: #fff7ed;
-  color: #9a3412;
-  border: 1px solid #fed7aa;
-  border-radius: 10px;
-  padding: 14px;
-  margin-bottom: 20px;
+@media (max-width: 768px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
 }
-
 </style>

@@ -1,43 +1,51 @@
 <template>
-  <div class="page">
+  <AdminPageLayout>
+    <AdminHero
+      title="Lista de Usuarios"
+      subtitle="Panel de administración de Mushu Airlines"
+      icon="bi bi-people"
+      back-to="/admin"
+      back-text="Volver al panel"
+    />
 
-    <!-- Header banner -->
-    <div class="header-banner">
-      <i class="bi bi-people header-icon"></i>
-      <div>
-        <h1 class="header-title">Lista de Usuarios</h1>
-        <p class="header-subtitle">Panel de administración de Mushu Airlines</p>
-      </div>
-      <RouterLink to="/admin" class="back-btn">&#8592; Volver al panel</RouterLink>
+    <div v-if="errorMsg" class="error-message">
+      <i class="bi bi-exclamation-circle-fill"></i>
+      <span>{{ errorMsg }}</span>
     </div>
 
-    <!-- Main content -->
-    <div class="content">
-      <div class="content-panel">
+    <AdminCard class="users-card">
+      <div class="card-header-row">
+        <h2>Usuarios ({{ totalCount }})</h2>
 
-        <!-- Panel top row -->
-        <div class="panel-top">
-          <h2 class="panel-title">Usuarios ({{ totalCount }})</h2>
-          <RouterLink to="/create-profile" class="create-btn">+ Crear Usuario</RouterLink>
-        </div>
+        <RouterLink to="/create-profile" class="create-user-btn">
+          <i class="bi bi-plus-lg me-2"></i>
+          Crear Usuario
+        </RouterLink>
+      </div>
 
-        <!-- Search -->
-        <div class="search-wrapper">
-          <i class="bi bi-search search-icon"></i>
-          <input
-            v-model="searchInput"
-            @keyup.enter="doSearch"
-            placeholder="Buscar por nombre, SSN o correo..."
-            class="search-input"
-          />
-        </div>
+      <div class="search-wrapper">
+        <i class="bi bi-search"></i>
 
-        <!-- Loading / Error -->
-        <div v-if="loading" class="status-msg">Cargando...</div>
-        <div v-else-if="errorMsg" class="status-msg error">{{ errorMsg }}</div>
+        <input
+          v-model="searchInput"
+          @keyup.enter="doSearch"
+          type="text"
+          placeholder="Buscar por nombre, SSN o correo..."
+          aria-label="Buscar usuario"
+        />
 
-        <!-- Table -->
-        <table v-else class="users-table">
+        <button type="button" class="search-btn-small" @click="doSearch">
+          Buscar
+        </button>
+      </div>
+
+      <div v-if="loading" class="loading-state">
+        <i class="bi bi-arrow-repeat"></i>
+        <p>Cargando usuarios...</p>
+      </div>
+
+      <div v-else-if="users.length > 0" class="table-wrapper">
+        <table class="users-table">
           <thead>
             <tr>
               <th>Nombre Completo</th>
@@ -46,39 +54,82 @@
               <th>Rol</th>
             </tr>
           </thead>
+
           <tbody>
-            <tr v-if="users.length === 0">
-              <td colspan="4" class="empty-msg">No se encontraron usuarios</td>
-            </tr>
             <tr v-for="user in users" :key="user.ssn + user.email">
               <td>{{ user.fullName }}</td>
               <td>{{ user.ssn }}</td>
               <td>{{ user.email }}</td>
               <td>
-                <span :class="['badge', roleBadgeClass(user.role)]">{{ user.role }}</span>
+                <span :class="['role-badge', roleBadgeClass(user.role)]">
+                  {{ displayRole(user.role) }}
+                </span>
               </td>
             </tr>
           </tbody>
         </table>
+      </div>
 
-        <!-- Pagination -->
-        <div class="pagination" v-if="!loading && totalPages > 0">
-          <button @click="changePage(page - 1)" :disabled="page === 1" class="page-btn">Anterior</button>
-          <span class="page-info">Página {{ page }} de {{ totalPages }}</span>
-          <button @click="changePage(page + 1)" :disabled="page >= totalPages" class="page-btn">Siguiente</button>
+      <div v-else class="empty-state">
+        <div class="empty-icon">
+          <i class="bi bi-people"></i>
         </div>
 
-      </div>
-    </div>
+        <h3>No se encontraron usuarios</h3>
 
-  </div>
+        <p>
+          Intente buscar por otro nombre, SSN o correo electrónico.
+        </p>
+
+        <RouterLink to="/create-profile" class="empty-create-btn">
+          <i class="bi bi-plus-lg me-2"></i>
+          Crear primer usuario
+        </RouterLink>
+      </div>
+
+      <div class="pagination" v-if="!loading && totalPages > 0">
+        <button
+          type="button"
+          @click="changePage(page - 1)"
+          :disabled="page === 1"
+          class="page-btn"
+        >
+          Anterior
+        </button>
+
+        <span class="page-info">Página {{ page }} de {{ totalPages }}</span>
+
+        <button
+          type="button"
+          @click="changePage(page + 1)"
+          :disabled="page >= totalPages"
+          class="page-btn"
+        >
+          Siguiente
+        </button>
+      </div>
+    </AdminCard>
+  </AdminPageLayout>
 </template>
 
 <script>
 import axios from "axios";
 
+import AdminPageLayout from "@/components/layout/AdminPageLayout.vue";
+import AdminHero from "@/components/admin/ui/AdminHero.vue";
+import AdminCard from "@/components/admin/ui/AdminCard.vue";
+
+const BaseURL = "http://localhost:5103/api/UserList";
+
 export default {
   name: "UsersPage",
+
+  components: {
+    AdminPageLayout,
+    AdminHero,
+    AdminCard,
+  },
+
   data() {
     return {
       users: [],
@@ -88,223 +139,338 @@ export default {
       activeSearch: "",
       page: 1,
       totalCount: 0,
-      pageSize: 10
+      pageSize: 10,
     };
   },
+
   computed: {
     totalPages() {
       return Math.max(1, Math.ceil(this.totalCount / this.pageSize));
-    }
+    },
   },
+
+  mounted() {
+    this.fetchUsers();
+  },
+
   methods: {
     async fetchUsers() {
       this.loading = true;
       this.errorMsg = "";
+
       try {
         const token = localStorage.getItem("token");
-        const response = await axios.get("http://localhost:5103/api/UserList", {
+
+        const response = await axios.get(BaseURL, {
           params: {
             page: this.page,
-            search: this.activeSearch || undefined
+            search: this.activeSearch || undefined,
           },
-          headers: { Authorization: `Bearer ${token}` }
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         });
-        this.users = response.data.users;
-        this.totalCount = response.data.totalCount;
+
+        this.users = response.data.users ?? [];
+        this.totalCount = response.data.totalCount ?? 0;
       } catch (error) {
-        this.errorMsg = error.response?.data || "Error al cargar usuarios";
+        this.errorMsg = error.response?.data || "Error al cargar usuarios.";
       } finally {
         this.loading = false;
       }
     },
+
     doSearch() {
-      this.activeSearch = this.searchInput;
+      this.activeSearch = this.searchInput.trim();
       this.page = 1;
       this.fetchUsers();
     },
+
     changePage(newPage) {
-      if (newPage < 1 || newPage > this.totalPages) return;
+      if (newPage < 1 || newPage > this.totalPages) {
+        return;
+      }
+
       this.page = newPage;
       this.fetchUsers();
     },
+
     roleBadgeClass(role) {
-      if (role === "Administrador") return "badge-admin";
-      if (role === "Operador") return "badge-operator";
+      if (role === "Administrator" || role === "Administrador") {
+        return "badge-admin";
+      }
+
+      if (role === "Operator" || role === "Operador") {
+        return "badge-operator";
+      }
+
       return "badge-unknown";
-    }
+    },
+
+    displayRole(role) {
+      if (role === "Administrator") {
+        return "Administrador";
+      }
+
+      if (role === "Operator") {
+        return "Operador";
+      }
+
+      return role;
+    },
   },
-  mounted() {
-    this.fetchUsers();
-  }
 };
 </script>
 
 <style scoped>
-.page {
-  min-height: 100vh;
-  background: #f4f5f7;
-}
-
-/* Header */
-.header-banner {
-  background: linear-gradient(to right, #d63031, #f39c12);
-  padding: 28px 40px;
+.error-message {
   display: flex;
   align-items: center;
-  gap: 20px;
-}
-
-.header-icon {
-  font-size: 48px;
-  color: white;
-}
-
-.header-title {
-  color: white;
-  font-size: 26px;
-  font-weight: bold;
-  margin: 0;
-}
-
-.header-subtitle {
-  color: rgba(255, 255, 255, 0.85);
-  font-size: 14px;
-  margin: 4px 0 0;
-}
-
-/* Content */
-.content {
-  padding: 30px 40px;
-}
-
-.content-panel {
-  background: white;
+  gap: 10px;
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
   border-radius: 12px;
-  padding: 28px 32px;
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.07);
-}
-
-/* Panel top row */
-.panel-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  padding: 14px 16px;
   margin-bottom: 20px;
+  font-size: 0.92rem;
+  font-weight: 700;
 }
 
-.panel-title {
-  font-size: 20px;
-  font-weight: bold;
+.error-message i {
+  font-size: 1.1rem;
+}
+
+.users-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.card-header-row {
+  padding: 24px 24px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.card-header-row h2 {
   margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
   color: #1a1a1a;
 }
 
-.create-btn {
-  padding: 10px 22px;
-  background: linear-gradient(to right, #e74c3c, #f39c12);
-  color: white;
-  font-weight: bold;
+.create-user-btn,
+.empty-create-btn {
   text-decoration: none;
+  background: linear-gradient(to right, #e74c3c, #f39c12);
+  color: #ffffff;
+  border: none;
   border-radius: 8px;
-  font-size: 14px;
+  padding: 11px 18px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
-/* Search */
+.create-user-btn:hover,
+.empty-create-btn:hover {
+  color: #ffffff;
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
 .search-wrapper {
+  margin: 0 24px 24px;
+  min-height: 44px;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 8px;
   display: flex;
   align-items: center;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 10px 16px;
   gap: 10px;
-  margin-bottom: 24px;
+  padding: 0 13px;
+  background: #ffffff;
+  transition: border-color 0.2s ease;
 }
 
-.search-icon {
-  color: #aaa;
-  font-size: 15px;
+.search-wrapper:focus-within {
+  border-color: #e74c3c;
 }
 
-.search-input {
+.search-wrapper i {
+  color: #bbb;
+  font-size: 1rem;
+}
+
+.search-wrapper input {
+  width: 100%;
+  height: 42px;
   border: none;
   outline: none;
-  flex: 1;
-  font-size: 14px;
   color: #333;
-  background: transparent;
+  font-size: 0.88rem;
 }
 
-/* Table */
+.search-wrapper input::placeholder {
+  color: #bbb;
+}
+
+.search-btn-small {
+  border: none;
+  border-radius: 7px;
+  background: #fff0ee;
+  color: #e74c3c;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.search-btn-small:hover {
+  background: #ffe1dd;
+}
+
+.loading-state {
+  margin: 0 24px 24px;
+  border: 1.5px dashed #e0e0e0;
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 34px 24px;
+  text-align: center;
+  color: #888;
+}
+
+.loading-state i {
+  font-size: 1.8rem;
+  color: #e74c3c;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.loading-state p {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
 .users-table {
   width: 100%;
   border-collapse: collapse;
-  margin-bottom: 24px;
+  font-size: 0.9rem;
+}
+
+.users-table thead {
+  background: #f8f9fa;
 }
 
 .users-table th {
+  padding: 14px 24px;
+  color: #888;
+  font-size: 0.75rem;
   text-transform: uppercase;
-  font-size: 11px;
-  color: #999;
-  font-weight: 600;
-  letter-spacing: 0.6px;
-  padding: 0 0 10px;
-  border-bottom: 2px solid #eee;
+  letter-spacing: 0.04em;
   text-align: left;
+  font-weight: 700;
 }
 
 .users-table td {
-  padding: 14px 0;
-  border-bottom: 1px solid #f0f0f0;
-  font-size: 14px;
+  padding: 18px 24px;
+  border-top: 1px solid #f0f0f0;
   color: #333;
 }
 
-.users-table tbody tr:last-child td {
-  border-bottom: none;
+.users-table tbody tr:hover {
+  background: #fffafa;
 }
 
-.users-table tbody tr:hover td {
-  background: #fafafa;
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 5px 13px;
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
-.empty-msg {
+.badge-admin {
+  background: #fff0ee;
+  color: #e74c3c;
+}
+
+.badge-operator {
+  background: #fff7ed;
+  color: #d97706;
+}
+
+.badge-unknown {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.empty-state {
+  margin: 0 24px 24px;
+  border: 1.5px dashed #e0e0e0;
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 34px 24px;
   text-align: center;
-  color: #aaa;
-  padding: 36px 0 !important;
-  font-size: 14px;
 }
 
-/* Badges */
-.badge {
-  display: inline-block;
-  padding: 4px 14px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
+.empty-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 14px;
+  border-radius: 14px;
+  background: #fff0ee;
+  color: #e74c3c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
 }
 
-.badge-admin    { background: #fde8d8; color: #c0392b; }
-.badge-operator { background: #fef3cd; color: #d68910; }
-.badge-unknown  { background: #f0f0f0; color: #7f8c8d; }
+.empty-state h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #333;
+}
 
-/* Pagination */
+.empty-state p {
+  margin: 0 auto 18px;
+  max-width: 440px;
+  color: #888;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
 .pagination {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 16px;
-  margin-bottom: 28px;
+  gap: 14px;
+  padding: 0 24px 24px;
 }
 
 .page-btn {
-  padding: 8px 20px;
-  border: 1px solid #ddd;
+  padding: 8px 18px;
+  border: 1.5px solid #e0e0e0;
   border-radius: 8px;
   background: white;
   color: #555;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 0.85rem;
+  font-weight: 700;
   cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
 }
 
 .page-btn:hover:not(:disabled) {
@@ -313,38 +479,40 @@ export default {
 }
 
 .page-btn:disabled {
-  opacity: 0.35;
-  cursor: default;
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .page-info {
-  font-size: 13px;
-  color: #777;
+  font-size: 0.85rem;
+  color: #888;
 }
 
-/* States */
-.status-msg {
-  text-align: center;
-  padding: 36px;
-  color: #aaa;
-  font-size: 14px;
-  margin-bottom: 20px;
-}
+@media (max-width: 768px) {
+  .card-header-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
 
-.status-msg.error {
-  color: #e74c3c;
-}
+  .create-user-btn {
+    justify-content: center;
+  }
 
-/* Back button */
-.back-btn {
-  margin-left: auto;
-  background: white;
-  color: #e74c3c;
-  font-weight: bold;
-  text-decoration: none;
-  font-size: 14px;
-  padding: 10px 20px;
-  border-radius: 10px;
-  white-space: nowrap;
+  .search-wrapper {
+    flex-wrap: wrap;
+    padding: 10px 13px;
+  }
+
+  .search-wrapper input {
+    min-width: 100%;
+  }
+
+  .search-btn-small {
+    width: 100%;
+  }
+
+  .pagination {
+    flex-direction: column;
+  }
 }
 </style>

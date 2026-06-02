@@ -110,11 +110,11 @@ export default {
 
   computed: {
     isAdmin() {
-        return this.userRole === "Administrator";
+      return this.userRole === "Administrator";
     },
 
     isOperator() {
-        return this.userRole === "Operator";
+      return this.userRole === "Operator";
     },
 
     isInternalUser() {
