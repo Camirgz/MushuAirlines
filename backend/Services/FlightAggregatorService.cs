@@ -12,9 +12,9 @@ public class FlightAggregatorService
         _flightRepository = flightRepository;
     }
 
-    public IEnumerable<FlightDto> GetAllFlights()
+    public IEnumerable<FlightDto> GetAllFlights(string date = null)
     {
-        return _flightRepository.GetAll().Select(ToDto);
+        return _flightRepository.GetAll(date).Select(ToDto);
     }
 
     private static FlightDto ToDto(RouteDbModel r) => new FlightDto

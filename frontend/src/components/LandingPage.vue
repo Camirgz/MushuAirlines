@@ -892,7 +892,7 @@ export default {
       this.showDestinationDropdown = false
     },
 
-    searchFlights() {
+    async searchFlights() {
       if (!this.selectedOrigin || !this.selectedDestination) {
         this.errorMsg = 'Por favor selecciona origen y destino de la lista.'
         return
@@ -914,8 +914,16 @@ export default {
       const origin = this.selectedOrigin.code
       const destination = this.selectedDestination.code
 
+      let availableFlights = this.flights
+      try {
+        const res = await fetch(`http://localhost:5103/api/flights?date=${this.departureDate}`)
+        availableFlights = (await res.json()).map(routeToFlight)
+      } catch (e) {
+        console.error('Error consultando vuelos disponibles:', e)
+      }
+
       // Direct flights —————————————————————————————————————
-      this.directFlightResults = this.flights
+      this.directFlightResults = availableFlights
         .filter(f => f.origin === origin && f.destination === destination)
         .filter(f => flightOperatesOnDate(f, this.departureDate))
         .map(f => ({
@@ -927,7 +935,7 @@ export default {
         }))
 
       // Stopover connections ————————————————————————————————
-      const rawConnections = findStopoverConnections(this.flights, origin, destination, this.departureDate)
+      const rawConnections = findStopoverConnections(availableFlights, origin, destination, this.departureDate)
 
       this.stopoverResults = rawConnections.map(conn => {
         const leg1IsOvernight = isOvernightFlight(conn.leg1)

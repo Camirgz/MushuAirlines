@@ -21,10 +21,24 @@ namespace backend.Repositories
             _connectionString = configuration.GetConnectionString("LoginContext");
         }
 
-        public IEnumerable<RouteDbModel> GetAll()
+        public IEnumerable<RouteDbModel> GetAll(string date = null)
         {
             using var connection = new SqlConnection(_connectionString);
-            return connection.Query<RouteDbModel>("SELECT * FROM Route").ToList();
+            if (date == null)
+                return connection.Query<RouteDbModel>("SELECT * FROM Route").ToList();
+
+            return connection.Query<RouteDbModel>(@"
+                SELECT r.*
+                FROM Route r
+                WHERE NOT EXISTS (
+                    SELECT 1
+                    FROM ScheduledFlight sf
+                    JOIN Aircraft a ON sf.AircraftCode = a.Code
+                    WHERE sf.RouteCode = r.Code
+                      AND sf.DepartureDate = @Date
+                      AND sf.BookedSeats >= (a.EconomyRows * a.EconomySeatsPerRow
+                                           + a.FirstClassRows * a.FirstClassSeatsPerRow)
+                )", new { Date = date }).ToList();
         }
 
         public void InsertRoute(RouteCreationModel route)

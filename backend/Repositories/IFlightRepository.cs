@@ -4,5 +4,5 @@ namespace backend.Repositories;
 
 public interface IFlightRepository
 {
-    IEnumerable<RouteDbModel> GetAll();
+    IEnumerable<RouteDbModel> GetAll(string date = null);
 }
