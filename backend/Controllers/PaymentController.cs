@@ -8,11 +8,11 @@ namespace backend.Controllers
     [ApiController]
     public class PaymentController : ControllerBase
     {
-        private readonly PaymentService service;
+        private readonly IPaymentService service;
 
-        public PaymentController(PaymentService service)
+        public PaymentController(IPaymentService paymentService)
         {
-            this.service = service;
+            this.service = paymentService;
         }
 
         [HttpPost("approve")]

@@ -27,6 +27,10 @@ builder.Services.AddScoped<
 builder.Services.AddScoped<
     IEmailPurchaseService,
     EmailPurchaseService>();
+    
+builder.Services.AddScoped<
+    IPaymentService,
+    PaymentService>();
 
 builder.Services.AddScoped<
     PurchaseConfirmationService>();
@@ -38,6 +42,7 @@ builder.Services.AddControllers()
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
 
 // Purchase repositories
 builder.Services.AddScoped<backend.Interfaces.IPassengerRepository,  backend.Repositories.PassengerRepository>();
