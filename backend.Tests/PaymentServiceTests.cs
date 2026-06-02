@@ -1,5 +1,7 @@
-using backend.Services;
+using backend.Interfaces;
 using backend.Model;
+using backend.Services;
+using Moq;
 
 namespace backend.Tests;
 
@@ -7,11 +9,16 @@ namespace backend.Tests;
 public class PaymentServiceTests
 {
     private PaymentService paymentService = null!;
+    private Mock<IPaymentRepository> repositoryMock = null!;
 
     [SetUp]
     public void Setup()
     {
-        paymentService = new PaymentService();
+        repositoryMock = new Mock<IPaymentRepository>();
+
+        paymentService = new PaymentService(
+            repositoryMock.Object
+        );
     }
 
     [Test]
