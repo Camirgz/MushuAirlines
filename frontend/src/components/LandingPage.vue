@@ -128,8 +128,8 @@
             <!-- Date -->
             <div class="field-group">
               <label class="field-label"><i class="bi bi-calendar3 me-1"></i>Fecha de salida</label>
-              <div class="input-box">
-                <input type="date" v-model="departureDate" />
+              <div class="input-box" :class="{ 'input-date-error': dateError }">
+                <input type="date" v-model="departureDate" :min="todayStr" :max="maxDateStr" />
               </div>
             </div>
 
@@ -168,6 +168,7 @@
 
           </div>
 
+          <p v-if="dateError" class="date-error-msg">{{ dateError }}</p>
           <p v-if="errorMsg" class="error-msg">{{ errorMsg }}</p>
 
           <button class="search-btn" @click="searchFlights">
@@ -664,6 +665,23 @@ export default {
       return this.userRole === 'Administrator'
     },
 
+    todayStr() {
+      return new Date().toISOString().split('T')[0]
+    },
+
+    maxDateStr() {
+      const d = new Date()
+      d.setFullYear(d.getFullYear() + 1)
+      return d.toISOString().split('T')[0]
+    },
+
+    dateError() {
+      if (!this.departureDate) return ''
+      if (this.departureDate < this.todayStr) return 'Esta fecha ya pasó'
+      if (this.departureDate > this.maxDateStr) return 'El límite de reserva es de un año'
+      return ''
+    },
+
     originSuggestions() {
       if (!this.originQuery) return []
       const normalize = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -850,6 +868,14 @@ export default {
       }
       if (this.selectedOrigin.code === this.selectedDestination.code) {
         this.errorMsg = 'El origen y destino no pueden ser iguales.'
+        return
+      }
+      if (!this.departureDate) {
+        this.errorMsg = 'Por favor selecciona una fecha de salida.'
+        return
+      }
+      if (this.dateError) {
+        this.errorMsg = this.dateError
         return
       }
 
@@ -1335,6 +1361,17 @@ export default {
 }
 
 /* ─── Misc form elements ──────────────────────────────────── */
+.date-error-msg {
+  color: #e53e3e;
+  font-size: 0.83rem;
+  margin-bottom: 8px;
+  margin-top: 0;
+}
+
+.input-date-error {
+  border-color: #e53e3e !important;
+}
+
 .error-msg {
   color: var(--color-primary);
   font-size: 0.83rem;
