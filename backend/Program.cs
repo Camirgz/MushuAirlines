@@ -25,6 +25,10 @@ builder.Services.AddScoped<
     QrService>();
 
 builder.Services.AddScoped<
+    IPaymentRepository,
+    PaymentRepository>();
+    
+builder.Services.AddScoped<
     IEmailPurchaseService,
     EmailPurchaseService>();
     
