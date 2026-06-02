@@ -54,6 +54,29 @@ namespace backend.Services
                 DestinationCity = r.DestinationCity
             }).ToList();
         }
+        public int GetOrCreateScheduledFlight(string routeCode, DateTime date)
+        {
+            return routeCreationRepository.GetOrCreateScheduledFlight(routeCode, date);
+        }
+        public RouteCreationModel GetRouteByCode(string code)
+        {
+            var r = routeCreationRepository.GetRouteByCode(code);
+            return new RouteCreationModel
+            {
+                Code               = r.Code,
+                OriginAirport      = r.OriginAirport,
+                DestinationAirport = r.DestinationAirport,
+                DepartureTime      = r.DepartureTime,
+                ArrivalTime        = r.ArrivalTime,
+                Duration           = r.Duration,
+                AircraftTypeId     = r.AircraftTypeId,
+                Frequency          = r.Frequency.Split(',').ToList(),
+                PriceFirstClass    = r.PriceFirstClass,
+                PriceEconomy       = r.PriceEconomy,
+                OriginCity         = r.OriginCity,
+                DestinationCity    = r.DestinationCity
+            };
+        }
 
     }
 }

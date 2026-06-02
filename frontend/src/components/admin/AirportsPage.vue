@@ -1,167 +1,67 @@
 <template>
-  <div class="airports-page">
-    <!-- Navbar -->
-    <nav class="navbar bg-white shadow-sm px-4 py-2">
-      <RouterLink to="/" class="navbar-brand d-flex align-items-center gap-2">
-        <img
-          src="@/assets/logo.png"
-          alt="Logo Mushu Airlines"
-          class="logo-img"
-        />
+  <AdminPageLayout>
+    <template v-if="isListMode">
+      <AdminHero
+        title="Lista de Aeropuertos"
+        subtitle="Panel de administración para operadores de Mushu Airlines"
+        icon="bi bi-airplane-engines"
+      />
 
-        <div>
-          <div class="brand-name">Mushu Airlines</div>
-          <div class="brand-tagline">Vuela con el dragón</div>
-        </div>
-      </RouterLink>
-
-      <div class="nav-actions">
-        <RouterLink to="/" class="nav-link-item">
-          <i class="bi bi-search me-2"></i>
-          Buscar vuelos
-        </RouterLink>
-
-        <a href="#" class="nav-link-item">
-          <i class="bi bi-briefcase me-2"></i>
-          Mis vuelos
-        </a>
-
-        <a href="#" class="nav-link-item">
-          <i class="bi bi-calendar-check me-2"></i>
-          Check-in
-        </a>
-
-        <div class="management-wrapper">
-          <button class="management-btn" type="button" @click="toggleDropdown">
-            <i class="bi bi-gear me-2"></i>
-            Gestión
-            <i
-              class="bi ms-2"
-              :class="isDropdownOpen ? 'bi-chevron-up' : 'bi-chevron-down'"
-            ></i>
-          </button>
-
-          <div v-if="isDropdownOpen" class="management-dropdown">
-            <RouterLink
-              to="/admin"
-              class="dropdown-item-custom"
-              @click="closeDropdown"
-            >
-              <i class="bi bi-grid"></i>
-              <span>Página principal interna</span>
-            </RouterLink>
-
-            <RouterLink
-              to="/admin/aircraft-types"
-              class="dropdown-item-custom"
-              @click="closeDropdown"
-            >
-              <i class="bi bi-airplane"></i>
-              <span>Tipos de aeronaves</span>
-            </RouterLink>
-
-            <RouterLink
-              to="/admin/routes"
-              class="dropdown-item-custom"
-              @click="closeDropdown"
-            >
-              <i class="bi bi-geo-alt"></i>
-              <span>Rutas</span>
-            </RouterLink>
-
-            <RouterLink
-              to="/admin/airports"
-              class="dropdown-item-custom"
-              @click="closeDropdown"
-            >
-              <i class="bi bi-airplane-engines"></i>
-              <span>Aeropuertos</span>
-            </RouterLink>
-
-            <RouterLink
-              to="/admin/users"
-              class="dropdown-item-custom"
-              @click="closeDropdown"
-            >
-              <i class="bi bi-people"></i>
-              <span>Usuarios administradores y operarios</span>
-            </RouterLink>
-          </div>
-        </div>
-
-        <RouterLink to="/" class="logout-btn">
-          <i class="bi bi-box-arrow-right me-2"></i>
-          Logout
-        </RouterLink>
+      <div v-if="errorMessage" class="error-message">
+        <i class="bi bi-exclamation-circle-fill"></i>
+        <span>{{ errorMessage }}</span>
       </div>
-    </nav>
 
-    <main class="airports-main">
-      <!-- Airport list view -->
-      <template v-if="!selectedAirport">
-        <section class="airports-hero">
-          <RouterLink to="/admin" class="hero-back-link">
-            <i class="bi bi-arrow-left"></i>
-            Volver al panel
+      <AdminCard class="airports-card">
+        <div class="card-header-row">
+          <h2>Aeropuertos ({{ filteredAirports.length }})</h2>
+
+          <RouterLink
+            v-if="isAdmin"
+            to="/admin/airports/create-airport"
+            class="create-airport-btn"
+          >
+            <i class="bi bi-plus-lg me-2"></i>
+            Crear Aeropuerto
           </RouterLink>
-
-          <div class="hero-content">
-            <i class="bi bi-airplane-engines hero-icon"></i>
-
-            <div>
-              <h1>Lista de Aeropuertos</h1>
-              <p>Panel de administración para operadores de Mushu Airlines</p>
-            </div>
-          </div>
-        </section>
-
-        <div v-if="successMessage" class="success-message">
-          <i class="bi bi-check-circle-fill"></i>
-          <span>{{ successMessage }}</span>
         </div>
 
-        <section class="airports-card">
-          <div class="card-header-row">
-            <h2>Aeropuertos ({{ filteredAirports.length }})</h2>
+        <div class="search-wrapper">
+          <i class="bi bi-search"></i>
+          <input
+            v-model="searchText"
+            type="text"
+            placeholder="Buscar por nombre o código..."
+            aria-label="Buscar aeropuerto"
+          />
+        </div>
 
-            <RouterLink
-              to="/admin/airports/create-airport"
-              class="create-airport-btn"
-            >
-              <i class="bi bi-plus-lg me-2"></i>
-              Crear Aeropuerto
-            </RouterLink>
-          </div>
+        <div v-if="filteredAirports.length > 0" class="table-wrapper">
+          <table class="airports-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Código</th>
+                <th>País</th>
+                <th>Ciudad</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
 
-          <div class="search-wrapper">
-            <i class="bi bi-search"></i>
-            <input
-              v-model="searchText"
-              type="text"
-              placeholder="Buscar por nombre o código..."
-              aria-label="Buscar aeropuerto"
-            />
-          </div>
+            <tbody>
+              <tr v-for="airport in filteredAirports" :key="airport.code">
+                <td>{{ airport.airportName }}</td>
 
-          <div v-if="filteredAirports.length > 0" class="table-wrapper">
-            <table class="airports-table">
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th>Código</th>
-                  <th>Ciudad</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
+                <td>
+                  <span class="airport-code">{{ airport.code }}</span>
+                </td>
 
-              <tbody>
-                <tr v-for="airport in filteredAirports" :key="airport.code">
-                  <td>{{ airport.airportName }}</td>
-                  <td>
-                    <span class="airport-code">{{ airport.code }}</span>
-                  </td>
-                  <td>{{ airport.city }}</td>
-                  <td>
+                <td>{{ airport.country }}</td>
+
+                <td>{{ airport.city }}</td>
+
+                <td>
+                  <div class="actions-wrapper">
                     <button
                       type="button"
                       class="view-btn"
@@ -170,13 +70,25 @@
                       <i class="bi bi-eye me-1"></i>
                       Ver
                     </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
 
-          <div v-else class="empty-state">
+                    <button
+                      v-if="isAdmin"
+                      type="button"
+                      class="edit-btn"
+                      @click="openAirportEdit(airport)"
+                    >
+                      <i class="bi bi-pencil me-1"></i>
+                      Editar
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div v-else class="empty-state">
+          <div v-if="isAdmin">
             <div class="empty-icon">
               <i class="bi bi-airplane-engines"></i>
             </div>
@@ -192,76 +104,177 @@
               Crear primer aeropuerto
             </RouterLink>
           </div>
-        </section>
-      </template>
+        </div>
+      </AdminCard>
+    </template>
 
-      <!-- Airport details view -->
-      <template v-else>
-        <section class="details-hero">
-          <button type="button" class="hero-back-link hero-back-button" @click="closeDetails">
-            <i class="bi bi-arrow-left"></i>
-            Volver a la lista
-          </button>
+    <template v-else-if="selectedAirport">
+      <AdminHero
+        title="Detalles del Aeropuerto"
+        subtitle="Información completa del aeropuerto"
+        icon="bi bi-airplane-engines"
+      />
 
-          <div class="hero-content">
-            <i class="bi bi-airplane-engines hero-icon"></i>
+      <AdminCard class="details-card">
+        <div class="detail-group detail-full">
+          <span class="detail-label">Nombre del Aeropuerto</span>
+          <p>{{ selectedAirport.airportName }}</p>
+        </div>
 
-            <div>
-              <h1>Detalles del Aeropuerto</h1>
-              <p>Información completa del aeropuerto</p>
-            </div>
+        <div class="detail-grid">
+          <div class="detail-group">
+            <span class="detail-label">País</span>
+            <p>{{ selectedAirport.country }}</p>
           </div>
-        </section>
 
-        <section class="details-card">
-          <div class="detail-group detail-full">
-            <span class="detail-label">Nombre del Aeropuerto</span>
-            <p>{{ selectedAirport.airportName }}</p>
+          <div class="detail-group">
+            <span class="detail-label">Ciudad</span>
+            <p>{{ selectedAirport.city }}</p>
           </div>
+        </div>
+
+        <div class="detail-group detail-full">
+          <span class="detail-label">Código del Aeropuerto</span>
+          <span class="airport-code airport-code-large">
+            {{ selectedAirport.code }}
+          </span>
+        </div>
+
+        <hr class="details-line" />
+
+        <button type="button" class="close-details-btn" @click="closeDetails">
+          Cerrar
+        </button>
+      </AdminCard>
+    </template>
+
+    <template v-else-if="editingAirport">
+      <AdminHero
+        title="Editar Aeropuerto"
+        subtitle="Modificación del aeropuerto"
+        icon="bi bi-airplane-engines"
+      />
+
+      <div v-if="successMessage" class="success-message">
+        <i class="bi bi-check-circle-fill"></i>
+        <span>{{ successMessage }}</span>
+      </div>
+
+      <div v-if="errorMessage" class="error-message">
+        <i class="bi bi-exclamation-circle-fill"></i>
+        <span>{{ errorMessage }}</span>
+      </div>
+
+      <AdminCard class="edit-card">
+        <form @submit.prevent="saveAirportChanges">
+        <div
+          class="form-group"
+          :class="{ 'has-error': editSubmitted && editErrors.nameInvalid }"
+        >
+          <label for="airportName">Nombre del Aeropuerto</label>
+
+          <input
+            id="airportName"
+            ref="airportNameInput"
+            v-model.trim="editAirportName"
+            type="text"
+            maxlength="200"
+            placeholder="Ingrese el nombre del aeropuerto"
+          />
+
+          <div class="helper-row">
+            <small>{{ editNameLength }}/200 caracteres</small>
+
+            <small v-if="editSubmitted && editErrors.nameInvalid" class="error-text">
+              El nombre del aeropuerto no debe contener números ni caracteres especiales como #, !, %, $.
+            </small>
+          </div>
+        </div>
 
           <div class="detail-grid">
             <div class="detail-group">
               <span class="detail-label">País</span>
-              <p>{{ selectedAirport.country }}</p>
+              <p>{{ editingAirport.country }}</p>
             </div>
 
             <div class="detail-group">
               <span class="detail-label">Ciudad</span>
-              <p>{{ selectedAirport.city }}</p>
+              <p>{{ editingAirport.city }}</p>
             </div>
           </div>
 
           <div class="detail-group detail-full">
             <span class="detail-label">Código del Aeropuerto</span>
-            <span class="airport-code airport-code-large">{{ selectedAirport.code }}</span>
+            <span class="airport-code airport-code-large">
+              {{ editingAirport.code }}
+            </span>
           </div>
 
           <hr class="details-line" />
 
-          <button type="button" class="close-details-btn" @click="closeDetails">
-            Cerrar
-          </button>
-        </section>
-      </template>
-    </main>
-  </div>
+          <div class="edit-actions">
+            <button
+              type="submit"
+              class="save-btn"
+              :disabled="saving || !canSaveEdit"
+            >
+              {{ saving ? "Guardando..." : "Guardar cambios" }}
+            </button>
+
+            <button type="button" class="cancel-btn" @click="cancelEdit">
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </AdminCard>
+    </template>
+  </AdminPageLayout>
 </template>
 
 <script>
+import AdminPageLayout from "@/components/layout/AdminPageLayout.vue";
+import AdminHero from "@/components/admin/ui/AdminHero.vue";
+import AdminCard from "@/components/admin/ui/AdminCard.vue";
+
+import axios from "axios";
+
+const BaseURL = "http://localhost:5103/api/airport";
+
 export default {
   name: "AirportsPage",
 
+  components: {
+    AdminPageLayout,
+    AdminHero,
+    AdminCard,
+  },
+
   data() {
     return {
-      isDropdownOpen: false,
       searchText: "",
       selectedAirport: null,
+      editingAirport: null,
+      editAirportName: "",
+      editErrors: {},
+      editSubmitted: false,
       airports: [],
       loading: false,
+      saving: false,
+      successMessage: "",
+      errorMessage: "",
+      userRole: null,
     };
   },
 
   computed: {
+    isAdmin() {
+      return this.userRole === "Administrator";
+    },
+
+    isListMode() {
+      return !this.selectedAirport && !this.editingAirport;
+    },
+
     filteredAirports() {
       const text = this.searchText.trim().toLowerCase();
 
@@ -290,312 +303,231 @@ export default {
         ? "Cuando registre aeropuertos, aparecerán en esta lista."
         : "Intente buscar por otro nombre o código.";
     },
+
+    editNameLength() {
+      return this.editAirportName.length;
+    },
+
+    canSaveEdit() {
+      if (!this.editingAirport) {
+        return false;
+      }
+
+      const newName = this.editAirportName.trim();
+      const currentName = this.editingAirport.airportName.trim();
+      const maxLenghtAirportName = 200;
+
+      return (
+        newName.length > 0 &&
+        newName.length <= maxLenghtAirportName &&
+        newName !== currentName
+      );
+    },
   },
 
   mounted() {
+    this.loadUser();
     this.loadAirports();
   },
 
   methods: {
-    toggleDropdown() {
-      this.isDropdownOpen = !this.isDropdownOpen;
+    getRoleFromToken() {
+      const token = localStorage.getItem("token");
+      if (!token) return null;
+      try {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        return (
+          payload["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] ||
+          payload.role ||
+          payload.Role ||
+          null
+        );
+      } catch (error) {
+        console.error("Error leyendo el token:", error);
+        return null;
+      }
     },
 
-    closeDropdown() {
-      this.isDropdownOpen = false;
+    loadUser() {
+      this.userRole = this.getRoleFromToken();
     },
 
     async loadAirports() {
       this.loading = true;
+      this.errorMessage = "";
 
       try {
-        const response = await fetch("http://localhost:5103/api/AirportCreation");
+        const response = await axios.get(BaseURL);
 
-        if (!response.ok) {
-          throw new Error("No se pudieron cargar los aeropuertos.");
-        }
-
-        this.airports = await response.json();
+        this.airports = response.data.map((airport) => ({
+          code: airport.code ?? airport.Code,
+          airportName: airport.airportName ?? airport.AirportName,
+          city: airport.city ?? airport.City,
+          country: airport.country ?? airport.Country,
+        }));
       } catch (error) {
-        console.error("Error loading airports:", error);
+        this.errorMessage = "No se pudieron cargar los aeropuertos.";
       } finally {
         this.loading = false;
       }
     },
 
     openAirportDetails(airport) {
-      this.selectedAirport = airport;
+      this.selectedAirport = { ...airport };
+      this.editingAirport = null;
       this.searchText = "";
+      this.successMessage = "";
+      this.errorMessage = "";
+
       window.scrollTo({ top: 0, behavior: "smooth" });
     },
 
     closeDetails() {
       this.selectedAirport = null;
+      this.errorMessage = "";
+
       window.scrollTo({ top: 0, behavior: "smooth" });
+    },
+
+    openAirportEdit(airport) {
+      this.editingAirport = { ...airport };
+      this.editAirportName = airport.airportName;
+      this.selectedAirport = null;
+      this.searchText = "";
+      this.successMessage = "";
+      this.errorMessage = "";
+      this.editErrors = {};
+      this.editSubmitted = false;
+
+      this.$nextTick(() => {
+        this.$refs.airportNameInput?.focus();
+      });
+
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    },
+
+    cancelEdit() {
+      this.editingAirport = null;
+      this.editAirportName = "";
+      this.editErrors = {};
+      this.editSubmitted = false;
+      this.errorMessage = "";
+
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    },
+
+    validateEditForm() {
+      this.editErrors = {};
+
+      const airportNameRegex = /^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s.'-]+$/;
+      const newName = this.editAirportName.trim();
+
+      if (newName && !airportNameRegex.test(newName)) {
+        this.editErrors.nameInvalid = true;
+      }
+
+      return Object.keys(this.editErrors).length === 0;
+    },
+
+    delay(milliseconds) {
+      return new Promise((resolve) => {
+        setTimeout(resolve, milliseconds);
+      });
+    },
+
+    async saveAirportChanges() {
+      this.editSubmitted = true;
+      this.successMessage = "";
+      this.errorMessage = "";
+
+      if (!this.validateEditForm()) {
+        this.errorMessage = "El nombre del aeropuerto contiene números o caracteres especiales no permitidos.";
+        return;
+      }
+
+      this.saving = true;
+
+      const newName = this.editAirportName.trim();
+
+      try {
+        await this.delay(1200);
+
+        await axios.put(`${BaseURL}/${this.editingAirport.code}`, {
+          code: this.editingAirport.code,
+          airportName: newName,
+          city: this.editingAirport.city,
+          country: this.editingAirport.country,
+        });
+
+        const airportIndex = this.airports.findIndex(
+          (airport) => airport.code === this.editingAirport.code
+        );
+
+        if (airportIndex !== -1) {
+          this.airports.splice(airportIndex, 1, {
+            ...this.airports[airportIndex],
+            airportName: newName,
+          });
+        }
+
+        this.successMessage = "El nombre del aeropuerto fue actualizado correctamente.";
+
+        await this.delay(1800);
+
+        this.editingAirport = null;
+        this.editAirportName = "";
+        this.editErrors = {};
+        this.editSubmitted = false;
+
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } catch (error) {
+        this.errorMessage = "No se pudo actualizar el aeropuerto.";
+
+        if (error.response?.data) {
+          this.errorMessage = error.response.data;
+        }
+
+        await this.delay(1800);
+      } finally {
+        this.saving = false;
+      }
     },
   },
 };
 </script>
 
 <style scoped>
-/* General page layout */
-.airports-page {
-  min-height: 100vh;
-  background: var(--bg-page);
-  color: var(--text-dark);
-}
-
-/* Navbar */
-.navbar {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  min-height: var(--navbar-min-height);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: var(--navbar-bg);
-  border-bottom: var(--navbar-border);
-}
-
-.navbar-brand {
-  text-decoration: none;
-  color: inherit;
-}
-
-.logo-img {
-  width: 46px;
-  height: 46px;
-  border-radius: 12px;
-  object-fit: contain;
-  border: none;
-}
-
-.brand-name {
-  font-weight: 800;
-  font-size: 1.25rem;
-  color: var(--text-dark);
-  line-height: 1.1;
-}
-
-.brand-tagline {
-  font-size: 0.78rem;
-  color: var(--text-medium);
-}
-
-.nav-actions {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-}
-
-.nav-link-item {
-  text-decoration: none;
-  color: var(--text-dark);
-  font-size: 0.95rem;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  transition: 0.2s ease;
-}
-
-.nav-link-item i {
-  font-size: 1.05rem;
-  color: #374151;
-  transition: 0.2s ease;
-}
-
-.nav-link-item:hover,
-.nav-link-item:hover i {
-  color: var(--color-primary-hover);
-}
-
-/* Management dropdown */
-.management-wrapper {
-  position: relative;
-}
-
-.management-btn {
-  padding: 11px 18px;
-  background: var(--gradient-brand-diagonal);
-  color: #ffffff;
-  border: none;
-  border-radius: var(--radius-btn);
-  font-weight: 800;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  box-shadow: var(--shadow-btn-primary);
-  transition: 0.2s ease;
-}
-
-.management-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-btn-primary-hover);
-}
-
-.management-dropdown {
-  position: absolute;
-  top: 56px;
-  right: 0;
-  width: 340px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-panel);
-  box-shadow: var(--shadow-dropdown);
-  padding: 8px;
-  z-index: 200;
-}
-
-.dropdown-item-custom {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  text-decoration: none;
-  color: var(--text-dark);
-  padding: 12px 14px;
-  border-radius: 9px;
-  font-size: 0.9rem;
-  font-weight: 700;
-  transition: 0.2s ease;
-}
-
-.dropdown-item-custom i {
-  color: var(--color-accent-soft);
-  font-size: 1rem;
-  transition: 0.2s ease;
-}
-
-.dropdown-item-custom:hover {
-  background: var(--bg-dropdown-hover);
-  color: var(--color-accent-soft);
-}
-
-.dropdown-item-custom.router-link-active,
-.dropdown-item-custom.router-link-exact-active {
-  background: var(--gradient-brand-diagonal);
-  color: #ffffff;
-}
-
-.dropdown-item-custom.router-link-active i,
-.dropdown-item-custom.router-link-exact-active i {
-  color: #ffffff;
-}
-
-/* Logout button */
-.logout-btn {
-  text-decoration: none;
-  padding: 10px 18px;
-  border: 1px solid #ff4b4b;
-  color: var(--color-primary-hover);
-  border-radius: var(--radius-btn);
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  background: var(--bg-card);
-  transition: 0.2s ease;
-}
-
-.logout-btn:hover {
-  background: var(--color-primary-hover);
-  color: #ffffff;
-  box-shadow: 0 8px 18px rgba(240, 24, 24, 0.18);
-}
-
-/* Main content */
-.airports-main {
-  max-width: var(--content-max-width);
-  margin: 0 auto;
-  padding: var(--content-padding);
-}
-
-.airports-hero,
-.details-hero {
-  background: var(--gradient-hero);
-  color: #ffffff;
-  border-radius: var(--radius-card);
-  padding: 32px 38px;
-  box-shadow: 0 18px 32px rgba(15, 23, 42, 0.16);
-  margin-bottom: 32px;
-}
-
-.details-hero {
-  max-width: 672px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.hero-content {
-  display: flex;
-  align-items: center;
-  gap: 22px;
-}
-
-.hero-icon {
-  font-size: 2.6rem;
-}
-
-.airports-hero h1,
-.details-hero h1 {
-  font-size: 1.95rem;
-  font-weight: 900;
-  margin: 0 0 6px;
-}
-
-.airports-hero p,
-.details-hero p {
-  margin: 0;
-  font-size: 1rem;
-  color: rgba(255, 255, 255, 0.95);
-}
-
-.hero-back-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 18px;
-  color: #ffffff;
-  text-decoration: none;
-  font-weight: 800;
-  font-size: 0.95rem;
-}
-
-.hero-back-link:hover {
-  color: #ffffff;
-  opacity: 0.88;
-}
-
-.hero-back-button {
-  background: transparent;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-}
-
-/* Success message */
-.success-message {
+.success-message,
+.error-message {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: #ecfdf5;
-  color: #166534;
-  border: 1px solid #bbf7d0;
   border-radius: 12px;
   padding: 14px 16px;
   margin-bottom: 20px;
   font-size: 0.92rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
-.success-message i {
+.success-message {
+  background: #ecfdf5;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.error-message {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.success-message i,
+.error-message i {
   font-size: 1.1rem;
 }
 
-/* List card */
 .airports-card {
-  background: var(--bg-card);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
+  padding: 0;
   overflow: hidden;
 }
 
@@ -609,47 +541,52 @@ export default {
 
 .card-header-row h2 {
   margin: 0;
-  font-size: 1.35rem;
-  font-weight: 900;
-  color: #07172c;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a1a1a;
 }
 
 .create-airport-btn,
 .empty-create-btn {
   text-decoration: none;
-  background: var(--color-accent-warm);
+  background: linear-gradient(to right, #e74c3c, #f39c12);
   color: #ffffff;
   border: none;
-  border-radius: var(--radius-btn);
+  border-radius: 8px;
   padding: 11px 18px;
-  font-weight: 800;
+  font-size: 0.9rem;
+  font-weight: 600;
   display: inline-flex;
   align-items: center;
-  transition: 0.2s ease;
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
 .create-airport-btn:hover,
 .empty-create-btn:hover {
   color: #ffffff;
-  background: var(--color-primary-hover);
+  opacity: 0.9;
   transform: translateY(-1px);
-  box-shadow: 0 8px 18px rgba(240, 24, 24, 0.18);
 }
 
 .search-wrapper {
   margin: 0 24px 24px;
-  height: 42px;
-  border: 1px solid #cbd5e1;
-  border-radius: 9px;
+  height: 44px;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 0 13px;
   background: #ffffff;
+  transition: border-color 0.2s ease;
+}
+
+.search-wrapper:focus-within {
+  border-color: #e74c3c;
 }
 
 .search-wrapper i {
-  color: #94a3b8;
+  color: #bbb;
   font-size: 1rem;
 }
 
@@ -658,12 +595,12 @@ export default {
   height: 100%;
   border: none;
   outline: none;
-  color: #111827;
-  font-size: 0.95rem;
+  color: #333;
+  font-size: 0.88rem;
 }
 
 .search-wrapper input::placeholder {
-  color: #7b8290;
+  color: #bbb;
 }
 
 .table-wrapper {
@@ -677,31 +614,32 @@ export default {
 }
 
 .airports-table thead {
-  background: #f8fafc;
+  background: #f8f9fa;
 }
 
 .airports-table th {
   padding: 14px 24px;
-  color: #64748b;
+  color: #888;
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   text-align: left;
+  font-weight: 700;
 }
 
 .airports-table td {
   padding: 18px 24px;
-  border-top: 1px solid #e5e7eb;
-  color: #061126;
+  border-top: 1px solid #f0f0f0;
+  color: #333;
 }
 
 .airport-code {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #ffedd5;
-  color: #c2410c;
-  border-radius: var(--radius-tag);
+  background: #fff0ee;
+  color: #e74c3c;
+  border-radius: 6px;
   padding: 4px 9px;
   font-size: 0.78rem;
   font-weight: 700;
@@ -713,27 +651,49 @@ export default {
   margin-top: 4px;
 }
 
-.view-btn {
+.actions-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.view-btn,
+.edit-btn {
   border: none;
   background: transparent;
-  color: var(--color-accent-soft);
-  font-weight: 800;
+  font-size: 0.88rem;
+  font-weight: 700;
   padding: 0;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
 }
 
-.view-btn:hover {
-  color: var(--color-primary-hover);
+.view-btn {
+  color: #e74c3c;
+}
+
+.edit-btn {
+  color: #2563eb;
+}
+
+.view-btn:hover,
+.edit-btn:hover {
   text-decoration: underline;
 }
 
-/* Empty state */
+.view-btn:hover {
+  color: #c0392b;
+}
+
+.edit-btn:hover {
+  color: #1d4ed8;
+}
+
 .empty-state {
   margin: 0 24px 24px;
-  border: 1px dashed #cbd5e1;
-  background: #f8fafc;
+  border: 1.5px dashed #e0e0e0;
+  background: #f8f9fa;
   border-radius: 12px;
   padding: 34px 24px;
   text-align: center;
@@ -744,8 +704,8 @@ export default {
   height: 56px;
   margin: 0 auto 14px;
   border-radius: 14px;
-  background: #fff4ed;
-  color: #ff3b00;
+  background: #fff0ee;
+  color: #e74c3c;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -754,26 +714,23 @@ export default {
 
 .empty-state h3 {
   margin: 0 0 8px;
-  font-size: 1.1rem;
-  font-weight: 900;
-  color: #111827;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #333;
 }
 
 .empty-state p {
   margin: 0 auto 18px;
   max-width: 440px;
-  color: #6b7280;
+  color: #888;
+  font-size: 0.92rem;
   line-height: 1.5;
 }
 
-/* Details card */
 .details-card {
-  max-width: 672px;
-  margin: 0 auto;
-  background: var(--bg-card);
-  border-radius: var(--radius-card);
-  padding: 32px;
-  box-shadow: var(--shadow-card);
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
 }
 
 .detail-grid {
@@ -790,14 +747,14 @@ export default {
 }
 
 .detail-label {
-  color: #64748b;
-  font-size: 0.88rem;
-  font-weight: 800;
+  color: #666f83;
+  font-size: 0.82rem;
+  font-weight: 700;
 }
 
 .detail-group p {
   margin: 0;
-  color: #061126;
+  color: #001233;
   font-size: 1.05rem;
 }
 
@@ -807,74 +764,137 @@ export default {
   margin: 24px 0 16px;
 }
 
+.details-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.edit-details-btn,
 .close-details-btn {
   width: 100%;
   border: none;
-  border-radius: 10px;
-  background: #f1f3f6;
-  color: #111827;
-  font-weight: 800;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 700;
   padding: 14px 18px;
   cursor: pointer;
-  transition: 0.2s ease;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.close-details-btn {
+  background: #f3f4f6;
+  color: #1f2937;
+}
+
+.close-details-btn:hover {
+  transform: translateY(-1px);
 }
 
 .close-details-btn:hover {
   background: #e5e7eb;
 }
 
-@media (max-width: 900px) {
-  .navbar {
-    align-items: flex-start;
-    gap: 16px;
-  }
+.hero-back-btn {
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  padding: 0;
+  margin-bottom: 16px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
 
-  .nav-actions {
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 12px;
-  }
+.hero-back-btn:hover {
+  text-decoration: underline;
+}
+
+.edit-card {
+  width: 100%;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 26px;
+}
+
+.form-group label {
+  color: #666f83;
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.form-group input {
+  width: 100%;
+  height: 40px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0 14px;
+  font-size: 0.9rem;
+  color: #001233;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-group input:focus {
+  border-color: #ff5f00;
+  box-shadow: 0 0 0 3px rgba(255, 95, 0, 0.12);
+}
+
+.form-group small {
+  margin-top: 6px;
+  color: #666f83;
+  font-size: 0.76rem;
+}
+
+.edit-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.save-btn,
+.cancel-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 13px 18px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.2s ease, background 0.2s ease;
+}
+
+.save-btn {
+  background: #ff5f00;
+  color: #ffffff;
+}
+
+.save-btn:hover:not(:disabled),
+.cancel-btn:hover {
+  transform: translateY(-1px);
+}
+
+.save-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.cancel-btn {
+  background: #f3f4f6;
+  color: #1f2937;
+}
+
+.cancel-btn:hover {
+  background: #e5e7eb;
 }
 
 @media (max-width: 768px) {
-  .navbar {
-    padding: 14px 18px !important;
-    flex-direction: column;
-  }
-
-  .nav-actions {
-    width: 100%;
-    justify-content: flex-start;
-  }
-
-  .management-dropdown {
-    left: 0;
-    right: auto;
-    width: min(340px, 90vw);
-  }
-
-  .airports-main {
-    padding: 24px 16px 60px;
-  }
-
-  .airports-hero,
-  .details-hero {
-    padding: 26px;
-  }
-
-  .hero-content {
-    align-items: flex-start;
-  }
-
-  .hero-icon {
-    font-size: 2.1rem;
-  }
-
-  .airports-hero h1,
-  .details-hero h1 {
-    font-size: 1.55rem;
-  }
-
   .card-header-row {
     align-items: stretch;
     flex-direction: column;
@@ -888,5 +908,39 @@ export default {
     grid-template-columns: 1fr;
     gap: 22px;
   }
+
+  .actions-wrapper {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .details-actions,
+  .edit-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+.helper-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.error-text {
+  color: #e74c3c !important;
+  font-weight: 700;
+}
+
+.form-group.has-error input {
+  border-color: #e74c3c;
+  background: #fff7f7;
+}
+
+.form-group.has-error input:focus {
+  border-color: #e74c3c;
+  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.12);
 }
 </style>

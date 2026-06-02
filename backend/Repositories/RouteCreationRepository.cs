@@ -162,5 +162,214 @@ namespace backend.Repositories
                 return connection.Query<RouteDbModel>(query).ToList();
             }
         }
+
+        public int GetOrCreateScheduledFlight(string routeCode, DateTime date)
+        {
+            RouteDbModel route = GetRouteByCode(routeCode);
+            ValidateFlightDate(route, date);
+            ValidateRouteDateRange(route, date);
+            int? existingFlight = GetExistingScheduledFlight(routeCode,date);
+            if (existingFlight.HasValue)
+            {
+                return existingFlight.Value;
+            }
+
+            int aircraftCode =GetAircraftCode(route.AircraftTypeId);
+
+            int flightScheduleId =CreateFlightSchedule(route, date);
+
+            int scheduledFlightId =CreateScheduledFlight(routeCode,aircraftCode,date,route.Duration);
+
+            LinkFlightSchedule(flightScheduleId, scheduledFlightId);
+            return scheduledFlightId;
+        }
+        private int? GetExistingScheduledFlight(string routeCode,DateTime date)
+        {
+           using var connection = new SqlConnection(_connectionString);
+
+            return connection.QueryFirstOrDefault<int?>(@"
+                SELECT dbo.GetExistingScheduledFlight(@RouteCode,@Date)",
+                new
+                {
+                    RouteCode = routeCode,
+                    Date = date.Date
+                });
+        }
+        private void ValidateFlightDate(RouteDbModel route,DateTime date)
+        {
+            Dictionary<DayOfWeek, string> days =
+                new Dictionary<DayOfWeek, string>
+            {
+                { DayOfWeek.Monday, "Lunes" },
+                { DayOfWeek.Tuesday, "Martes" },
+                { DayOfWeek.Wednesday, "Miércoles" },
+                { DayOfWeek.Thursday, "Jueves" },
+                { DayOfWeek.Friday, "Viernes" },
+                { DayOfWeek.Saturday, "Sábado" },
+                { DayOfWeek.Sunday, "Domingo" }
+            };
+
+            string currentDay = days[date.DayOfWeek];
+
+            List<string> routeDays =
+                route.Frequency
+                    .Split(',')
+                    .Select(day => day.Trim())
+                    .ToList();
+
+            if (!routeDays.Contains(currentDay))
+            {
+                throw new Exception(
+                    "This route does not operate on " + currentDay
+                );
+            }
+        }
+
+        private void ValidateRouteDateRange(RouteDbModel route,DateTime date)
+        {
+            DateTime startDate =
+                DateTime.Parse(route.StartDate);
+
+            DateTime finalizationDate =
+                DateTime.Parse(route.FinalizationDate);
+
+            if (date.Date < startDate.Date ||
+                date.Date > finalizationDate.Date)
+            {
+                throw new Exception(
+                    "The selected date is outside the route schedule."
+                );
+            }
+        }
+        public RouteDbModel GetRouteByCode(string routeCode)
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            return connection.QuerySingle<RouteDbModel>(@"SELECT * FROM Route WHERE Code = @Code",
+                new
+                {
+                    Code = routeCode
+                });
+        }
+        private int GetAircraftCode(string aircraftType)
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            int? aircraftCode = connection.QueryFirstOrDefault<int?>(@"SELECT dbo.GetAircraftCode(@Type)", new
+            {
+                Type = aircraftType
+            });
+
+            if (aircraftCode == null)
+            {
+                throw new Exception("No aircraft available.");
+            }
+
+            return aircraftCode.Value;
+        }
+        private int CreateFlightSchedule(RouteDbModel route,DateTime date)
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            int newId = GetNextFlightScheduleId();
+            DateTime arrivalDate = CalculateArrivalDate(date,route.Duration);
+
+            connection.Execute(@"
+                INSERT INTO FlightSchedule(Id,OriginAirport,DestinationAirport,Duration,DepartureTime,ArrivalTime, DepartureDate,ArrivalDate)
+                VALUES
+                (
+                    @Id,
+                    @OriginAirport,
+                    @DestinationAirport,
+                    @Duration,
+                    @DepartureTime,
+                    @ArrivalTime,
+                    @DepartureDate,
+                    @ArrivalDate
+                )",
+                new
+                {
+                    Id = newId,
+                    route.OriginAirport,
+                    route.DestinationAirport,
+                    route.Duration,
+                    route.DepartureTime,
+                    route.ArrivalTime,
+                    DepartureDate = date,
+                    ArrivalDate = arrivalDate
+                });
+
+            return newId;
+        }
+        private int CreateScheduledFlight(string routeCode,int aircraftCode, DateTime date,string duration)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            int newId = GetNextScheduledFlightId();
+            DateTime arrivalDate = CalculateArrivalDate(date,duration);
+
+            connection.Execute(@"
+                INSERT INTO ScheduledFlight
+                (Id,AircraftCode,Status,DepartureDate,ArrivalDate,BookedSeats,RouteCode)
+                VALUES
+                (
+                    @Id,
+                    @AircraftCode,
+                    'Scheduled',
+                    @DepartureDate,
+                    @ArrivalDate,
+                    0,
+                    @RouteCode
+                )",
+                new
+                {
+                    Id = newId,
+                    AircraftCode = aircraftCode,
+                    RouteCode = routeCode,
+                    DepartureDate = date,
+                    ArrivalDate = arrivalDate
+                });
+
+            return newId;
+        }
+        private void LinkFlightSchedule(int flightScheduleId,int scheduledFlightId)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            connection.Execute(@"
+                INSERT INTO FlightScheduleHasScheduledFlight(FlightScheduleId,ScheduledFlightId)
+                VALUES
+                (
+                    @FlightScheduleId,
+                    @ScheduledFlightId
+                )",
+                new
+                {
+                    FlightScheduleId = flightScheduleId,
+                    ScheduledFlightId = scheduledFlightId
+                });
+        }
+        private int GetNextFlightScheduleId()
+        {
+            using var connection = new SqlConnection(_connectionString);
+            return connection.QuerySingle<int>(@"
+                SELECT ISNULL(MAX(Id), 0) + 1
+                FROM FlightSchedule");
+        }
+        private int GetNextScheduledFlightId()
+        {
+            using var connection = new SqlConnection(_connectionString);
+            return connection.QuerySingle<int>(@"
+                SELECT ISNULL(MAX(Id), 0) + 1
+                FROM ScheduledFlight");
+        }
+        private DateTime CalculateArrivalDate(DateTime departureDate,string duration)
+        {
+            string[] parts = duration.Split(':');
+            TimeSpan durationTime = new TimeSpan(
+                int.Parse(parts[0]),
+                int.Parse(parts[1]),
+                0
+            );
+            return departureDate.Add(durationTime);
+        }
     }
 }

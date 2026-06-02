@@ -1,6 +1,6 @@
+using backend.Interfaces;
 using backend.Repositories;
 using backend.Services;
-
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,9 +14,22 @@ builder.Services.AddCors(options =>
                             .AllowAnyMethod();
                     });
 });
-// Dependency injection for the public flight search endpoint
-builder.Services.AddScoped<IFlightRepository, RouteCreationRepository>();
-builder.Services.AddScoped<FlightAggregatorService>();
+// DEPENDENCY INJECTION
+
+builder.Services.AddScoped<
+    IPurchaseConfirmationRepository,
+    PurchaseConfirmationRepository>();
+
+builder.Services.AddScoped<
+    IQrService, 
+    QrService>();
+
+builder.Services.AddScoped<
+    IEmailPurchaseService,
+    EmailPurchaseService>();
+
+builder.Services.AddScoped<
+    PurchaseConfirmationService>();
 
 // Add services to the container.
 builder.Services.AddControllers()
@@ -25,6 +38,15 @@ builder.Services.AddControllers()
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// Purchase repositories
+builder.Services.AddScoped<backend.Interfaces.IPassengerRepository,  backend.Repositories.PassengerRepository>();
+builder.Services.AddScoped<backend.Interfaces.IItineraryRepository,  backend.Repositories.ItineraryRepository>();
+builder.Services.AddScoped<backend.Interfaces.IPurchaseRepository,   backend.Repositories.PurchaseRepository>();
+
+
+builder.Services.AddScoped<IAirportRepository, AirportRepository>();
+builder.Services.AddScoped<IAirportService, AirportService>();
 
 var app = builder.Build();
 
