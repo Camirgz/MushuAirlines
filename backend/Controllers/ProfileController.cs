@@ -1,12 +1,14 @@
 using backend.Interfaces;
 using backend.Model;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
 namespace backend.Controllers;
 
-[Route("api/[controller]")]
+[Route("api/profile")]
 [ApiController]
+[Authorize]
 public class ProfileController : ControllerBase
 {
     private readonly IProfileService _profileService;
@@ -14,6 +16,18 @@ public class ProfileController : ControllerBase
     public ProfileController(IProfileService profileService)
     {
         _profileService = profileService;
+    }
+
+    [HttpGet("claims")]
+    public ActionResult GetClaims()
+    {
+        var claims = User.Claims.Select(claim => new
+        {
+            claim.Type,
+            claim.Value
+        });
+
+        return Ok(claims);
     }
 
     [HttpGet("me")]
@@ -66,10 +80,10 @@ public class ProfileController : ControllerBase
     {
         return
             User.FindFirstValue(ClaimTypes.Name) ??
-            User.FindFirstValue(ClaimTypes.NameIdentifier) ??
-            User.FindFirstValue("unique_name") ??
             User.FindFirstValue("username") ??
-            User.FindFirstValue("sub");
+            User.FindFirstValue("Username") ??
+            User.FindFirstValue("unique_name") ??
+            User.FindFirstValue(ClaimTypes.NameIdentifier);
     }
 
     private string? GetCurrentRole()
@@ -77,7 +91,8 @@ public class ProfileController : ControllerBase
         string? role =
             User.FindFirstValue(ClaimTypes.Role) ??
             User.FindFirstValue("role") ??
-            User.FindFirstValue("Role");
+            User.FindFirstValue("Role") ??
+            User.FindFirstValue("http://schemas.microsoft.com/ws/2008/06/identity/claims/role");
 
         if (role == "Administrador")
         {

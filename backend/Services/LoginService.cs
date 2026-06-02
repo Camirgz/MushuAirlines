@@ -45,10 +45,12 @@ namespace backend.Services
                 var role = loginRepository.GetUserRole(login.Username);
 
                 // the info we want to include in the token, in this case the username and the role of the user
-                var claims = new[]
+                var claims = new List<Claim>
                 {
                     new Claim(ClaimTypes.Name, login.Username),
-                    new Claim(ClaimTypes.Role, role)
+                    new Claim("username", login.Username),
+                    new Claim(ClaimTypes.Role, role),
+                    new Claim("role", role)
                 };
 
                 // we create the token with the info, the expiration time and the signature

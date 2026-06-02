@@ -45,13 +45,18 @@ function getRoleFromToken() {
     if (!token) return null;
     try {
         const payload = JSON.parse(atob(token.split(".")[1]));
-        console.log("Payload del token:", payload);
-        return (
+        let role =
             payload["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] ||
             payload.role ||
             payload.Role ||
-            null
-        );
+            null;
+        if (role === "Administrador") {
+            role = "Administrator";
+        }
+        if (role === "Operador") {
+            role = "Operator";
+        }
+        return role;
     } catch (error) {
         console.error("Error leyendo el token:", error);
         return null;

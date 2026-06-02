@@ -135,6 +135,11 @@ public class ProfileService : IProfileService
             return basicValidation;
         }
 
+        if (profile.Salary == null)
+        {
+            return "Debe ingresar el salario.";
+        }
+
         if (profile.Salary < 0)
         {
             return "El salario no puede ser negativo.";

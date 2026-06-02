@@ -2,7 +2,7 @@
   <AdminPageLayout>
     <AdminHero
       title="Mi Perfil"
-      subtitle="Información personal de la cuenta conectada"
+      subtitle="Información personal de mi cuenta personal en Mushu Airlines"
       icon="bi bi-person-circle"
     />
 
@@ -200,10 +200,6 @@ export default {
 
         this.profile = response.data;
       } catch (error) {
-        console.error("Error cargando perfil:", error);
-        console.error("Status:", error.response?.status);
-        console.error("Data:", error.response?.data);
-
         this.errorMessage =
           error.response?.data ||
           "No se pudo cargar el perfil.";
@@ -393,6 +389,11 @@ export default {
         lastName: this.form.lastName,
         ssn: this.form.ssn,
         nationality: this.form.nationality,
+
+        salary: this.profile.salary ?? 0,
+        workSchedule: this.profile.workSchedule || "N/A",
+        permissions: this.profile.permissions || "N/A",
+        role: this.profile.role || this.userRole || "Operator",
       };
     },
 

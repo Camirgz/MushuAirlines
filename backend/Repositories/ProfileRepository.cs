@@ -148,7 +148,7 @@ public class ProfileRepository : IProfileRepository
                 ",
                 new
                 {
-                    profile.Salary,
+                    Salary = profile.Salary!.Value,
                     profile.WorkSchedule,
                     profile.Permissions,
                     EmployeeId = employeeId.Value
