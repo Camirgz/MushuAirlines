@@ -1,0 +1,68 @@
+﻿/* =========================================================
+   Mushu Airlines - Global Design Tokens
+   Import once in main.js; use var(--token) in scoped styles.
+   ========================================================= */
+
+:root {
+  /* Brand palette */
+  --color-primary: #e74c3c;
+  --color-primary-dark: #c0392b;
+  --color-primary-hover: #f01818;
+  --color-accent: #f39c12;
+  --color-accent-warm: #ff5a00;
+  --color-accent-gold: #ffc400;
+  --color-accent-soft: #ff3b00;
+
+  /* Gradients */
+  --gradient-brand: linear-gradient(to right, #e74c3c, #f39c12);
+  --gradient-brand-diagonal: linear-gradient(135deg, #f01818 0%, #ff5a00 45%, #ffc400 100%);
+  --gradient-hero: linear-gradient(135deg, #f00000 0%, #ff4b00 45%, #ffc400 100%);
+
+  /* Backgrounds */
+  --bg-page: #f8f9fa;
+  --bg-card: #ffffff;
+  --bg-input: #ffffff;
+  --bg-dropdown-hover: #fff4ed;
+  --bg-tag: #f3f4f6;
+
+  /* Text */
+  --text-dark: #111827;
+  --text-body: #333333;
+  --text-medium: #6b7280;
+  --text-muted: #9ca3af;
+  --text-faint: #aaaaaa;
+
+  /* Borders */
+  --border-color: #e5e7eb;
+  --border-color-light: #e0e0e0;
+  --border-color-focus: #e74c3c;
+
+  /* Border radius */
+  --radius-card: 16px;
+  --radius-panel: 12px;
+  --radius-btn: 10px;
+  --radius-input: 8px;
+  --radius-tag: 6px;
+  --radius-pill: 999px;
+
+  /* Shadows */
+  --shadow-card: 0 16px 36px rgba(15, 23, 42, 0.08);
+  --shadow-card-sm: 0 2px 12px rgba(0, 0, 0, 0.07);
+  --shadow-card-hover: 0 4px 20px rgba(0, 0, 0, 0.12);
+  --shadow-btn-primary: 0 8px 18px rgba(240, 24, 24, 0.22);
+  --shadow-btn-primary-hover: 0 10px 22px rgba(240, 24, 24, 0.28);
+  --shadow-dropdown: 0 18px 38px rgba(15, 23, 42, 0.16);
+
+  /* Navbar */
+  --navbar-min-height: 72px;
+  --navbar-bg: #ffffff;
+  --navbar-border: 1px solid var(--border-color);
+
+  /* Layout */
+  --content-max-width: 1120px;
+  --content-padding: 34px 24px 80px;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}

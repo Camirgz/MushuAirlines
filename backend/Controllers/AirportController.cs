@@ -1,61 +1,86 @@
+using backend.DTOs;
+using backend.Interfaces;
 using backend.Model;
-using backend.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace backend.Controllers;
 
-[Route("api/[controller]")]
+[Route("api/airport")]
 [ApiController]
 public class AirportController : ControllerBase
 {
-    private readonly AirportService airportService;
+    private readonly IAirportService _airportService;
 
-    public AirportController()
+    public AirportController(IAirportService airportService)
     {
-        airportService = new AirportService();
+        _airportService = airportService;
     }
 
     [HttpGet]
-    public ActionResult GetAirports()
+    public ActionResult<List<AirportModel>> GetAirports()
     {
-        var airports = airportService.GetAirports();
+        var airports = _airportService.GetAirports();
+
         return Ok(airports);
     }
 
     [HttpGet("countries")]
-    public ActionResult GetCountries()
+    public ActionResult<List<AirportCatalogDto>> GetCountries()
     {
-        var countries = airportService.GetCountries();
+        var countries = _airportService.GetCountries();
+
         return Ok(countries);
     }
 
     [HttpGet("cities")]
-    public ActionResult GetCitiesByCountry([FromQuery] string country)
+    public ActionResult<List<AirportCatalogDto>> GetCitiesByCountry(
+        [FromQuery] string country
+    )
     {
         if (string.IsNullOrWhiteSpace(country))
         {
             return BadRequest("Debe seleccionar un país.");
         }
 
-        var cities = airportService.GetCitiesByCountry(country);
+        var cities = _airportService.GetCitiesByCountry(country);
+
         return Ok(cities);
     }
 
     [HttpPost]
     public ActionResult CreateAirport([FromBody] AirportModel airport)
     {
+        string result = _airportService.CreateAirport(airport);
+
+        if (!string.IsNullOrWhiteSpace(result))
+        {
+            return BadRequest(result);
+        }
+
+        return Ok("Aeropuerto creado correctamente.");
+    }
+
+    [HttpPut("{code}")]
+    public ActionResult UpdateAirportName(
+        [FromRoute] string code,
+        [FromBody] AirportModel airport
+    )
+    {
         if (airport == null)
         {
             return BadRequest("Debe ingresar los datos del aeropuerto.");
         }
 
-        var result = airportService.CreateAirport(airport);
+        string result = _airportService.UpdateAirportName(
+            code,
+            airport.AirportName
+        );
 
-        if (string.IsNullOrEmpty(result))
+        if (!string.IsNullOrWhiteSpace(result))
         {
-            return Ok("Aeropuerto creado correctamente");
+            return BadRequest(result);
         }
 
-        return BadRequest(result);
+        return Ok("Nombre del aeropuerto actualizado correctamente.");
     }
 }
