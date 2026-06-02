@@ -335,27 +335,9 @@
 
         <div class="flights-panel">
 
-          <!-- Direct flights — always visible -->
-          <p class="results-count">{{ filteredDirectFlights.length }} {{ filteredDirectFlights.length === 1 ? 'vuelo directo disponible' : 'vuelos directos disponibles' }}</p>
-
-          <div v-if="filteredDirectFlights.length === 0" class="no-results">
-            <i class="bi bi-airplane"></i>
-            <p>No hay vuelos directos disponibles para esta búsqueda.</p>
-          </div>
-
-          <FlightResultCard
-            v-for="flight in filteredDirectFlights"
-            :key="flight.id"
-            result-type="direct"
-            :direct-flight="flight"
-            :passenger-count="passengerCount"
-            :airports="airports"
-            @select="openFlightDetails"
-          />
-
-          <!-- Stopover itineraries — only when mode is 'stopover' -->
+          <!-- Stopover itineraries first when mode is 'stopover' -->
           <template v-if="flightSearchMode === 'stopover'">
-            <p class="results-count results-count--section">
+            <p class="results-count">
               {{ filteredStopoverResults.length }} {{ filteredStopoverResults.length === 1 ? 'itinerario con escala disponible' : 'itinerarios con escala disponibles' }}
             </p>
 
@@ -377,6 +359,26 @@
               @select="handleStopoverSelect"
             />
           </template>
+
+          <!-- Direct flights -->
+          <p class="results-count" :class="{ 'results-count--section': flightSearchMode === 'stopover' }">
+            {{ filteredDirectFlights.length }} {{ filteredDirectFlights.length === 1 ? 'vuelo directo disponible' : 'vuelos directos disponibles' }}
+          </p>
+
+          <div v-if="filteredDirectFlights.length === 0" class="no-results">
+            <i class="bi bi-airplane"></i>
+            <p>No hay vuelos directos disponibles para esta búsqueda.</p>
+          </div>
+
+          <FlightResultCard
+            v-for="flight in filteredDirectFlights"
+            :key="flight.id"
+            result-type="direct"
+            :direct-flight="flight"
+            :passenger-count="passengerCount"
+            :airports="airports"
+            @select="openFlightDetails"
+          />
 
         </div>
       </div>
