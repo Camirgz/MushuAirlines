@@ -128,8 +128,29 @@
             <!-- Date -->
             <div class="field-group">
               <label class="field-label"><i class="bi bi-calendar3 me-1"></i>Fecha de salida</label>
-              <div class="input-box" :class="{ 'input-date-error': dateError }">
-                <input type="date" v-model="departureDate" :min="todayStr" :max="maxDateStr" />
+              <div class="input-box date-field" :class="{ 'input-date-error': dateError }">
+                <input
+                  type="text"
+                  :value="departureDateDisplay"
+                  @input="onDateInput"
+                  placeholder="dd/mm/aaaa"
+                  maxlength="10"
+                  inputmode="numeric"
+                  class="date-text-input"
+                />
+                <button type="button" class="date-picker-btn" @click="openDatePicker">
+                  <i class="bi bi-calendar3"></i>
+                </button>
+                <input
+                  type="date"
+                  ref="datePicker"
+                  :value="departureDate"
+                  @change="onDatePickerChange"
+                  :min="todayStr"
+                  :max="maxDateStr"
+                  class="date-picker-hidden"
+                  tabindex="-1"
+                />
               </div>
             </div>
 
@@ -605,6 +626,7 @@ export default {
       flights: [],
 
       departureDate: '',
+      departureDateDisplay: '',
 
       originQuery: '',
       selectedOrigin: null,
@@ -676,7 +698,8 @@ export default {
     },
 
     dateError() {
-      if (!this.departureDate) return ''
+      if (!this.departureDateDisplay) return ''
+      if (!this.departureDate) return 'Formato: dd/mm/aaaa'
       if (this.departureDate < this.todayStr) return 'Esta fecha ya pasó'
       if (this.departureDate > this.maxDateStr) return 'El límite de reserva es de un año'
       return ''
@@ -977,6 +1000,36 @@ export default {
       this.filterPriceMax = max + 5000
     },
 
+    openDatePicker() {
+      const picker = this.$refs.datePicker
+      if (picker.showPicker) picker.showPicker()
+      else picker.click()
+    },
+
+    onDatePickerChange(e) {
+      const val = e.target.value
+      if (!val) return
+      this.departureDate = val
+      const [yyyy, mm, dd] = val.split('-')
+      this.departureDateDisplay = `${dd}/${mm}/${yyyy}`
+    },
+
+    onDateInput(e) {
+      const digits = e.target.value.replace(/\D/g, '').slice(0, 8)
+      let result = ''
+      for (let i = 0; i < digits.length; i++) {
+        if (i === 2 || i === 4) result += '/'
+        result += digits[i]
+      }
+      this.departureDateDisplay = result
+      this.$nextTick(() => { e.target.value = result })
+      if (digits.length === 8) {
+        this.departureDate = `${digits.slice(4, 8)}-${digits.slice(2, 4)}-${digits.slice(0, 2)}`
+      } else {
+        this.departureDate = ''
+      }
+    },
+
     getAirportCity(code) {
       const airport = this.airports.find(a => a.code === code)
       return airport ? airport.city : code
@@ -1219,13 +1272,47 @@ export default {
 }
 .input-box input[type="text"]::placeholder { color: #bbb; }
 
-.input-box input[type="date"] {
+.date-field {
+  position: relative;
+}
+
+.date-text-input {
   border: none;
   outline: none;
   width: 100%;
   font-size: 0.88rem;
-  color: #999;
+  color: #333;
+  background: transparent;
+}
+
+.date-text-input::placeholder {
+  color: #bbb;
+}
+
+.date-picker-btn {
+  background: none;
+  border: none;
+  padding: 0;
   cursor: pointer;
+  color: #bbb;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.date-picker-btn:hover {
+  color: var(--color-primary);
+}
+
+.date-picker-hidden {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  top: 0;
+  left: 0;
 }
 
 /* ─── Passenger stepper ───────────────────────────────────── */
