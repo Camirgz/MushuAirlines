@@ -16,15 +16,14 @@
         <div class="card-header-row">
           <h2>Aeropuertos ({{ filteredAirports.length }})</h2>
 
-          <div v-if="isAdmin">
-            <RouterLink
-              to="/admin/airports/create-airport"
-              class="create-airport-btn"
-            >
-              <i class="bi bi-plus-lg me-2"></i>
-              Crear Aeropuerto
-            </RouterLink>
-          </div>
+          <RouterLink
+            v-if="isAdmin"
+            to="/admin/airports/create-airport"
+            class="create-airport-btn"
+          >
+            <i class="bi bi-plus-lg me-2"></i>
+            Crear Aeropuerto
+          </RouterLink>
         </div>
 
         <div class="search-wrapper">
@@ -72,16 +71,15 @@
                       Ver
                     </button>
 
-                    <div v-if="isAdmin">
-                      <button
-                        type="button"
-                        class="edit-btn"
-                        @click="openAirportEdit(airport)"
-                      >
-                        <i class="bi bi-pencil me-1"></i>
-                        Editar
-                      </button>
-                    </div>
+                    <button
+                      v-if="isAdmin"
+                      type="button"
+                      class="edit-btn"
+                      @click="openAirportEdit(airport)"
+                    >
+                      <i class="bi bi-pencil me-1"></i>
+                      Editar
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -94,10 +92,10 @@
             <div class="empty-icon">
               <i class="bi bi-airplane-engines"></i>
             </div>
-  
+
             <h3>{{ emptyTitle }}</h3>
             <p>{{ emptyDescription }}</p>
-  
+
             <RouterLink
               to="/admin/airports/create-airport"
               class="empty-create-btn"
@@ -329,10 +327,32 @@ export default {
   },
 
   mounted() {
+    this.loadUser();
     this.loadAirports();
   },
 
   methods: {
+    getRoleFromToken() {
+      const token = localStorage.getItem("token");
+      if (!token) return null;
+      try {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        return (
+          payload["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] ||
+          payload.role ||
+          payload.Role ||
+          null
+        );
+      } catch (error) {
+        console.error("Error leyendo el token:", error);
+        return null;
+      }
+    },
+
+    loadUser() {
+      this.userRole = this.getRoleFromToken();
+    },
+
     async loadAirports() {
       this.loading = true;
       this.errorMessage = "";
