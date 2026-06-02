@@ -63,7 +63,7 @@
             </thead>
 
             <tbody>
-              <tr v-for="user in users" :key="user.ssn + user.email">
+              <tr v-for="user in users" :key="user.id">
                 <td>{{ user.fullName }}</td>
                 <td>{{ user.ssn }}</td>
                 <td>{{ user.email }}</td>
@@ -157,6 +157,11 @@
             <span class="detail-label">Apellido</span>
             <p>{{ selectedUser.lastName || "-" }}</p>
           </div>
+          
+          <div class="detail-group detail-full">
+            <span class="detail-label">Correo</span>
+            <p>{{ selectedUser.email || "-" }}</p>
+          </div>
 
           <div class="detail-group">
             <span class="detail-label">Nombre completo</span>
@@ -168,10 +173,6 @@
             <p>{{ selectedUser.ssn || "-" }}</p>
           </div>
 
-          <div class="detail-group detail-full">
-            <span class="detail-label">Correo</span>
-            <p>{{ selectedUser.email || "-" }}</p>
-          </div>
 
           <div class="detail-group">
             <span class="detail-label">Nacionalidad</span>
@@ -323,7 +324,7 @@ export default {
       users: [],
       selectedUser: null,
       editingUser: null,
-      editingOriginalSsn: "",
+      editingUserId: null,
       editForm: {
         firstName: "",
         lastName: "",
@@ -392,8 +393,10 @@ export default {
       const fullName = user.fullName ?? user.FullName ?? "";
       const firstName = user.firstName ?? user.FirstName ?? this.getFirstName(fullName);
       const lastName = user.lastName ?? user.LastName ?? this.getLastName(fullName);
+      const rawRole = user.role ?? user.Role ?? "Operator";
 
       return {
+        id: user.id ?? user.Id,
         firstName,
         lastName,
         fullName: fullName || `${firstName} ${lastName}`.trim(),
@@ -403,8 +406,20 @@ export default {
         workSchedule: user.workSchedule ?? user.WorkSchedule ?? "",
         permissions: user.permissions ?? user.Permissions ?? "",
         email: user.email ?? user.Email ?? "",
-        role: user.role ?? user.Role ?? "Operator",
+        role: this.normalizeRole(rawRole),
       };
+    },
+
+    normalizeRole(role) {
+      if (role === "Administrador") {
+        return "Administrator";
+      }
+
+      if (role === "Operador") {
+        return "Operator";
+      }
+
+      return role || "Operator";
     },
 
     getFirstName(fullName) {
@@ -452,7 +467,7 @@ export default {
       this.selectedUser = null;
       this.successMessage = "";
       this.errorMsg = "";
-      this.editingOriginalSsn = user.ssn;
+      this.editingUserId = user.id;
 
       this.editForm = {
         firstName: user.firstName || "",
@@ -463,7 +478,7 @@ export default {
         workSchedule: user.workSchedule || "",
         permissions: user.permissions || "",
         email: user.email || "",
-        role: user.role || "Operator",
+        role: this.normalizeRole(user.role),
       };
 
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -471,7 +486,7 @@ export default {
 
     cancelEdit() {
       this.editingUser = null;
-      this.editingOriginalSsn = "";
+      this.editingUserId = null;
       this.errorMsg = "";
       window.scrollTo({ top: 0, behavior: "smooth" });
     },
@@ -505,14 +520,8 @@ export default {
           role: this.editForm.role,
         };
 
-        /*
-          IMPORTANTE:
-          Esta ruta debe existir en tu backend.
-          Ejemplo esperado:
-          PUT http://localhost:5103/api/UserList/{ssn}
-        */
         await axios.put(
-          `${BaseURL}/${encodeURIComponent(this.editingOriginalSsn)}`,
+          `${BaseURL}/${encodeURIComponent(this.editingUserId)}`,
           payload,
           {
             headers: {
@@ -527,7 +536,7 @@ export default {
 
         setTimeout(() => {
           this.editingUser = null;
-          this.editingOriginalSsn = "";
+          this.editingUserId = null;
           this.successMessage = "";
           window.scrollTo({ top: 0, behavior: "smooth" });
         }, 1500);

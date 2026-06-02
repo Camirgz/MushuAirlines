@@ -79,6 +79,9 @@ builder.Services.AddScoped<backend.Interfaces.IPurchaseRepository,   backend.Rep
 builder.Services.AddScoped<IAirportRepository, AirportRepository>();
 builder.Services.AddScoped<IAirportService, AirportService>();
 
+builder.Services.AddScoped<IUserListRepository, UserListRepository>();
+builder.Services.AddScoped<IUserListService, UserListService>();
+
 builder.Services.AddScoped<IProfileRepository, ProfileRepository>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
 
@@ -93,10 +96,10 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseCors(MyAllowSpecificOrigins);
+
 app.UseAuthentication();
 app.UseAuthorization();
-
-app.UseCors(MyAllowSpecificOrigins);
 
 app.MapControllers();
 
