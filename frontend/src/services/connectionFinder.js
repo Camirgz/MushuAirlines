@@ -50,6 +50,15 @@ function flightOperatesOnWeekday(flight, weekdayName) {
   return flight.frequency.includes(weekdayName)
 }
 
+// Return true when the flight has not yet passed its finalization date on the given date string.
+function flightIsActiveOnDate(flight, dateString) {
+  if (!dateString || !flight.finalizationDate) return true
+  const [y, m, d] = dateString.split('-').map(Number)
+  const searchDate = new Date(y, m - 1, d)
+  const [ey, em, ed] = flight.finalizationDate.split('-').map(Number)
+  return new Date(ey, em - 1, ed) >= searchDate
+}
+
 // Add `days` to a "YYYY-MM-DD" string and return the resulting date string.
 // Returns an empty string when the input is empty.
 function addDaysToDateString(dateString, days) {
@@ -79,11 +88,13 @@ function findStopoverConnections(allFlights, originCode, destinationCode, dateSt
   const firstLegs = allFlights.filter(flight =>
     flight.origin === originCode &&
     flight.destination !== destinationCode &&
-    flightOperatesOnWeekday(flight, selectedWeekday)
+    flightOperatesOnWeekday(flight, selectedWeekday) &&
+    flightIsActiveOnDate(flight, dateString)
   )
 
   const secondLegs = allFlights.filter(flight =>
-    flight.destination === destinationCode
+    flight.destination === destinationCode &&
+    flightIsActiveOnDate(flight, dateString)
   )
 
   const connections = []

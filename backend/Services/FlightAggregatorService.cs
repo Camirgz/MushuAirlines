@@ -40,5 +40,6 @@ public class FlightAggregatorService
         BagMultiplier = r.BagMultiplier,
         EconomyClassCapacity = r.EconomyClassCapacity,
         FirstClassCapacity = r.FirstClassCapacity,
+        FinalizationDate = r.FinalizationDate,
     };
 }

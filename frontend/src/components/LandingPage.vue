@@ -574,11 +574,16 @@ function durationToLabel(dur) {
 // Maps JS Date.getDay() (0=Sunday) to the Spanish day names stored in the DB.
 const WEEKDAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
 
-// Returns true when no date is provided or the flight runs on that weekday.
+// Returns true when the flight runs on the given date (weekday + active date range).
 function flightOperatesOnDate(flight, dateStr) {
-  if (!dateStr || !flight.frequency || flight.frequency.length === 0) return true
+  if (!dateStr) return true
   const [year, month, day] = dateStr.split('-').map(Number)
   const date = new Date(year, month - 1, day)
+  if (flight.finalizationDate) {
+    const [ey, em, ed] = flight.finalizationDate.split('-').map(Number)
+    if (new Date(ey, em - 1, ed) < date) return false
+  }
+  if (!flight.frequency || flight.frequency.length === 0) return true
   const dayName = WEEKDAY_NAMES[date.getDay()]
   return flight.frequency.includes(dayName)
 }
@@ -609,6 +614,7 @@ function routeToFlight(r) {
     frequency: Array.isArray(r.frequency)
       ? r.frequency
       : (r.frequency || '').split(',').map(d => d.trim()).filter(Boolean),
+    finalizationDate: r.finalizationDate || null,
   }
 }
 
@@ -672,7 +678,9 @@ export default {
     try {
       const flightsRes = await fetch('http://localhost:5103/api/flights')
       const flights = await flightsRes.json()
+      console.log('[DEBUG] primer vuelo raw del API:', JSON.stringify(flights[0]))
       this.flights = flights.map(routeToFlight)
+      console.log('[DEBUG] primer vuelo mapeado finalizationDate:', this.flights[0]?.finalizationDate)
     } catch (e) {
       console.error('Error cargando vuelos:', e)
     }
