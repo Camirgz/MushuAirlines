@@ -763,7 +763,7 @@ export default {
 
 .details-line {
   border: none;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--border-color);
   margin: 24px 0 16px;
 }
 
