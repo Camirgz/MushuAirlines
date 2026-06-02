@@ -34,7 +34,11 @@
       <div class="leg-row">
         <div class="leg-endpoint">
           <div class="leg-time">{{ directFlight.departureTime }}</div>
-          <div class="leg-code">{{ directFlight.origin }}</div>
+          <template v-if="getAirport(directFlight.origin)">
+            <div class="leg-iata-name"><span class="leg-iata">{{ directFlight.origin }}</span>, {{ getAirport(directFlight.origin).airportName }}</div>
+            <div class="leg-location">{{ getAirport(directFlight.origin).city }}, {{ getAirport(directFlight.origin).country }}</div>
+          </template>
+          <div class="leg-iata-name" v-else><span class="leg-iata">{{ directFlight.origin }}</span></div>
           <div class="leg-date">{{ directFlight.date }}</div>
         </div>
 
@@ -50,7 +54,11 @@
 
         <div class="leg-endpoint leg-endpoint--right">
           <div class="leg-time">{{ directFlight.arrivalTime }}</div>
-          <div class="leg-code">{{ directFlight.destination }}</div>
+          <template v-if="getAirport(directFlight.destination)">
+            <div class="leg-iata-name"><span class="leg-iata">{{ directFlight.destination }}</span>, {{ getAirport(directFlight.destination).airportName }}</div>
+            <div class="leg-location">{{ getAirport(directFlight.destination).city }}, {{ getAirport(directFlight.destination).country }}</div>
+          </template>
+          <div class="leg-iata-name" v-else><span class="leg-iata">{{ directFlight.destination }}</span></div>
           <div class="leg-date">{{ directFlight.arrivalDate }}</div>
         </div>
       </div>
@@ -63,7 +71,11 @@
         <div class="leg-row">
           <div class="leg-endpoint">
             <div class="leg-time">{{ leg1.departureTime }}</div>
-            <div class="leg-code">{{ leg1.origin }}</div>
+            <template v-if="getAirport(leg1.origin)">
+              <div class="leg-iata-name"><span class="leg-iata">{{ leg1.origin }}</span>, {{ getAirport(leg1.origin).airportName }}</div>
+              <div class="leg-location">{{ getAirport(leg1.origin).city }}, {{ getAirport(leg1.origin).country }}</div>
+            </template>
+            <div class="leg-iata-name" v-else><span class="leg-iata">{{ leg1.origin }}</span></div>
             <div class="leg-date">{{ leg1.date }}</div>
           </div>
 
@@ -78,7 +90,11 @@
 
           <div class="leg-endpoint leg-endpoint--right">
             <div class="leg-time">{{ leg1.arrivalTime }}</div>
-            <div class="leg-code">{{ leg1.destination }}</div>
+            <template v-if="getAirport(leg1.destination)">
+              <div class="leg-iata-name"><span class="leg-iata">{{ leg1.destination }}</span>, {{ getAirport(leg1.destination).airportName }}</div>
+              <div class="leg-location">{{ getAirport(leg1.destination).city }}, {{ getAirport(leg1.destination).country }}</div>
+            </template>
+            <div class="leg-iata-name" v-else><span class="leg-iata">{{ leg1.destination }}</span></div>
             <div class="leg-date">{{ leg1.arrivalDate }}</div>
           </div>
         </div>
@@ -99,7 +115,11 @@
         <div class="leg-row">
           <div class="leg-endpoint">
             <div class="leg-time">{{ leg2.departureTime }}</div>
-            <div class="leg-code">{{ leg2.origin }}</div>
+            <template v-if="getAirport(leg2.origin)">
+              <div class="leg-iata-name"><span class="leg-iata">{{ leg2.origin }}</span>, {{ getAirport(leg2.origin).airportName }}</div>
+              <div class="leg-location">{{ getAirport(leg2.origin).city }}, {{ getAirport(leg2.origin).country }}</div>
+            </template>
+            <div class="leg-iata-name" v-else><span class="leg-iata">{{ leg2.origin }}</span></div>
             <div class="leg-date">{{ leg2.date }}</div>
           </div>
 
@@ -114,7 +134,11 @@
 
           <div class="leg-endpoint leg-endpoint--right">
             <div class="leg-time">{{ leg2.arrivalTime }}</div>
-            <div class="leg-code">{{ leg2.destination }}</div>
+            <template v-if="getAirport(leg2.destination)">
+              <div class="leg-iata-name"><span class="leg-iata">{{ leg2.destination }}</span>, {{ getAirport(leg2.destination).airportName }}</div>
+              <div class="leg-location">{{ getAirport(leg2.destination).city }}, {{ getAirport(leg2.destination).country }}</div>
+            </template>
+            <div class="leg-iata-name" v-else><span class="leg-iata">{{ leg2.destination }}</span></div>
             <div class="leg-date">{{ leg2.arrivalDate }}</div>
           </div>
         </div>
@@ -164,9 +188,19 @@ export default {
       type: Number,
       default: 1,
     },
+    airports: {
+      type: Array,
+      default: () => [],
+    },
   },
 
   emits: ['select'],
+
+  methods: {
+    getAirport(code) {
+      return this.airports.find(a => a.code === code) || null
+    },
+  },
 
   computed: {
     isStopover() {
@@ -327,17 +361,29 @@ export default {
   line-height: 1;
 }
 
-.leg-code {
-  font-size: 0.8rem;
+.leg-iata-name {
+  font-size: 0.78rem;
+  color: #444;
+  margin-top: 4px;
+  line-height: 1.3;
+}
+
+.leg-iata {
   font-weight: 700;
   color: var(--color-primary);
-  margin-top: 3px;
+}
+
+.leg-location {
+  font-size: 0.72rem;
+  color: #999;
+  margin-top: 1px;
+  line-height: 1.3;
 }
 
 .leg-date {
   font-size: 0.72rem;
   color: #aaa;
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
 /* ─── Flight track between endpoints ─────────────────────── */

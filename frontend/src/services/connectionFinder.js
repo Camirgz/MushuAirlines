@@ -73,27 +73,28 @@ function addDaysToDateString(dateString, days) {
   ].join('-')
 }
 
-// Find all valid two-leg itineraries from originCode to destinationCode.
+// Find all valid two-leg itineraries.
+// originCodes and destinationCodes are arrays of airport codes (e.g. ['JFK', 'LGA']).
 // A connection is valid when:
-//   - leg1 goes from origin to some intermediate airport X
-//   - leg2 goes from X to the destination
+//   - leg1 departs from one of originCodes toward an intermediate airport X
+//   - leg2 departs from X toward one of destinationCodes
 //   - the layover gap is between MIN_LAYOVER_MINUTES and MAX_LAYOVER_MINUTES
 //   - both legs operate on the correct weekday for the given date
 //
 // allFlights must be the normalized flight objects produced by routeToFlight.
-function findStopoverConnections(allFlights, originCode, destinationCode, dateString) {
+function findStopoverConnections(allFlights, originCodes, destinationCodes, dateString) {
   const selectedWeekday = getWeekdayName(dateString)
   const nextDayWeekday = selectedWeekday ? advanceWeekday(selectedWeekday) : null
 
   const firstLegs = allFlights.filter(flight =>
-    flight.origin === originCode &&
-    flight.destination !== destinationCode &&
+    originCodes.includes(flight.origin) &&
+    !destinationCodes.includes(flight.destination) &&
     flightOperatesOnWeekday(flight, selectedWeekday) &&
     flightIsActiveOnDate(flight, dateString)
   )
 
   const secondLegs = allFlights.filter(flight =>
-    flight.destination === destinationCode &&
+    destinationCodes.includes(flight.destination) &&
     flightIsActiveOnDate(flight, dateString)
   )
 

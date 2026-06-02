@@ -21,24 +21,56 @@ namespace backend.Repositories
             _connectionString = configuration.GetConnectionString("LoginContext");
         }
 
-        public IEnumerable<RouteDbModel> GetAll(string date = null)
+        public IEnumerable<RouteDbModel> GetAll(
+            string date = null,
+            string origin = null,
+            string originType = null,
+            string destination = null,
+            string destinationType = null)
         {
             using var connection = new SqlConnection(_connectionString);
-            if (date == null)
+            bool hasLocation = origin != null && destination != null;
+
+            if (!hasLocation && date == null)
                 return connection.Query<RouteDbModel>("SELECT * FROM Route").ToList();
+
+            if (!hasLocation)
+                return connection.Query<RouteDbModel>(@"
+                    SELECT r.* FROM Route r
+                    WHERE NOT EXISTS (
+                        SELECT 1 FROM ScheduledFlight sf
+                        JOIN Aircraft a ON sf.AircraftCode = a.Code
+                        WHERE sf.RouteCode = r.Code
+                          AND sf.DepartureDate = @Date
+                          AND sf.BookedSeats >= (a.EconomyRows * a.EconomySeatsPerRow
+                                               + a.FirstClassRows * a.FirstClassSeatsPerRow)
+                    )", new { Date = date }).ToList();
 
             return connection.Query<RouteDbModel>(@"
                 SELECT r.*
                 FROM Route r
-                WHERE NOT EXISTS (
-                    SELECT 1
-                    FROM ScheduledFlight sf
+                JOIN Airport ao ON r.OriginAirport      = ao.Code
+                JOIN Airport ad ON r.DestinationAirport = ad.Code
+                WHERE
+                  ((@OriginType = 'city'    AND ao.City         = @Origin)
+                OR (@OriginType = 'airport' AND r.OriginAirport = @Origin))
+                AND
+                  ((@DestType   = 'city'    AND ad.City              = @Destination)
+                OR (@DestType   = 'airport' AND r.DestinationAirport = @Destination))
+                AND (@Date IS NULL OR NOT EXISTS (
+                    SELECT 1 FROM ScheduledFlight sf
                     JOIN Aircraft a ON sf.AircraftCode = a.Code
                     WHERE sf.RouteCode = r.Code
                       AND sf.DepartureDate = @Date
                       AND sf.BookedSeats >= (a.EconomyRows * a.EconomySeatsPerRow
                                            + a.FirstClassRows * a.FirstClassSeatsPerRow)
-                )", new { Date = date }).ToList();
+                ))",
+                new
+                {
+                    Origin = origin, OriginType = originType,
+                    Destination = destination, DestType = destinationType,
+                    Date = date
+                }).ToList();
         }
 
         public void InsertRoute(RouteCreationModel route)

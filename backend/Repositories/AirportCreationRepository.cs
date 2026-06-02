@@ -2,6 +2,7 @@ using backend.Model;
 using Dapper;
 using Microsoft.Extensions.Configuration;
 using System.Data.SqlClient;
+using System.Collections.Generic;
 
 namespace backend.Repositories
 {
@@ -141,6 +142,46 @@ namespace backend.Repositories
 
             using var connection = new SqlConnection(_connectionString);
             return connection.Query<AirportCreationModel>(query).ToList();
+        }
+
+        public List<AirportSuggestionDto> GetSuggestions(string query)
+        {
+            const string sql = @"
+                WITH Matches AS (
+                    SELECT Code, AirportName, City
+                    FROM Airport
+                    WHERE City        COLLATE Latin1_General_CI_AI LIKE '%' + @Query + '%'
+                       OR Code        COLLATE Latin1_General_CI_AI LIKE '%' + @Query + '%'
+                       OR AirportName COLLATE Latin1_General_CI_AI LIKE '%' + @Query + '%'
+                ),
+                CityOptions AS (
+                    SELECT DISTINCT
+                        'city'    AS [Type],
+                        City      AS [Value],
+                        City      AS [Label],
+                        City      AS [City],
+                        0         AS SortKey
+                    FROM Matches
+                ),
+                AirportOptions AS (
+                    SELECT
+                        'airport'                          AS [Type],
+                        Code                               AS [Value],
+                        AirportName + ' (' + Code + ')'   AS [Label],
+                        City                               AS [City],
+                        1                                  AS SortKey
+                    FROM Matches
+                )
+                SELECT [Type], [Value], [Label], [City]
+                FROM (
+                    SELECT * FROM CityOptions
+                    UNION ALL
+                    SELECT * FROM AirportOptions
+                ) AS Combined
+                ORDER BY [City], SortKey, [Label];";
+
+            using var connection = new SqlConnection(_connectionString);
+            return connection.Query<AirportSuggestionDto>(sql, new { Query = query }).ToList();
         }
     }
 }

@@ -41,6 +41,15 @@ public class AirportCreationController : ControllerBase
         return Ok(cities);
     }
 
+    [HttpGet("suggestions")]
+    public ActionResult GetSuggestions([FromQuery] string q)
+    {
+        if (string.IsNullOrWhiteSpace(q))
+            return Ok(new List<object>());
+
+        return Ok(airportCreationService.GetSuggestions(q));
+    }
+
     [HttpPost]
     public ActionResult CreateAirport([FromBody] AirportCreationModel airport)
     {

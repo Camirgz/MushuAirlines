@@ -27,6 +27,11 @@ namespace backend.Services
             return airportCreationRepository.GetAirports();
         }
 
+        public List<AirportSuggestionDto> GetSuggestions(string query)
+        {
+            return airportCreationRepository.GetSuggestions(query);
+        }
+
         public string CreateAirport(AirportCreationModel airport)
         {
             try

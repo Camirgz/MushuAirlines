@@ -67,7 +67,6 @@
             <div class="field-group autocomplete-wrapper">
               <label class="field-label"><i class="bi bi-geo-alt me-1"></i>Origen</label>
               <div class="input-box" :class="{ focused: showOriginDropdown }">
-                <i class="bi bi-geo-alt field-icon"></i>
                 <input
                   type="text"
                   placeholder="Ciudad o aeropuerto"
@@ -80,16 +79,14 @@
               </div>
               <div class="autocomplete-dropdown" v-if="showOriginDropdown && originSuggestions.length">
                 <div
-                  v-for="airport in originSuggestions"
-                  :key="airport.code"
+                  v-for="s in originSuggestions"
+                  :key="s.type + '-' + s.value"
                   class="autocomplete-item"
-                  @mousedown.prevent="selectOrigin(airport)"
+                  :class="s.type === 'airport' ? 'autocomplete-item--airport' : 'autocomplete-item--city'"
+                  @mousedown.prevent="selectOrigin(s)"
                 >
-                  <span class="airport-code">{{ airport.code }}</span>
-                  <span class="airport-text">
-                    <span class="airport-city">{{ airport.city }}</span>
-                    <span class="airport-country">{{ airport.country }}</span>
-                  </span>
+                  <i class="bi" :class="s.type === 'city' ? 'bi-globe2' : 'bi-airplane'"></i>
+                  <span class="suggestion-label">{{ s.label }}</span>
                 </div>
               </div>
             </div>
@@ -98,7 +95,6 @@
             <div class="field-group autocomplete-wrapper">
               <label class="field-label"><i class="bi bi-geo-alt-fill me-1"></i>Destino</label>
               <div class="input-box" :class="{ focused: showDestinationDropdown }">
-                <i class="bi bi-geo-alt field-icon"></i>
                 <input
                   type="text"
                   placeholder="Ciudad o aeropuerto"
@@ -111,16 +107,14 @@
               </div>
               <div class="autocomplete-dropdown" v-if="showDestinationDropdown && destinationSuggestions.length">
                 <div
-                  v-for="airport in destinationSuggestions"
-                  :key="airport.code"
+                  v-for="s in destinationSuggestions"
+                  :key="s.type + '-' + s.value"
                   class="autocomplete-item"
-                  @mousedown.prevent="selectDestination(airport)"
+                  :class="s.type === 'airport' ? 'autocomplete-item--airport' : 'autocomplete-item--city'"
+                  @mousedown.prevent="selectDestination(s)"
                 >
-                  <span class="airport-code">{{ airport.code }}</span>
-                  <span class="airport-text">
-                    <span class="airport-city">{{ airport.city }}</span>
-                    <span class="airport-country">{{ airport.country }}</span>
-                  </span>
+                  <i class="bi" :class="s.type === 'city' ? 'bi-globe2' : 'bi-airplane'"></i>
+                  <span class="suggestion-label">{{ s.label }}</span>
                 </div>
               </div>
             </div>
@@ -355,6 +349,7 @@
             result-type="direct"
             :direct-flight="flight"
             :passenger-count="passengerCount"
+            :airports="airports"
             @select="openFlightDetails"
           />
 
@@ -378,6 +373,7 @@
               :layover-minutes="connection.layoverMinutes"
               :connection-city="connection.connectionCity"
               :passenger-count="passengerCount"
+              :airports="airports"
               @select="handleStopoverSelect"
             />
           </template>
@@ -637,10 +633,12 @@ export default {
       originQuery: '',
       selectedOrigin: null,
       showOriginDropdown: false,
+      originSuggestions: [],
 
       destinationQuery: '',
       selectedDestination: null,
       showDestinationDropdown: false,
+      destinationSuggestions: [],
 
       // 'direct' shows direct routes; 'stopover' shows two-leg connections.
       flightSearchMode: 'direct',
@@ -711,28 +709,6 @@ export default {
       if (this.departureDate < this.todayStr) return 'Esta fecha ya pasó'
       if (this.departureDate > this.maxDateStr) return 'El límite de reserva es de un año'
       return ''
-    },
-
-    originSuggestions() {
-      if (!this.originQuery) return []
-      const normalize = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
-      const query = normalize(this.originQuery)
-      return this.airports.filter(a =>
-        a.code.toLowerCase().startsWith(query) ||
-        normalize(a.city).includes(query) ||
-        normalize(a.country).includes(query)
-      ).slice(0, 8)
-    },
-
-    destinationSuggestions() {
-      if (!this.destinationQuery) return []
-      const normalize = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
-      const query = normalize(this.destinationQuery)
-      return this.airports.filter(a =>
-        a.code.toLowerCase().startsWith(query) ||
-        normalize(a.city).includes(query) ||
-        normalize(a.country).includes(query)
-      ).slice(0, 8)
     },
 
     filteredDirectFlights() {
@@ -866,29 +842,47 @@ export default {
       this.isDropdownOpen = false
     },
 
-    onOriginInput() {
+    async onOriginInput() {
       this.selectedOrigin = null
       this.showOriginDropdown = true
+      const q = this.originQuery.trim()
+      if (!q) { this.originSuggestions = []; return }
+      try {
+        const res = await fetch(`http://localhost:5103/api/AirportCreation/suggestions?q=${encodeURIComponent(q)}`)
+        this.originSuggestions = await res.json()
+      } catch (e) {
+        this.originSuggestions = []
+      }
     },
     onOriginBlur() {
       setTimeout(() => { this.showOriginDropdown = false }, 200)
     },
-    selectOrigin(airport) {
-      this.selectedOrigin = airport
-      this.originQuery = `${airport.code} - ${airport.city}, ${airport.country}`
+    selectOrigin(s) {
+      this.selectedOrigin = { type: s.type, value: s.value }
+      this.originQuery = s.label
+      this.originSuggestions = []
       this.showOriginDropdown = false
     },
 
-    onDestinationInput() {
+    async onDestinationInput() {
       this.selectedDestination = null
       this.showDestinationDropdown = true
+      const q = this.destinationQuery.trim()
+      if (!q) { this.destinationSuggestions = []; return }
+      try {
+        const res = await fetch(`http://localhost:5103/api/AirportCreation/suggestions?q=${encodeURIComponent(q)}`)
+        this.destinationSuggestions = await res.json()
+      } catch (e) {
+        this.destinationSuggestions = []
+      }
     },
     onDestinationBlur() {
       setTimeout(() => { this.showDestinationDropdown = false }, 200)
     },
-    selectDestination(airport) {
-      this.selectedDestination = airport
-      this.destinationQuery = `${airport.code} - ${airport.city}, ${airport.country}`
+    selectDestination(s) {
+      this.selectedDestination = { type: s.type, value: s.value }
+      this.destinationQuery = s.label
+      this.destinationSuggestions = []
       this.showDestinationDropdown = false
     },
 
@@ -897,7 +891,7 @@ export default {
         this.errorMsg = 'Por favor selecciona origen y destino de la lista.'
         return
       }
-      if (this.selectedOrigin.code === this.selectedDestination.code) {
+      if (this.selectedOrigin.value === this.selectedDestination.value) {
         this.errorMsg = 'El origen y destino no pueden ser iguales.'
         return
       }
@@ -911,20 +905,27 @@ export default {
       }
 
       this.errorMsg = ''
-      const origin = this.selectedOrigin.code
-      const destination = this.selectedDestination.code
 
+      // Two parallel fetches:
+      // 1. Direct flights — API filters by origin/destination/capacity
+      // 2. All available flights for this date — used by the stopover finder
+      let directFlights = []
       let availableFlights = this.flights
       try {
-        const res = await fetch(`http://localhost:5103/api/flights?date=${this.departureDate}`)
-        availableFlights = (await res.json()).map(routeToFlight)
+        const { value: originVal, type: originType } = this.selectedOrigin
+        const { value: destVal, type: destType } = this.selectedDestination
+        const [directRes, allRes] = await Promise.all([
+          fetch(`http://localhost:5103/api/flights?date=${this.departureDate}&origin=${encodeURIComponent(originVal)}&originType=${originType}&destination=${encodeURIComponent(destVal)}&destinationType=${destType}`),
+          fetch(`http://localhost:5103/api/flights?date=${this.departureDate}`)
+        ])
+        directFlights = (await directRes.json()).map(routeToFlight)
+        availableFlights = (await allRes.json()).map(routeToFlight)
       } catch (e) {
-        console.error('Error consultando vuelos disponibles:', e)
+        console.error('Error consultando vuelos:', e)
       }
 
-      // Direct flights —————————————————————————————————————
-      this.directFlightResults = availableFlights
-        .filter(f => f.origin === origin && f.destination === destination)
+      // Direct flights — API already filtered by origin/destination; keep frequency/date check
+      this.directFlightResults = directFlights
         .filter(f => flightOperatesOnDate(f, this.departureDate))
         .map(f => ({
           ...f,
@@ -934,8 +935,15 @@ export default {
             : this.departureDate,
         }))
 
-      // Stopover connections ————————————————————————————————
-      const rawConnections = findStopoverConnections(availableFlights, origin, destination, this.departureDate)
+      // Stopover connections — expand city selection to array of airport codes
+      const originCodes = this.selectedOrigin.type === 'city'
+        ? this.airports.filter(a => a.city === this.selectedOrigin.value).map(a => a.code)
+        : [this.selectedOrigin.value]
+      const destCodes = this.selectedDestination.type === 'city'
+        ? this.airports.filter(a => a.city === this.selectedDestination.value).map(a => a.code)
+        : [this.selectedDestination.value]
+
+      const rawConnections = findStopoverConnections(availableFlights, originCodes, destCodes, this.departureDate)
 
       this.stopoverResults = rawConnections.map(conn => {
         const leg1IsOvernight = isOvernightFlight(conn.leg1)
@@ -1426,8 +1434,8 @@ export default {
 .autocomplete-item {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 14px 18px;
+  gap: 10px;
+  padding: 11px 16px;
   cursor: pointer;
   transition: background 0.15s;
   border-bottom: 1px solid #f0f0f0;
@@ -1435,31 +1443,27 @@ export default {
 .autocomplete-item:last-child { border-bottom: none; }
 .autocomplete-item:hover { background: #fff5f5; }
 
-.airport-code {
+.autocomplete-item--city {
   font-weight: 700;
-  font-size: 15px;
-  color: var(--color-primary);
-  min-width: 48px;
-  flex-shrink: 0;
-  letter-spacing: 0.5px;
-}
-
-.airport-text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.airport-city {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 0.93rem;
   color: #1a1a1a;
-  line-height: 1.3;
+  background: #fafafa;
+}
+.autocomplete-item--city i {
+  color: var(--color-primary);
+  font-size: 1rem;
 }
 
-.airport-country {
-  font-size: 13px;
-  color: #888;
+.autocomplete-item--airport {
+  font-size: 0.85rem;
+  color: #444;
+}
+.autocomplete-item--airport i {
+  color: #aaa;
+  font-size: 0.85rem;
+}
+
+.suggestion-label {
   line-height: 1.3;
 }
 

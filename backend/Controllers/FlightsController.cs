@@ -15,11 +15,16 @@ public class FlightsController : ControllerBase
     }
 
     [HttpGet]
-    public IActionResult GetFlights([FromQuery] string date = null)
+    public IActionResult GetFlights(
+        [FromQuery] string date = null,
+        [FromQuery] string origin = null,
+        [FromQuery] string originType = null,
+        [FromQuery] string destination = null,
+        [FromQuery] string destinationType = null)
     {
         try
         {
-            var flights = _flightAggregatorService.GetAllFlights(date);
+            var flights = _flightAggregatorService.GetAllFlights(date, origin, originType, destination, destinationType);
             return Ok(flights);
         }
         catch (Exception ex)
