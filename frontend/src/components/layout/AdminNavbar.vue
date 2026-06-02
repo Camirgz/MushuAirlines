@@ -29,8 +29,8 @@
         Check-in
       </a>
 
-      <div v-if="isInternalUser" class="management-wrapper">
-        <button class="management-btn" type="button" @click="toggleDropdown">
+      <div v-if="isInternalUser" class="management-wrapper" ref="managementMenu">
+        <button class="management-btn" type="button" @click.stop="toggleDropdown">
           <i class="bi bi-gear me-1"></i>
           Gestión
 
@@ -89,10 +89,31 @@
         </div>
       </div>
 
-      <button class="logout-btn" type="button" @click="logout">
-        <i class="bi bi-box-arrow-right me-1"></i>
-        Logout
-      </button>
+      <div class="profile-wrapper" ref="profileMenu">
+        <button class="profile-btn" type="button" @click.stop="toggleProfileMenu">
+          <i class="bi bi-person"></i>
+        </button>
+
+        <div v-if="isProfileMenuOpen" class="profile-dropdown">
+          <RouterLink
+            to="/admin/profile"
+            class="profile-dropdown-item"
+            @click="closeProfileMenu"
+          >
+            <i class="bi bi-person"></i>
+            <span>Perfil</span>
+          </RouterLink>
+
+          <button
+            type="button"
+            class="profile-dropdown-item logout-dropdown-btn"
+            @click="logout"
+          >
+            <i class="bi bi-box-arrow-right"></i>
+            <span>Logout</span>
+          </button>
+        </div>
+      </div>
     </div>
   </nav>
 </template>
@@ -104,6 +125,7 @@ export default {
   data() {
     return {
       isDropdownOpen: false,
+      isProfileMenuOpen: false,
       userRole: null,
     };
   },
@@ -124,6 +146,11 @@ export default {
 
   mounted() {
     this.userRole = this.getRoleFromToken();
+    document.addEventListener("click", this.handleOutsideClick);
+  },
+
+  beforeUnmount() {
+    document.removeEventListener("click", this.handleOutsideClick);
   },
 
   methods: {
@@ -149,16 +176,39 @@ export default {
 
     toggleDropdown() {
       this.isDropdownOpen = !this.isDropdownOpen;
+      this.isProfileMenuOpen = false;
     },
 
     closeDropdown() {
       this.isDropdownOpen = false;
     },
 
+    toggleProfileMenu() {
+      this.isProfileMenuOpen = !this.isProfileMenuOpen;
+      this.isDropdownOpen = false;
+    },
+
+    closeProfileMenu() {
+      this.isProfileMenuOpen = false;
+    },
+    
+    handleOutsideClick(event) {
+      const managementMenu = this.$refs.managementMenu;
+      const profileMenu = this.$refs.profileMenu;
+
+      if (managementMenu && !managementMenu.contains(event.target)) {
+        this.isDropdownOpen = false;
+      }
+
+      if (profileMenu && !profileMenu.contains(event.target)) {
+        this.isProfileMenuOpen = false;
+      }
+    },
+
     logout() {
       localStorage.removeItem("token");
       this.$router.push("/");
-    },
+},
   },
 };
 </script>
@@ -298,22 +348,73 @@ export default {
   color: #ffffff;
 }
 
-.logout-btn {
-  padding: 7px 16px;
-  border: 1px solid #e74c3c;
-  color: #e74c3c;
-  border-radius: 999px;
-  font-size: 0.88rem;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  background: #ffffff;
-  cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease;
+.profile-wrapper {
+  position: relative;
 }
 
-.logout-btn:hover {
-  background: #e74c3c;
-  color: #ffffff;
+.profile-btn {
+  width: 42px;
+  height: 42px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #111827;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.profile-btn:hover {
+  border-color: #e74c3c;
+  color: #e74c3c;
+}
+
+.profile-dropdown {
+  position: absolute;
+  top: 52px;
+  right: 0;
+  width: 190px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.16);
+  padding: 8px;
+  z-index: 300;
+}
+
+.profile-dropdown-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: none;
+  background: transparent;
+  text-decoration: none;
+  color: #111827;
+  padding: 11px 12px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.profile-dropdown-item i {
+  color: #6b7280;
+}
+
+.profile-dropdown-item:hover {
+  background: #fff4ed;
+  color: #e74c3c;
+}
+
+.profile-dropdown-item:hover i {
+  color: #e74c3c;
+}
+
+.logout-dropdown-btn {
+  text-align: left;
 }
 </style>
