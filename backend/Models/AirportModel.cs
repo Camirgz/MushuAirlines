@@ -1,6 +1,6 @@
 namespace backend.Model;
 
-public class AirportCreationModel
+public class AirportModel
 {
     public string Code { get; set; }
     public string AirportName { get; set; }
