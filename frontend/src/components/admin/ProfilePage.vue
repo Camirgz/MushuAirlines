@@ -75,12 +75,12 @@
       <form v-else class="profile-form" @submit.prevent="saveProfile">
         <div class="form-grid">
           <div class="form-group">
-            <label>Nombre</label>
+            <label>Nombre <span>*</span></label>
             <input v-model.trim="form.firstName" type="text" required />
           </div>
 
           <div class="form-group">
-            <label>Apellido</label>
+            <label>Apellido <span>*</span></label>
             <input v-model.trim="form.lastName" type="text" required />
           </div>
 
@@ -91,33 +91,33 @@
           </div>
 
           <div class="form-group">
-            <label>SSN</label>
+            <label>SSN <span>*</span></label>
             <input v-model.trim="form.ssn" type="text" required />
           </div>
 
           <div class="form-group">
-            <label>Nacionalidad</label>
+            <label>Nacionalidad <span>*</span></label>
             <input v-model.trim="form.nationality" type="text" required />
           </div>
 
           <template v-if="isAdmin">
             <div class="form-group">
-              <label>Salario</label>
+              <label>Salario <span>*</span></label>
               <input v-model.number="form.salary" type="number" min="0" required />
             </div>
 
             <div class="form-group">
-              <label>Horario</label>
+              <label>Horario <span>*</span></label>
               <input v-model.trim="form.workSchedule" type="text" required />
             </div>
 
             <div class="form-group detail-full">
-              <label>Permisos</label>
+              <label>Permisos <span>*</span></label>
               <input v-model.trim="form.permissions" type="text" required />
             </div>
 
             <div class="form-group detail-full">
-              <label>Rol</label>
+              <label>Rol <span>*</span></label>
               <select v-model="form.role">
                 <option value="Administrator">Administrator</option>
                 <option value="Operator">Operator</option>
