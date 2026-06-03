@@ -73,16 +73,9 @@ namespace backend.Services
         {
             var currentAircraft = _aircraftRepository.GetById(id);
 
-            bool hasIncreasedValue =
-                aircraft.WeightKg > currentAircraft.WeightKg ||
-                aircraft.EconomyRows > currentAircraft.EconomyRows ||
-                aircraft.EconomySeatsPerRow > currentAircraft.EconomySeatsPerRow ||
-                aircraft.FirstClassRows > currentAircraft.FirstClassRows ||
-                aircraft.FirstClassSeatsPerRow > currentAircraft.FirstClassSeatsPerRow;
-
-            if (!hasIncreasedValue)
+            if (currentAircraft == null)
             {
-                return "Debe aumentar al menos un valor para actualizar la aeronave.";
+                return "No se encontró la aeronave solicitada.";
             }
 
             if (aircraft.WeightKg < currentAircraft.WeightKg)
@@ -110,13 +103,25 @@ namespace backend.Services
                 return "Los asientos por fila de primera clase no pueden disminuir.";
             }
 
+            bool hasIncreasedValue =
+                aircraft.WeightKg > currentAircraft.WeightKg ||
+                aircraft.EconomyRows > currentAircraft.EconomyRows ||
+                aircraft.EconomySeatsPerRow > currentAircraft.EconomySeatsPerRow ||
+                aircraft.FirstClassRows > currentAircraft.FirstClassRows ||
+                aircraft.FirstClassSeatsPerRow > currentAircraft.FirstClassSeatsPerRow;
+
+            if (!hasIncreasedValue)
+            {
+                return "Debe aumentar al menos un valor para actualizar la aeronave.";
+            }
+
             int totalSeats =
                 aircraft.EconomyRows * aircraft.EconomySeatsPerRow
                 + aircraft.FirstClassRows * aircraft.FirstClassSeatsPerRow;
 
-            if (totalSeats >= MaxSeatCapacity)
+            if (totalSeats >= 1000)
             {
-                return "La capacidad total de asientos (" + totalSeats + ") no puede ser igual o mayor a 1000.";
+                return $"La capacidad total de asientos ({totalSeats}) no puede ser igual o mayor a 1000.";
             }
 
             try
