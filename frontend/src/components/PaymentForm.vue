@@ -7,6 +7,24 @@
       icon="bi bi-credit-card-fill"
     />
 
+    <!-- Order summary -->
+    <div class="order-summary" v-if="flight">
+      <div class="order-route">
+        <span class="order-airport">{{ flight.origin }}</span>
+        <i class="bi bi-arrow-right order-arrow"></i>
+        <span class="order-airport">{{ flight.destination }}</span>
+      </div>
+      <div class="order-meta">
+        <span><i class="bi bi-calendar3 me-1"></i>{{ flight.flightDate }}</span>
+        <span class="order-sep">·</span>
+        <span><i class="bi bi-people me-1"></i>{{ purchaseState.seats.length }} pasajero(s)</span>
+      </div>
+      <div class="order-total">
+        <span class="order-total-label">Total estimado</span>
+        <span class="order-total-amount">₡{{ estimatedTotal.toLocaleString() }}</span>
+      </div>
+    </div>
+
     <AdminCard>
 
       <form
@@ -189,6 +207,7 @@ import axios from 'axios';
 import AdminPageLayout from '@/components/layout/AdminPageLayout.vue';
 import AdminHero from '@/components/admin/ui/AdminHero.vue';
 import AdminCard from '@/components/admin/ui/AdminCard.vue';
+import { usePurchaseFlow } from '@/composables/usePurchaseFlow';
 
 export default {
   name: 'PaymentForm',
@@ -197,6 +216,17 @@ export default {
     AdminPageLayout,
     AdminHero,
     AdminCard,
+  },
+
+  setup() {
+    const { state, hasPassengers, setPayment } = usePurchaseFlow();
+    return { purchaseState: state, hasPassengers, setPayment };
+  },
+
+  created() {
+    if (!this.hasPassengers) {
+      this.$router.push('/purchase/passengers');
+    }
   },
 
   data() {
@@ -227,6 +257,19 @@ export default {
         parseInt(this.payment.expiry.slice(0, 2)) <= 12 &&
         /^\d{3,4}$/.test(this.payment.cvv)
       );
+    },
+
+    flight() {
+      return this.purchaseState.flight;
+    },
+
+    estimatedTotal() {
+      const f     = this.purchaseState.flight;
+      const seats = this.purchaseState.seats;
+      if (!f || !seats.length) return 0;
+      return seats.reduce((sum, s) => {
+        return sum + (s.seatClass === 'FirstClass' ? f.priceFirstClass : f.priceEconomy);
+      }, 0);
     },
   },
 
@@ -331,13 +374,79 @@ export default {
     },
 
     goBack() {
-      this.$router.push('/');
+      this.$router.push('/purchase/passengers');
     },
   },
 };
 </script>
 
 <style scoped>
+
+/* ── Order summary ── */
+.order-summary {
+  background: linear-gradient(135deg, rgba(231,76,60,0.07) 0%, rgba(243,156,18,0.07) 100%);
+  border: 1.5px solid rgba(231,76,60,0.18);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.order-route {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.order-airport {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #1a1a1a;
+  letter-spacing: 0.04em;
+}
+
+.order-arrow {
+  color: #e74c3c;
+}
+
+.order-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.order-sep {
+  color: #ccc;
+}
+
+.order-total {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.order-total-label {
+  font-size: 0.72rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.order-total-amount {
+  font-size: 1.25rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #e74c3c 0%, #f39c12 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
 
 .airline-payment-form {
   display: flex;

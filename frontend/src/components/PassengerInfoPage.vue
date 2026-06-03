@@ -238,9 +238,13 @@
 
       </AdminCard>
 
+      <div v-if="validationError" class="validation-error">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ validationError }}
+      </div>
+
       <div class="action-row">
         <button class="btn-back" type="button" @click="goBack">Volver</button>
-        <button class="btn-continue" type="button">Continuar al Pago</button>
+        <button class="btn-continue" type="button" @click="continueToPayment">Continuar al Pago</button>
       </div>
 
     </main>
@@ -265,8 +269,8 @@ export default {
   },
 
   setup() {
-    const { state, hasFlight } = usePurchaseFlow();
-    return { purchaseState: state, hasFlight };
+    const { state, hasFlight, setPassengers } = usePurchaseFlow();
+    return { purchaseState: state, hasFlight, setPassengers };
   },
 
   data() {
@@ -278,6 +282,7 @@ export default {
         checkedCount:  0,
         checkedWeight: 0,
       },
+      validationError: null,
     };
   },
 
@@ -332,6 +337,46 @@ export default {
 
     goBack() {
       this.$router.push("/");
+    },
+
+    validateAllPassengers() {
+      for (let i = 0; i < this.passengers.length; i++) {
+        const p     = this.passengers[i];
+        const label = `Pasajero ${i + 1}`;
+
+        if (!p.firstName.trim())
+          return this.setError(`${label}: el nombre es requerido.`);
+        if (!p.lastName.trim())
+          return this.setError(`${label}: el apellido es requerido.`);
+        if (!p.gender)
+          return this.setError(`${label}: el género es requerido.`);
+        if (!p.passportCountry.trim())
+          return this.setError(`${label}: el país del pasaporte es requerido.`);
+        if (!p.passportNumber.trim())
+          return this.setError(`${label}: el número de pasaporte es requerido.`);
+        if (!p.birthDate)
+          return this.setError(`${label}: la fecha de nacimiento es requerida.`);
+
+        if (i === 0) {
+          if (!p.email.trim())
+            return this.setError(`${label}: el correo electrónico es requerido.`);
+          if (!p.phone.trim())
+            return this.setError(`${label}: el teléfono es requerido.`);
+        }
+      }
+      this.validationError = null;
+      return true;
+    },
+
+    setError(msg) {
+      this.validationError = msg;
+      return false;
+    },
+
+    continueToPayment() {
+      if (!this.validateAllPassengers()) return;
+      this.setPassengers(this.passengers, this.baggage);
+      this.$router.push("/payment");
     },
   },
 };
@@ -608,6 +653,18 @@ export default {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+}
+
+/* ── Validation error ── */
+.validation-error {
+  background: #fff5f5;
+  border: 1.5px solid #fca5a5;
+  color: #b91c1c;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  margin-top: 8px;
 }
 
 /* ── Action row ── */
