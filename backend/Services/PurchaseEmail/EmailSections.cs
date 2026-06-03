@@ -241,9 +241,44 @@ namespace backend.Templates
             ";
         }
 
-        public static string BuildPaymentSection(
+       public static string BuildPaymentSection(
             PurchaseConfirmationModel model)
         {
+            StringBuilder baggageHtml = new();
+
+            if (model.BaggageDetails != null &&
+                model.BaggageDetails.Count > 0)
+            {
+                foreach (var baggage in model.BaggageDetails)
+                {
+                    string baggageType =
+                        baggage.Type == "HandBaggage"
+                            ? "Equipaje de Mano"
+                            : "Equipaje Documentado";
+
+                    baggageHtml.Append($@"
+                        <div style='
+                            display:flex;
+                            justify-content:space-between;
+                            margin-bottom:10px;
+                            padding:10px 0;
+                            border-bottom:1px solid rgba(255,255,255,0.15);
+                        '>
+
+                            <span>
+                                {baggageType}
+                                ({baggage.Quantity})
+                            </span>
+
+                            <strong>
+                                ${baggage.Subtotal:N2}
+                            </strong>
+
+                        </div>
+                    ");
+                }
+            }
+
             return $@"
                 <div style='{EmailStyles.Section}'>
 
@@ -262,6 +297,32 @@ namespace backend.Templates
                             <strong>Método de pago:</strong>
                             {model.PaymentMethod}
                         </p>
+
+                        <div style='
+                            margin-top:20px;
+                            padding-top:15px;
+                            border-top:1px solid rgba(255,255,255,0.2);
+                        '>
+
+                            <div style='
+                                display:flex;
+                                justify-content:space-between;
+                                margin-bottom:10px;
+                            '>
+
+                                <span>
+                                    Asientos ({model.TotalSeats})
+                                </span>
+
+                                <strong>
+                                    ${(model.Details?.Sum(d => d.Subtotal) ?? 0m):N2}
+                                </strong>
+
+                            </div>
+
+                            {baggageHtml}
+
+                        </div>
 
                         <h2 style='
                             color:#f0a500;

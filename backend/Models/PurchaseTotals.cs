@@ -5,6 +5,11 @@ public class PurchaseTotals
     public decimal TotalPaid { get; set; }
     public int TotalSeats { get; set; }
     public List<SeatClassSubtotal> DetailByClass { get; set; } = [];
+    public List<BaggageSubtotal> BaggageDetails { get; set; } = [];
+    public int HandBaggageCount { get; set; }
+    public decimal HandBaggageSubtotal { get; set; }
+    public int CheckedBaggageCount { get; set; }
+    public decimal CheckedBaggageSubtotal { get; set; }
 }
 
 public class SeatClassSubtotal

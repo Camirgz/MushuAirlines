@@ -14,9 +14,11 @@ public class PurchasePricingCalculatorTests
         _calculator = new PurchasePricingCalculator();
     }
 
+    private BaggageInfo GetEmptyBaggage() => new() { HandCount = 0, CheckedCount = 0, HandWeight = 0, CheckedWeight = 0 };
+
 
     [Test]
-    public void Calculate_OnlyEconomySeats_ShouldReturnCorrectTotal()
+    public void Calculate_OnlyEconomySeats_NoBAGGAGE_ShouldReturnCorrectTotal()
     {
         // Arrange
         var seats = new List<SeatSelection>
@@ -30,7 +32,7 @@ public class PurchasePricingCalculatorTests
         int     expectedSeats   = 3;
 
         // Act
-        var result = _calculator.Calculate(seats, economyPrice, firstClassPrice: 300m);
+        var result = _calculator.Calculate(seats, economyPrice, firstClassPrice: 300m, GetEmptyBaggage(), 0m, 0m, 1m);
 
         // Assert
         Assert.Multiple(() =>
@@ -41,7 +43,7 @@ public class PurchasePricingCalculatorTests
     }
 
     [Test]
-    public void Calculate_OnlyFirstClassSeats_ShouldReturnCorrectTotal()
+    public void Calculate_OnlyFirstClassSeats_NoBaggage_ShouldReturnCorrectTotal()
     {
         // Arrange
         var seats = new List<SeatSelection>
@@ -54,7 +56,7 @@ public class PurchasePricingCalculatorTests
         int     expectedSeats   = 2;
 
         // Act
-        var result = _calculator.Calculate(seats, economyPrice: 100m, firstClassPrice);
+        var result = _calculator.Calculate(seats, economyPrice: 100m, firstClassPrice, GetEmptyBaggage(), 0m, 0m, 1m);
 
         // Assert
         Assert.Multiple(() =>
@@ -65,7 +67,7 @@ public class PurchasePricingCalculatorTests
     }
 
     [Test]
-    public void Calculate_MixedClasses_ShouldSumBothSubtotals()
+    public void Calculate_MixedClasses_NoBaggage_ShouldSumBothSubtotals()
     {
         // Arrange
         var seats = new List<SeatSelection>
@@ -80,13 +82,104 @@ public class PurchasePricingCalculatorTests
         int     expectedSeats   = 3;
 
         // Act
-        var result = _calculator.Calculate(seats, economyPrice, firstClassPrice);
+        var result = _calculator.Calculate(seats, economyPrice, firstClassPrice, GetEmptyBaggage(), 0m, 0m, 1m);
 
         // Assert
         Assert.Multiple(() =>
         {
             Assert.That(result.TotalPaid,  Is.EqualTo(expectedTotal));
             Assert.That(result.TotalSeats, Is.EqualTo(expectedSeats));
+        });
+    }
+
+    [Test]
+    public void Calculate_WithHandBaggage_ShouldIncludeInTotal()
+    {
+        // Arrange
+        var seats = new List<SeatSelection>
+        {
+            new() { PassengerIndex = 0, SeatClass = "Economy", SeatNumber = 1 },
+        };
+        var baggage = new BaggageInfo { HandCount = 2, CheckedCount = 0, HandWeight = 0, CheckedWeight = 0 };
+        decimal economyPrice = 100m;
+        decimal handBagPrice = 30m;
+        decimal expectedSeatsSubtotal = 100m;
+        decimal expectedBaggageSubtotal = 60m;
+        decimal expectedTotal = 160m;
+
+        // Act
+        var result = _calculator.Calculate(seats, economyPrice, 0m, baggage, handBagPrice, 0m, 1m);
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.TotalPaid,            Is.EqualTo(expectedTotal));
+            Assert.That(result.HandBaggageCount,     Is.EqualTo(2));
+            Assert.That(result.HandBaggageSubtotal,  Is.EqualTo(expectedBaggageSubtotal));
+            Assert.That(result.CheckedBaggageCount,  Is.EqualTo(0));
+            Assert.That(result.CheckedBaggageSubtotal, Is.EqualTo(0m));
+        });
+    }
+
+    [Test]
+    public void Calculate_WithCheckedBaggage_ShouldIncludeInTotal()
+    {
+        // Arrange
+        var seats = new List<SeatSelection>
+        {
+            new() { PassengerIndex = 0, SeatClass = "Economy", SeatNumber = 1 },
+        };
+        var baggage = new BaggageInfo { HandCount = 0, CheckedCount = 1, HandWeight = 0, CheckedWeight = 0 };
+        decimal economyPrice = 100m;
+        decimal bagPrice = 50m;
+        decimal bagMultiplier = 1.5m;
+        decimal expectedSeatsSubtotal = 100m;
+        decimal expectedBaggageSubtotal = 75m; // 1 × 50 × 1.5
+        decimal expectedTotal = 175m;
+
+        // Act
+        var result = _calculator.Calculate(seats, economyPrice, 0m, baggage, 0m, bagPrice, bagMultiplier);
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.TotalPaid,             Is.EqualTo(expectedTotal));
+            Assert.That(result.HandBaggageCount,      Is.EqualTo(0));
+            Assert.That(result.HandBaggageSubtotal,   Is.EqualTo(0m));
+            Assert.That(result.CheckedBaggageCount,   Is.EqualTo(1));
+            Assert.That(result.CheckedBaggageSubtotal, Is.EqualTo(expectedBaggageSubtotal));
+        });
+    }
+
+    [Test]
+    public void Calculate_WithBothBaggageTypes_ShouldIncludeBothInTotal()
+    {
+        // Arrange
+        var seats = new List<SeatSelection>
+        {
+            new() { PassengerIndex = 0, SeatClass = "Economy", SeatNumber = 1 },
+        };
+        var baggage = new BaggageInfo { HandCount = 1, CheckedCount = 2, HandWeight = 0, CheckedWeight = 0 };
+        decimal economyPrice = 100m;
+        decimal handBagPrice = 20m;
+        decimal bagPrice = 50m;
+        decimal bagMultiplier = 1.0m;
+        decimal expectedSeatsSubtotal = 100m;
+        decimal expectedHandBaggageSubtotal = 20m;
+        decimal expectedCheckedBaggageSubtotal = 100m; // 2 × 50 × 1.0
+        decimal expectedTotal = 220m;
+
+        // Act
+        var result = _calculator.Calculate(seats, economyPrice, 0m, baggage, handBagPrice, bagPrice, bagMultiplier);
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.TotalPaid,              Is.EqualTo(expectedTotal));
+            Assert.That(result.HandBaggageCount,       Is.EqualTo(1));
+            Assert.That(result.HandBaggageSubtotal,    Is.EqualTo(expectedHandBaggageSubtotal));
+            Assert.That(result.CheckedBaggageCount,    Is.EqualTo(2));
+            Assert.That(result.CheckedBaggageSubtotal, Is.EqualTo(expectedCheckedBaggageSubtotal));
         });
     }
 
@@ -103,7 +196,7 @@ public class PurchasePricingCalculatorTests
         };
 
         // Act
-        var result = _calculator.Calculate(seats, economyPrice: 200m, firstClassPrice: 600m);
+        var result = _calculator.Calculate(seats, economyPrice: 200m, firstClassPrice: 600m, GetEmptyBaggage(), 0m, 0m, 1m);
 
         // Assert
         Assert.That(result.DetailByClass, Has.Count.EqualTo(2));
@@ -123,7 +216,7 @@ public class PurchasePricingCalculatorTests
         decimal expectedSubtotal = 500m;
 
         // Act
-        var result = _calculator.Calculate(seats, economyPrice, firstClassPrice: 999m);
+        var result = _calculator.Calculate(seats, economyPrice, firstClassPrice: 999m, GetEmptyBaggage(), 0m, 0m, 1m);
 
         // Assert
         var detail = result.DetailByClass.Single(d => d.SeatClass == "Economy");
@@ -149,7 +242,7 @@ public class PurchasePricingCalculatorTests
         decimal expectedSubtotal = 2100m;
 
         // Act
-        var result = _calculator.Calculate(seats, economyPrice: 50m, firstClassPrice);
+        var result = _calculator.Calculate(seats, economyPrice: 50m, firstClassPrice, GetEmptyBaggage(), 0m, 0m, 1m);
 
         // Assert
         var detail = result.DetailByClass.Single(d => d.SeatClass == "FirstClass");
@@ -168,7 +261,7 @@ public class PurchasePricingCalculatorTests
         var seats = new List<SeatSelection>();
 
         // Act
-        var result = _calculator.Calculate(seats, economyPrice: 100m, firstClassPrice: 200m);
+        var result = _calculator.Calculate(seats, economyPrice: 100m, firstClassPrice: 200m, GetEmptyBaggage(), 0m, 0m, 1m);
 
         // Assert
         Assert.Multiple(() =>
@@ -191,7 +284,7 @@ public class PurchasePricingCalculatorTests
         int     expectedSeats = 1;
 
         // Act
-        var result = _calculator.Calculate(seats, economyPrice, firstClassPrice: 0m);
+        var result = _calculator.Calculate(seats, economyPrice, firstClassPrice: 0m, GetEmptyBaggage(), 0m, 0m, 1m);
 
         // Assert
         Assert.Multiple(() =>
@@ -212,7 +305,7 @@ public class PurchasePricingCalculatorTests
 
         // Act & Assert
         Assert.Throws<ArgumentException>(() =>
-            _calculator.Calculate(seats, economyPrice: 100m, firstClassPrice: 200m));
+            _calculator.Calculate(seats, economyPrice: 100m, firstClassPrice: 200m, GetEmptyBaggage(), 0m, 0m, 1m));
     }
 
     [Test]
@@ -228,7 +321,7 @@ public class PurchasePricingCalculatorTests
         };
 
         // Act
-        var result = _calculator.Calculate(seats, economyPrice: 175m, firstClassPrice: 450m);
+        var result = _calculator.Calculate(seats, economyPrice: 175m, firstClassPrice: 450m, GetEmptyBaggage(), 0m, 0m, 1m);
 
         // Assert
         decimal expectedTotal = result.DetailByClass.Sum(d => d.Subtotal);

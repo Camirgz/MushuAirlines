@@ -77,6 +77,22 @@ namespace backend.Repositories
             if (purchase != null)
             {
                 purchase.Details = GetPurchaseDetails(purchaseId);
+                purchase.BaggageDetails = GetPurchaseBaggageDetails(purchaseId);
+                
+                // Populate individual baggage counts and subtotals
+                var handBaggage = purchase.BaggageDetails.FirstOrDefault(b => b.Type == "HandBaggage");
+                if (handBaggage != null)
+                {
+                    purchase.HandBaggageCount = handBaggage.Quantity;
+                    purchase.HandBaggageSubtotal = handBaggage.Subtotal;
+                }
+
+                var checkedBaggage = purchase.BaggageDetails.FirstOrDefault(b => b.Type == "CheckedBaggage");
+                if (checkedBaggage != null)
+                {
+                    purchase.CheckedBaggageCount = checkedBaggage.Quantity;
+                    purchase.CheckedBaggageSubtotal = checkedBaggage.Subtotal;
+                }
             }
 
             return purchase;
@@ -91,6 +107,23 @@ namespace backend.Repositories
                 new { PurchaseId = purchaseId },
                 commandType: CommandType.StoredProcedure
             ).ToList();
+        }
+
+        public List<BaggageSubtotal> GetPurchaseBaggageDetails(int purchaseId)
+        {
+            using var connection = new SqlConnection(connectionString);
+
+            const string query = @"
+                SELECT
+                    BaggageType AS Type,
+                    Quantity,
+                    UnitPrice,
+                    Subtotal
+                FROM PurchaseBaggageDetail
+                WHERE PurchaseId = @PurchaseId
+                ORDER BY BaggageType";
+
+            return connection.Query<BaggageSubtotal>(query, new { PurchaseId = purchaseId }).ToList();
         }
     }
 }

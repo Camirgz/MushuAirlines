@@ -98,11 +98,18 @@ public class PurchaseService : IPurchaseService
 
         decimal economyPrice    = route1.PriceEconomy    + (isStopover ? route2!.PriceEconomy    : 0);
         decimal firstClassPrice = route1.PriceFirstClass + (isStopover ? route2!.PriceFirstClass : 0);
+        decimal handBagPrice    = route1.HandBagPrice    + (isStopover ? route2!.HandBagPrice    : 0);
+        decimal bagPrice        = route1.BagPrice        + (isStopover ? route2!.BagPrice        : 0);
+        decimal bagMultiplier   = route1.BagMultiplier; // Multiplier is the same for both legs
 
         var totals = _pricingCalculator.Calculate(
             request.SeatSelections,
             economyPrice,
-            firstClassPrice);
+            firstClassPrice,
+            request.Baggage,
+            handBagPrice,
+            bagPrice,
+            bagMultiplier);
 
         string reservationCode;
         do
@@ -138,6 +145,10 @@ public class PurchaseService : IPurchaseService
         foreach (var detail in totals.DetailByClass)
             await _purchaseRepo.CreatePurchaseDetailAsync(
                 purchaseId, detail.SeatClass, detail.SeatCount, detail.Subtotal);
+
+        foreach (var baggageDetail in totals.BaggageDetails)
+            await _purchaseRepo.CreatePurchaseBaggageDetailAsync(
+                purchaseId, baggageDetail.Type, baggageDetail.Quantity, baggageDetail.UnitPrice, baggageDetail.Subtotal);
 
         var tickets = new List<TicketSummary>(request.SeatSelections.Count);
         for (int seatIdx = 0; seatIdx < request.SeatSelections.Count; seatIdx++)
