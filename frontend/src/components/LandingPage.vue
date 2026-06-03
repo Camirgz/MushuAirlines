@@ -1208,7 +1208,6 @@ export default {
   align-items: center;
   padding: 56px 24px 72px;
   position: relative;
-  overflow: hidden;
 }
 
 .hero-plane-bg {
