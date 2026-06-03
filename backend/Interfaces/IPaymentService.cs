@@ -4,6 +4,6 @@ namespace backend.Services
 {
     public interface IPaymentService
     {
-        int ApprovePayment(PaymentModel model);
+        void ValidatePayment(PaymentModel model);
     }
 }

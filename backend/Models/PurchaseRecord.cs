@@ -1,5 +1,12 @@
 namespace backend.Model;
 
+public class PassengerIdentityRecord
+{
+    public string    FullName       { get; set; } = string.Empty;
+    public DateTime? BirthDate      { get; set; }
+    public string    PassportCountry { get; set; } = string.Empty;
+}
+
 public class PurchaseRecord
 {
     public int PassengerId { get; set; }

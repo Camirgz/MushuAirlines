@@ -540,10 +540,210 @@
             </div>
           </div>
 
+          <div v-if="seatAvailabilityError" class="modal-seat-error">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ seatAvailabilityError }}
+          </div>
+
           <div class="modal-actions">
             <button class="modal-cancel-btn" @click="closeFlightDetails">Cancelar</button>
-            <button class="modal-cart-btn" :disabled="firstClassCount + economyCount === 0">
-              <i class="bi bi-cart3 me-2"></i>Agregar al carrito
+            <button
+              class="modal-cart-btn"
+              :disabled="passengerCount === 0"
+              @click="startPurchase"
+            >
+              <i class="bi bi-arrow-right-circle me-2"></i>Continuar con la compra
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </Transition>
+
+    <!-- Booking modal — stopover flights -->
+    <Transition name="modal-fade">
+      <div class="modal-overlay" v-if="selectedStopover" @click.self="closeStopoverModal">
+        <div class="flight-modal">
+
+          <button class="modal-close-btn" @click="closeStopoverModal">
+            <i class="bi bi-x-lg"></i>
+          </button>
+
+          <div class="modal-airline-header">
+            <div class="modal-airline-info">
+              <div class="airline-icon">
+                <i class="bi bi-airplane-fill"></i>
+              </div>
+              <div>
+                <div class="modal-airline-name">Mushu Airlines</div>
+                <div class="modal-flight-id">Itinerario con escala en {{ selectedStopover.connectionCity }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Leg 1 -->
+          <div class="modal-route-section">
+            <div class="modal-endpoint">
+              <div class="modal-time">{{ selectedStopover.leg1.departureTime }}</div>
+              <div class="modal-city">{{ getAirportCity(selectedStopover.leg1.origin) }}</div>
+              <div class="modal-iata">{{ selectedStopover.leg1.origin }}</div>
+              <div class="modal-date">{{ selectedStopover.leg1.date }}</div>
+            </div>
+            <div class="modal-route-middle">
+              <div class="modal-duration-label">{{ selectedStopover.leg1.durationLabel }}</div>
+              <div class="modal-route-line">
+                <div class="modal-route-dot left"></div>
+                <div class="modal-route-plane"><i class="bi bi-airplane-fill"></i></div>
+                <div class="modal-route-dot right"></div>
+              </div>
+            </div>
+            <div class="modal-endpoint right">
+              <div class="modal-time">{{ selectedStopover.leg1.arrivalTime }}</div>
+              <div class="modal-city">{{ getAirportCity(selectedStopover.leg1.destination) }}</div>
+              <div class="modal-iata">{{ selectedStopover.leg1.destination }}</div>
+              <div class="modal-date">{{ selectedStopover.leg1.arrivalDate }}</div>
+            </div>
+          </div>
+
+          <!-- Layover indicator -->
+          <div class="modal-layover-bar">
+            <div class="modal-layover-line"></div>
+            <div class="modal-layover-badge">
+              <i class="bi bi-hourglass-split me-1"></i>
+              Escala de
+              {{ Math.floor(selectedStopover.layoverMinutes / 60) }}h
+              {{ selectedStopover.layoverMinutes % 60 > 0 ? (selectedStopover.layoverMinutes % 60) + 'm' : '' }}
+              en {{ selectedStopover.connectionCity }}
+            </div>
+            <div class="modal-layover-line"></div>
+          </div>
+
+          <!-- Leg 2 -->
+          <div class="modal-route-section">
+            <div class="modal-endpoint">
+              <div class="modal-time">{{ selectedStopover.leg2.departureTime }}</div>
+              <div class="modal-city">{{ getAirportCity(selectedStopover.leg2.origin) }}</div>
+              <div class="modal-iata">{{ selectedStopover.leg2.origin }}</div>
+              <div class="modal-date">{{ selectedStopover.leg2.date }}</div>
+            </div>
+            <div class="modal-route-middle">
+              <div class="modal-duration-label">{{ selectedStopover.leg2.durationLabel }}</div>
+              <div class="modal-route-line">
+                <div class="modal-route-dot left"></div>
+                <div class="modal-route-plane"><i class="bi bi-airplane-fill"></i></div>
+                <div class="modal-route-dot right"></div>
+              </div>
+            </div>
+            <div class="modal-endpoint right">
+              <div class="modal-time">{{ selectedStopover.leg2.arrivalTime }}</div>
+              <div class="modal-city">{{ getAirportCity(selectedStopover.leg2.destination) }}</div>
+              <div class="modal-iata">{{ selectedStopover.leg2.destination }}</div>
+              <div class="modal-date">{{ selectedStopover.leg2.arrivalDate }}</div>
+            </div>
+          </div>
+
+          <div class="modal-info-grid">
+            <div class="modal-info-item">
+              <span class="modal-info-label"><i class="bi bi-globe me-1"></i>País destino</span>
+              <span class="modal-info-value">{{ getAirportCountry(selectedStopover.leg2.destination) }}</span>
+            </div>
+            <div class="modal-info-item">
+              <span class="modal-info-label"><i class="bi bi-people me-1"></i>Pasajeros</span>
+              <span class="modal-info-value">{{ passengerCount }}</span>
+            </div>
+          </div>
+
+          <!-- Seat class distribution -->
+          <div class="modal-section-block">
+            <div class="modal-section-title">Distribución de clase</div>
+            <div class="modal-class-row">
+              <div class="modal-class-info">
+                <span class="modal-class-name">Primera Clase</span>
+                <span class="modal-class-price">₡{{ (selectedStopover.leg1.priceFirstClass + selectedStopover.leg2.priceFirstClass).toLocaleString() }} / persona</span>
+              </div>
+              <div class="modal-qty-ctrl">
+                <button class="modal-qty-btn" @click="stopoverFirstClassCount = Math.max(0, stopoverFirstClassCount - 1)">−</button>
+                <span class="modal-qty-val">{{ stopoverFirstClassCount }}</span>
+                <button class="modal-qty-btn" @click="stopoverFirstClassCount = Math.min(passengerCount, stopoverFirstClassCount + 1)">+</button>
+              </div>
+            </div>
+            <div class="modal-class-row">
+              <div class="modal-class-info">
+                <span class="modal-class-name">Clase Turista</span>
+                <span class="modal-class-price">₡{{ (selectedStopover.leg1.priceEconomy + selectedStopover.leg2.priceEconomy).toLocaleString() }} / persona</span>
+              </div>
+              <div class="modal-qty-ctrl">
+                <span class="modal-qty-val readonly">{{ stopoverEconomyCount }}</span>
+              </div>
+            </div>
+            <p v-if="stopoverFirstClassCount + stopoverEconomyCount !== passengerCount" class="modal-class-warning">
+              La suma debe ser {{ passengerCount }} pasajero(s)
+            </p>
+          </div>
+
+          <!-- Luggage -->
+          <div class="modal-section-block">
+            <div class="modal-section-title">Equipaje</div>
+            <div class="modal-class-row">
+              <div class="modal-class-info">
+                <span class="modal-class-name">Equipaje de mano</span>
+                <span class="modal-class-price">₡{{ ((selectedStopover.leg1.handBagPrice ?? 0) + (selectedStopover.leg2.handBagPrice ?? 0)).toLocaleString() }} / unidad</span>
+              </div>
+              <div class="modal-qty-ctrl">
+                <button class="modal-qty-btn" @click="stopoverHandBagsCount = Math.max(0, stopoverHandBagsCount - 1)">−</button>
+                <span class="modal-qty-val">{{ stopoverHandBagsCount }}</span>
+                <button class="modal-qty-btn" @click="stopoverHandBagsCount++">+</button>
+              </div>
+            </div>
+            <div class="modal-class-row">
+              <div class="modal-class-info">
+                <span class="modal-class-name">Equipaje documentado</span>
+                <span class="modal-class-price">₡{{ ((selectedStopover.leg1.bagPrice ?? 0) * (selectedStopover.leg1.bagMultiplier ?? 1) + (selectedStopover.leg2.bagPrice ?? 0) * (selectedStopover.leg2.bagMultiplier ?? 1)).toLocaleString() }} / unidad</span>
+              </div>
+              <div class="modal-qty-ctrl">
+                <button class="modal-qty-btn" @click="stopoverCheckedBagsCount = Math.max(0, stopoverCheckedBagsCount - 1)">−</button>
+                <span class="modal-qty-val">{{ stopoverCheckedBagsCount }}</span>
+                <button class="modal-qty-btn" @click="stopoverCheckedBagsCount++">+</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Purchase summary -->
+          <div class="modal-receipt">
+            <div class="modal-section-title">Resumen</div>
+            <div class="receipt-line" v-if="stopoverFirstClassCount > 0">
+              <span>{{ stopoverFirstClassCount }} × Primera Clase</span>
+              <span>₡{{ (stopoverFirstClassCount * (selectedStopover.leg1.priceFirstClass + selectedStopover.leg2.priceFirstClass)).toLocaleString() }}</span>
+            </div>
+            <div class="receipt-line" v-if="stopoverEconomyCount > 0">
+              <span>{{ stopoverEconomyCount }} × Clase Turista</span>
+              <span>₡{{ (stopoverEconomyCount * (selectedStopover.leg1.priceEconomy + selectedStopover.leg2.priceEconomy)).toLocaleString() }}</span>
+            </div>
+            <div class="receipt-line" v-if="stopoverHandBagsCount > 0">
+              <span>{{ stopoverHandBagsCount }} × Equipaje de mano</span>
+              <span>₡{{ (stopoverHandBagsCount * ((selectedStopover.leg1.handBagPrice ?? 0) + (selectedStopover.leg2.handBagPrice ?? 0))).toLocaleString() }}</span>
+            </div>
+            <div class="receipt-line" v-if="stopoverCheckedBagsCount > 0">
+              <span>{{ stopoverCheckedBagsCount }} × Equipaje documentado</span>
+              <span>₡{{ (stopoverCheckedBagsCount * ((selectedStopover.leg1.bagPrice ?? 0) * (selectedStopover.leg1.bagMultiplier ?? 1) + (selectedStopover.leg2.bagPrice ?? 0) * (selectedStopover.leg2.bagMultiplier ?? 1))).toLocaleString() }}</span>
+            </div>
+            <div class="receipt-total">
+              <span>Total</span>
+              <span>₡{{ stopoverModalTotal.toLocaleString() }}</span>
+            </div>
+          </div>
+
+          <div v-if="stopoverSeatAvailabilityError" class="modal-seat-error">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ stopoverSeatAvailabilityError }}
+          </div>
+
+          <div class="modal-actions">
+            <button class="modal-cancel-btn" @click="closeStopoverModal">Cancelar</button>
+            <button
+              class="modal-cart-btn"
+              :disabled="passengerCount === 0"
+              @click="startStopoverPurchase"
+            >
+              <i class="bi bi-arrow-right-circle me-2"></i>Continuar con la compra
             </button>
           </div>
 
@@ -557,6 +757,8 @@
 <script>
 import FlightResultCard from './FlightResultCard.vue'
 import { findStopoverConnections, isOvernightFlight, addDaysToDateString } from '@/services/connectionFinder.js'
+import { usePurchaseFlow } from '@/composables/usePurchaseFlow'
+import { checkAvailability } from '@/services/PurchaseService'
 
 function durationToHours(dur) {
   const [h, m] = dur.split(':')
@@ -665,6 +867,13 @@ export default {
       firstClassCount: 0,
       handBagsCount: 0,
       checkedBagsCount: 0,
+      seatAvailabilityError: null,
+
+      selectedStopover: null,
+      stopoverFirstClassCount: 0,
+      stopoverHandBagsCount: 0,
+      stopoverCheckedBagsCount: 0,
+      stopoverSeatAvailabilityError: null,
     }
   },
 
@@ -768,6 +977,21 @@ export default {
       const tickets = (this.firstClassCount * f.priceFirstClass) + (this.economyCount * f.priceEconomy)
       const handBags = this.handBagsCount * f.handBagPrice
       const checkedBags = this.checkedBagsCount * f.bagPrice * f.bagMultiplier
+      return tickets + handBags + checkedBags
+    },
+
+    stopoverEconomyCount() {
+      return this.passengerCount - this.stopoverFirstClassCount
+    },
+
+    stopoverModalTotal() {
+      if (!this.selectedStopover) return 0
+      const l1 = this.selectedStopover.leg1
+      const l2 = this.selectedStopover.leg2
+      const tickets     = this.stopoverFirstClassCount  * (l1.priceFirstClass + l2.priceFirstClass)
+                        + this.stopoverEconomyCount     * (l1.priceEconomy    + l2.priceEconomy)
+      const handBags    = this.stopoverHandBagsCount    * ((l1.handBagPrice ?? 0) + (l2.handBagPrice ?? 0))
+      const checkedBags = this.stopoverCheckedBagsCount * ((l1.bagPrice ?? 0) * (l1.bagMultiplier ?? 1) + (l2.bagPrice ?? 0) * (l2.bagMultiplier ?? 1))
       return tickets + handBags + checkedBags
     },
 
@@ -1006,6 +1230,7 @@ export default {
       this.firstClassCount = 0
       this.handBagsCount = 0
       this.checkedBagsCount = 0
+      this.seatAvailabilityError = null
       document.body.style.overflow = 'hidden'
     },
 
@@ -1015,8 +1240,134 @@ export default {
     },
 
     handleStopoverSelect(connection) {
-      // Stopover booking flow — available in a future update.
-      console.log('Itinerario con escala seleccionado:', connection)
+      this.selectedStopover              = connection
+      this.stopoverFirstClassCount       = 0
+      this.stopoverHandBagsCount         = 0
+      this.stopoverCheckedBagsCount      = 0
+      this.stopoverSeatAvailabilityError = null
+      document.body.style.overflow = 'hidden'
+    },
+
+    closeStopoverModal() {
+      this.selectedStopover        = null
+      document.body.style.overflow = ''
+    },
+
+    async startStopoverPurchase() {
+      const conn = this.selectedStopover
+      const leg1 = conn.leg1
+      const leg2 = conn.leg2
+
+      const [avail1, avail2] = await Promise.all([
+        checkAvailability(leg1.id, leg1.date, this.passengerCount),
+        checkAvailability(leg2.id, leg2.date, this.passengerCount),
+      ])
+
+      if (!avail1 || !avail2) {
+        const leg = !avail1 ? leg1 : leg2
+        this.stopoverSeatAvailabilityError =
+          `Lo sentimos, el vuelo ${leg.origin}→${leg.destination} ya no tiene asientos disponibles para la cantidad de pasajeros solicitada.`
+        return
+      }
+
+      const seats = [
+        ...Array.from({ length: this.stopoverFirstClassCount }, (_, i) => ({
+          passengerIndex: i,
+          seatClass:      'FirstClass',
+          seatNumber:     i + 1,
+        })),
+        ...Array.from({ length: this.stopoverEconomyCount }, (_, i) => ({
+          passengerIndex: this.stopoverFirstClassCount + i,
+          seatClass:      'Economy',
+          seatNumber:     this.stopoverFirstClassCount + i + 1,
+        })),
+      ]
+
+      const { setFlight } = usePurchaseFlow()
+      setFlight(
+        {
+          code:            leg1.id,
+          flightDate:      leg1.date,
+          origin:          leg1.origin,
+          destination:     leg2.destination,
+          originCity:      leg1.originCity      ?? '',
+          destinationCity: leg2.destinationCity ?? '',
+          departureTime:   leg1.departureTime,
+          arrivalTime:     leg2.arrivalTime,
+          priceEconomy:     leg1.priceEconomy    + leg2.priceEconomy,
+          priceFirstClass:  leg1.priceFirstClass + leg2.priceFirstClass,
+          passengerCount:   this.passengerCount,
+          handBagsCount:    this.stopoverHandBagsCount,
+          checkedBagsCount: this.stopoverCheckedBagsCount,
+          handBagPrice:    (leg1.handBagPrice ?? 0) + (leg2.handBagPrice ?? 0),
+          handBagWeight:    Math.min(leg1.handBagWeight ?? 0, leg2.handBagWeight ?? 0),
+          bagPrice:        (leg1.bagPrice ?? 0) * (leg1.bagMultiplier ?? 1)
+                         + (leg2.bagPrice ?? 0) * (leg2.bagMultiplier ?? 1),
+          bagWeight:        Math.min(leg1.bagWeight ?? 0, leg2.bagWeight ?? 0),
+          bagMultiplier:    1,
+          isStopover:       true,
+          connectionCity:   conn.connectionCity,
+          layoverMinutes:   conn.layoverMinutes,
+        },
+        seats,
+        {
+          code:       leg2.id,
+          flightDate: leg2.date,
+        }
+      )
+
+      this.closeStopoverModal()
+      this.$router.push('/purchase/passengers')
+    },
+
+    async startPurchase() {
+      const f = this.selectedFlight
+
+      // Verify seat availability before navigating
+      const available = await checkAvailability(f.id, f.date, this.passengerCount)
+      if (!available) {
+        this.seatAvailabilityError = 'Lo sentimos, este vuelo ya no tiene asientos disponibles para la cantidad de pasajeros solicitada.'
+        return
+      }
+
+      // Build one seat entry per passenger, ordered First Class first then Economy.
+      const seats = [
+        ...Array.from({ length: this.firstClassCount }, (_, i) => ({
+          passengerIndex: i,
+          seatClass:      'FirstClass',
+          seatNumber:     i + 1,
+        })),
+        ...Array.from({ length: this.economyCount }, (_, i) => ({
+          passengerIndex: this.firstClassCount + i,
+          seatClass:      'Economy',
+          seatNumber:     this.firstClassCount + i + 1,
+        })),
+      ]
+
+      const { setFlight } = usePurchaseFlow()
+      setFlight({
+        code:            f.id,
+        flightDate:      f.date,
+        origin:          f.origin,
+        destination:     f.destination,
+        originCity:      f.originCity      ?? '',
+        destinationCity: f.destinationCity ?? '',
+        departureTime:   f.departureTime,
+        arrivalTime:     f.arrivalTime,
+        priceEconomy:     f.priceEconomy,
+        priceFirstClass:  f.priceFirstClass,
+        passengerCount:   this.passengerCount,
+        handBagsCount:    this.handBagsCount,
+        checkedBagsCount: this.checkedBagsCount,
+        handBagPrice:     f.handBagPrice    ?? 0,
+        handBagWeight:    f.handBagWeight   ?? 0,
+        bagPrice:         f.bagPrice        ?? 0,
+        bagWeight:        f.bagWeight       ?? 0,
+        bagMultiplier:    f.bagMultiplier   ?? 1,
+      }, seats)
+
+      this.closeFlightDetails()
+      this.$router.push('/purchase/passengers')
     },
 
     setFilterPriceClass(className) {
@@ -2124,6 +2475,39 @@ export default {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+.modal-seat-error {
+  background: #fff5f5;
+  border: 1.5px solid #fca5a5;
+  color: #b91c1c;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.modal-layover-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0;
+}
+.modal-layover-line {
+  flex: 1;
+  height: 1px;
+  background: #e8e8e8;
+}
+.modal-layover-badge {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #e67e22;
+  background: #fff4e8;
+  border: 1px solid #fcd9a4;
+  border-radius: 20px;
+  padding: 4px 12px;
+  white-space: nowrap;
 }
 
 .modal-actions {

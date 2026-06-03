@@ -183,6 +183,9 @@ namespace backend.Repositories
             LinkFlightSchedule(flightScheduleId, scheduledFlightId);
             return scheduledFlightId;
         }
+        public int? FindExistingScheduledFlight(string routeCode, DateTime date)
+            => GetExistingScheduledFlight(routeCode, date);
+
         private int? GetExistingScheduledFlight(string routeCode,DateTime date)
         {
            using var connection = new SqlConnection(_connectionString);
@@ -262,7 +265,17 @@ namespace backend.Repositories
 
             if (aircraftCode == null)
             {
-                throw new Exception("No aircraft available.");
+                aircraftCode = connection.QueryFirstOrDefault<int?>(@"
+                    SELECT TOP 1 Code
+                    FROM   Aircraft
+                    ORDER  BY Code");
+            }
+
+            if (aircraftCode == null)
+            {
+                throw new Exception(
+                    $"No hay aeronaves de tipo '{aircraftType}' disponibles. " +
+                    "Un administrador debe registrar aeronaves antes de que se puedan crear vuelos programados.");
             }
 
             return aircraftCode.Value;

@@ -18,11 +18,61 @@ namespace backend.Repositories
         {
             using var connection = new SqlConnection(connectionString);
 
+            const string sql = @"
+                WITH Legs AS (
+                    SELECT
+                        ROW_NUMBER() OVER (ORDER BY
+                            CAST(fs.DepartureDate AS DATETIME) + CAST(fs.DepartureTime AS DATETIME)
+                        ) AS LegOrder,
+                        CAST(sf.Id AS VARCHAR)                                                      AS FlightNumber,
+                        at.AircraftType                                                             AS AircraftType,
+                        fs.OriginAirport,
+                        fs.DestinationAirport,
+                        CAST(fs.DepartureDate AS DATETIME) + CAST(fs.DepartureTime AS DATETIME)    AS DepartureDate,
+                        CAST(fs.ArrivalDate   AS DATETIME) + CAST(fs.ArrivalTime   AS DATETIME)    AS ArrivalDate
+                    FROM Purchase p
+                    INNER JOIN Itinerary i     ON p.BookingCode       = i.BookingCode
+                    INNER JOIN ItineraryScheduledFlight isf ON i.BookingCode = isf.BookingCode
+                    INNER JOIN ScheduledFlight sf  ON isf.ScheduledId        = sf.Id
+                    INNER JOIN Aircraft a          ON sf.AircraftCode        = a.Code
+                    INNER JOIN AircraftType at     ON a.Type                 = at.Id
+                    INNER JOIN FlightScheduleHasScheduledFlight fshsf ON sf.Id = fshsf.ScheduledFlightId
+                    INNER JOIN FlightSchedule fs   ON fshsf.FlightScheduleId = fs.Id
+                    WHERE p.Id = @PurchaseId
+                )
+                SELECT
+                    p.Id                                    AS PurchaseId,
+                    per.FirstName + ' ' + per.LastName      AS FullName,
+                    pass.InternationalId                    AS PassportNumber,
+                    p.Email,
+                    p.ReservationCode,
+                    p.InvoiceNumber,
+                    p.PaymentMethod,
+                    p.TotalPaid,
+                    p.TotalSeats,
+                    l1.FlightNumber,
+                    l1.AircraftType,
+                    l1.OriginAirport,
+                    l1.DestinationAirport,
+                    l1.DepartureDate,
+                    l1.ArrivalDate,
+                    i.Layover,
+                    l2.FlightNumber     AS FlightNumber2,
+                    l2.OriginAirport    AS OriginAirport2,
+                    l2.DestinationAirport AS DestinationAirport2,
+                    l2.DepartureDate    AS DepartureDate2,
+                    l2.ArrivalDate      AS ArrivalDate2
+                FROM Purchase p
+                INNER JOIN Passenger pa    ON p.PassengerId = pa.Id
+                INNER JOIN Person per      ON pa.Id         = per.Id
+                LEFT  JOIN Passport pass   ON pa.Id         = pass.PassengerHas
+                INNER JOIN Itinerary i     ON p.BookingCode = i.BookingCode
+                INNER JOIN Legs l1         ON l1.LegOrder   = 1
+                LEFT  JOIN Legs l2         ON l2.LegOrder   = 2
+                WHERE p.Id = @PurchaseId";
+
             var purchase = connection.QueryFirstOrDefault<PurchaseConfirmationModel>(
-                "GetPurchase",
-                new { PurchaseId = purchaseId },
-                commandType: CommandType.StoredProcedure
-            );
+                sql, new { PurchaseId = purchaseId });
 
             if (purchase != null)
             {

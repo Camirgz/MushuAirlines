@@ -1,105 +1,104 @@
-using backend.Interfaces;
 using backend.Model;
 using backend.Services;
-using Moq;
 
 namespace backend.Tests;
 
 [TestFixture]
 public class PaymentServiceTests
 {
-    private PaymentService paymentService = null!;
-    private Mock<IPaymentRepository> repositoryMock = null!;
+    private PaymentService _paymentService = null!;
 
     [SetUp]
     public void Setup()
     {
-        repositoryMock = new Mock<IPaymentRepository>();
-
-        paymentService = new PaymentService(
-            repositoryMock.Object
-        );
+        _paymentService = new PaymentService();
     }
 
     [Test]
-    public void ApprovePayment_ValidPayment_ShouldReturnPurchaseId()
+    public void ValidatePayment_ValidPayment_ShouldNotThrow()
     {
         // Arrange
-        PaymentModel payment = new()
+        var payment = new PaymentModel
         {
             PaymentMethod = "Visa",
-            Holder = "Leo Sibaja",
-            CardNumber = "1111 1111 1111 1111",
-            Expiry = "12/30",
-            Cvv = "123"
+            Holder        = "Leo Sibaja",
+            CardNumber    = "1111 1111 1111 1111",
+            Expiry        = "12/30",
+            Cvv           = "123"
         };
 
-        // Act
-        int result = paymentService.ApprovePayment(payment);
-
-        // Assert
-        Assert.That(result, Is.GreaterThan(0));
+        // Act & Assert — a valid payment must pass without throwing
+        Assert.DoesNotThrow(() => _paymentService.ValidatePayment(payment));
     }
 
     [Test]
-    public void ApprovePayment_WithoutPaymentMethod_ShouldThrowException()
+    public void ValidatePayment_WithoutPaymentMethod_ShouldThrowException()
     {
         // Arrange
-        PaymentModel payment = new()
+        var payment = new PaymentModel
         {
             PaymentMethod = "",
-            Holder = "Leo Sibaja",
-            CardNumber = "1111 1111 1111 1111",
-            Expiry = "12/30",
-            Cvv = "123"
+            Holder        = "Leo Sibaja",
+            CardNumber    = "1111 1111 1111 1111",
+            Expiry        = "12/30",
+            Cvv           = "123"
         };
 
         // Act & Assert
-        Exception ex = Assert.Throws<Exception>(
-            () => paymentService.ApprovePayment(payment)
-        )!;
-
-        Assert.That(ex.Message,Is.EqualTo("Debe seleccionar un método de pago."));
+        var ex = Assert.Throws<Exception>(() => _paymentService.ValidatePayment(payment))!;
+        Assert.That(ex.Message, Is.EqualTo("Debe seleccionar un método de pago."));
     }
 
     [Test]
-    public void ApprovePayment_InsufficientFundsCard_ShouldThrowException()
+    public void ValidatePayment_InsufficientFundsCard_ShouldThrowException()
     {
         // Arrange
-        PaymentModel payment = new()
+        var payment = new PaymentModel
         {
             PaymentMethod = "Visa",
-            Holder = "Leo Sibaja",
-            CardNumber = "9999 9999 9999 9999",
-            Expiry = "12/30",
-            Cvv = "123"
+            Holder        = "Leo Sibaja",
+            CardNumber    = "9999 9999 9999 9999",
+            Expiry        = "12/30",
+            Cvv           = "123"
         };
+
         // Act & Assert
-        Exception ex = Assert.Throws<Exception>(() => paymentService.ApprovePayment(payment))!;
-        Assert.That(ex.Message,Is.EqualTo("Pago rechazado: fondos insuficientes."));
+        var ex = Assert.Throws<Exception>(() => _paymentService.ValidatePayment(payment))!;
+        Assert.That(ex.Message, Is.EqualTo("Pago rechazado: fondos insuficientes."));
     }
 
     [Test]
-    public void ApprovePayment_ExpiredCard_ShouldThrowException()
+    public void ValidatePayment_ExpiredCard_ShouldThrowException()
     {
         // Arrange
-        PaymentModel payment = new()
+        var payment = new PaymentModel
         {
             PaymentMethod = "Visa",
-            Holder = "Leo Sibaja",
-            CardNumber = "1111 1111 1111 1111",
-            Expiry = "01/20",
-            Cvv = "123"
+            Holder        = "Leo Sibaja",
+            CardNumber    = "1111 1111 1111 1111",
+            Expiry        = "01/20",
+            Cvv           = "123"
         };
 
         // Act & Assert
-        Exception ex = Assert.Throws<Exception>(
-            () => paymentService.ApprovePayment(payment)
-        )!;
+        var ex = Assert.Throws<Exception>(() => _paymentService.ValidatePayment(payment))!;
+        Assert.That(ex.Message, Is.EqualTo("Pago rechazado: tarjeta expirada."));
+    }
 
-        Assert.That(
-            ex.Message,
-            Is.EqualTo("Pago rechazado: tarjeta expirada.")
-        );
+    [Test]
+    public void ValidatePayment_NullPaymentMethod_ShouldThrowException()
+    {
+        // Arrange
+        var payment = new PaymentModel
+        {
+            PaymentMethod = null!,
+            Holder        = "Leo Sibaja",
+            CardNumber    = "1111 1111 1111 1111",
+            Expiry        = "12/30",
+            Cvv           = "123"
+        };
+
+        // Act & Assert
+        Assert.Throws<Exception>(() => _paymentService.ValidatePayment(payment));
     }
 }

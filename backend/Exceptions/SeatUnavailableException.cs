@@ -11,5 +11,12 @@ namespace backend.Exceptions
             SeatNumber = seatNumber;
             ScheduledFlightId = scheduledFlightId;
         }
+
+        public SeatUnavailableException(int scheduledFlightId)
+            : base("No hay asientos disponibles en este vuelo.")
+        {
+            SeatNumber = string.Empty;
+            ScheduledFlightId = scheduledFlightId;
+        }
     }
 }

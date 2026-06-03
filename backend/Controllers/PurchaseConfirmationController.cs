@@ -15,6 +15,20 @@ namespace backend.Controllers
             this.service = service;
         }
 
+        [HttpGet("{purchaseId}")]
+        public ActionResult GetPurchase(int purchaseId)
+        {
+            try
+            {
+                var result = service.GetPurchaseData(purchaseId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+        }
+
         [HttpPost("send/{purchaseId}")]
         public ActionResult SendConfirmation(int purchaseId)
         {

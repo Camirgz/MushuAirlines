@@ -1,6 +1,19 @@
 <template>
   <AdminPageLayout>
 
+    <div class="purchase-layout">
+
+      <aside class="sidebar-col">
+        <PurchaseSummaryCard
+          v-if="flight"
+          :flight="flight"
+          :seats="purchaseState.seats"
+          :baggage="purchaseState.baggage"
+        />
+      </aside>
+
+      <div class="content-col">
+
     <AdminHero
       title="Información de Pago"
       subtitle="Complete los datos de su tarjeta para finalizar la compra."
@@ -149,6 +162,10 @@
 
         </div>
 
+        <div class="api-error" v-if="apiError">
+          <i class="bi bi-exclamation-circle-fill me-2"></i>{{ apiError }}
+        </div>
+
         <div class="bottom-box">
 
           <h4>Pago seguro</h4>
@@ -181,14 +198,19 @@
 
     </AdminCard>
 
+      </div><!-- end content-col -->
+    </div><!-- end purchase-layout -->
+
   </AdminPageLayout>
 </template>
 
 <script>
-import axios from 'axios';
 import AdminPageLayout from '@/components/layout/AdminPageLayout.vue';
 import AdminHero from '@/components/admin/ui/AdminHero.vue';
 import AdminCard from '@/components/admin/ui/AdminCard.vue';
+import PurchaseSummaryCard from '@/components/purchase/PurchaseSummaryCard.vue';
+import { usePurchaseFlow } from '@/composables/usePurchaseFlow';
+import { validatePayment, createPurchase, sendConfirmation } from '@/services/PurchaseService';
 
 export default {
   name: 'PaymentForm',
@@ -197,6 +219,18 @@ export default {
     AdminPageLayout,
     AdminHero,
     AdminCard,
+    PurchaseSummaryCard,
+  },
+
+  setup() {
+    const { state, hasPassengers, setPayment, buildPurchaseRequest, clear } = usePurchaseFlow();
+    return { purchaseState: state, hasPassengers, setPayment, buildPurchaseRequest, clear };
+  },
+
+  created() {
+    if (!this.hasPassengers) {
+      this.$router.push('/purchase/passengers');
+    }
   },
 
   data() {
@@ -213,6 +247,7 @@ export default {
 
       errors: {},
       validFields: {},
+      apiError: null,
     };
   },
 
@@ -227,6 +262,19 @@ export default {
         parseInt(this.payment.expiry.slice(0, 2)) <= 12 &&
         /^\d{3,4}$/.test(this.payment.cvv)
       );
+    },
+
+    flight() {
+      return this.purchaseState.flight;
+    },
+
+    estimatedTotal() {
+      const f     = this.purchaseState.flight;
+      const seats = this.purchaseState.seats;
+      if (!f || !seats.length) return 0;
+      return seats.reduce((sum, s) => {
+        return sum + (s.seatClass === 'FirstClass' ? f.priceFirstClass : f.priceEconomy);
+      }, 0);
     },
   },
 
@@ -305,39 +353,91 @@ export default {
       if (!this.isFormValid) return;
 
       this.isProcessing = true;
+      this.apiError     = null;
 
+      const cardData = {
+        holder:        this.payment.holder,
+        cardNumber:    this.payment.cardNumber,
+        expiry:        this.payment.expiry,
+        cvv:           this.payment.cvv,
+        paymentMethod: this.payment.paymentMethod,
+      };
+
+      // Step 1 — validate card (payment simulation)
       try {
-        const response = await axios.post(
-          'http://localhost:5103/api/payment/approve',
-          {
-            holder: this.payment.holder,
-            cardNumber: this.payment.cardNumber,
-            expiry: this.payment.expiry,
-            cvv: this.payment.cvv,
-            paymentMethod: this.payment.paymentMethod,
-          }
-        );
-
-        const purchaseId =
-          response.data.purchaseId ?? response.data.PurchaseId;
-
-        this.$router.push(`/purchase-confirmation/${purchaseId}`);
-      } catch (error) {
-        console.error(error);
-        alert(error.response?.data || 'Error procesando el pago');
-      } finally {
+        await validatePayment(cardData);
+      } catch (err) {
+        this.apiError     = err.message ?? 'Error al procesar el pago.';
         this.isProcessing = false;
+        return;
       }
+
+      // Step 2 — persist payment info to the flow and create the purchase
+      this.setPayment({
+        method:       this.payment.paymentMethod,
+        contactEmail: this.purchaseState.passengers[0]?.email ?? '',
+      });
+
+      let purchaseResponse;
+      try {
+        purchaseResponse = await createPurchase(this.buildPurchaseRequest());
+      } catch (err) {
+        this.apiError     = err.message ?? 'Ocurrió un error al procesar la compra.';
+        this.isProcessing = false;
+        return;
+      }
+
+      // Step 3 — fire-and-forget confirmation email
+      sendConfirmation(purchaseResponse.purchaseId).catch(() => {});
+
+      // Step 4 — clear flow state and show the confirmation page
+      this.clear();
+      this.$router.push(`/purchase-confirmation/${purchaseResponse.purchaseId}`);
     },
 
     goBack() {
-      this.$router.push('/');
+      this.$router.push('/purchase/passengers');
     },
   },
 };
 </script>
 
 <style scoped>
+
+/* ── Two-column purchase layout ── */
+.purchase-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 28px;
+}
+
+.sidebar-col {
+  width: 256px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 84px;
+}
+
+.content-col {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .sidebar-col {
+    display: none;
+  }
+}
+
+.api-error {
+  background: #fff5f5;
+  border: 1.5px solid #fca5a5;
+  color: #b91c1c;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
 
 .airline-payment-form {
   display: flex;

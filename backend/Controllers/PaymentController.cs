@@ -20,17 +20,12 @@ namespace backend.Controllers
         {
             try
             {
-                int purchaseId =
-                    service.ApprovePayment(model);
-
-                return Ok(new
-                {
-                    PurchaseId = purchaseId
-                });
+                service.ValidatePayment(model);
+                return Ok(new { approved = true });
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(new { message = ex.Message });
             }
         }
     }

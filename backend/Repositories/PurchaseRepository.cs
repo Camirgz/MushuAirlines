@@ -34,6 +34,49 @@ public class PurchaseRepository : IPurchaseRepository
         return taken == 0;
     }
 
+    public async Task<bool> HasAvailableSeatsAsync(int scheduledFlightId, int requestedCount)
+    {
+        using var connection = new SqlConnection(_connectionString);
+
+        const string bookedQuery = @"
+            SELECT COUNT(SeatNumber)
+            FROM   Ticket
+            WHERE  ScheduledId = @ScheduledFlightId";
+
+        int booked = await connection.ExecuteScalarAsync<int>(bookedQuery,
+            new { ScheduledFlightId = scheduledFlightId });
+
+
+        const string capacityQuery = @"
+            SELECT r.EconomyClassCapacity + r.FirstClassCapacity
+            FROM   ScheduledFlight sf
+            JOIN   Route           r  ON sf.RouteCode = r.Code
+            WHERE  sf.Id = @ScheduledFlightId";
+
+        int? capacity = await connection.QueryFirstOrDefaultAsync<int?>(capacityQuery,
+            new { ScheduledFlightId = scheduledFlightId });
+
+        if (capacity == null || capacity == 0)
+            return true;
+
+        return (capacity.Value - booked) >= requestedCount;
+    }
+
+    public async Task<List<int>> GetNextAvailableSeatNumbersAsync(int scheduledFlightId, int count)
+    {
+        using var connection = new SqlConnection(_connectionString);
+
+        const string query = @"
+            SELECT ISNULL(MAX(SeatNumber), 0)
+            FROM   Ticket
+            WHERE  ScheduledId = @ScheduledFlightId";
+
+        int maxUsed = await connection.ExecuteScalarAsync<int>(query,
+            new { ScheduledFlightId = scheduledFlightId });
+
+        return Enumerable.Range(maxUsed + 1, count).ToList();
+    }
+
     public async Task<bool> ReservationCodeExistsAsync(string code)
     {
         using var connection = new SqlConnection(_connectionString);
@@ -112,5 +155,67 @@ public class PurchaseRepository : IPurchaseRepository
             ScheduledId = scheduledFlightId,
             BookingCode = bookingCode
         });
+    }
+
+    public async Task UpdateFlightBookingAsync(int scheduledFlightId, int firstPassengerId, int seatCount)
+    {
+        using var connection = new SqlConnection(_connectionString);
+
+        await connection.ExecuteAsync(@"
+            UPDATE ScheduledFlight
+            SET    BookedSeats = BookedSeats + @SeatCount
+            WHERE  Id = @ScheduledFlightId",
+            new { ScheduledFlightId = scheduledFlightId, SeatCount = seatCount });
+
+        await connection.ExecuteAsync(@"
+            UPDATE FlightSchedule
+            SET    PassengerBooked = @PassengerId
+            WHERE  Id IN (
+                SELECT FlightScheduleId
+                FROM   FlightScheduleHasScheduledFlight
+                WHERE  ScheduledFlightId = @ScheduledFlightId
+            )
+            AND PassengerBooked IS NULL",
+            new { ScheduledFlightId = scheduledFlightId, PassengerId = firstPassengerId });
+    }
+
+    public async Task<int> GetBookedSeatsAsync(int scheduledFlightId)
+    {
+        using var connection = new SqlConnection(_connectionString);
+        return await connection.ExecuteScalarAsync<int>(@"
+            SELECT ISNULL(BookedSeats, 0) FROM ScheduledFlight WHERE Id = @Id",
+            new { Id = scheduledFlightId });
+    }
+
+    public async Task<int> GetAircraftCapacityByTypeAsync(string aircraftTypeId)
+    {
+        using var connection = new SqlConnection(_connectionString);
+        return await connection.ExecuteScalarAsync<int>(@"
+            SELECT TOP 1
+                ISNULL(a.EconomyRows * a.EconomySeatsPerRow
+                       + a.FirstClassRows * a.FirstClassSeatsPerRow, 0)
+            FROM Aircraft a
+            JOIN AircraftType aty ON a.[Type] = aty.Id
+            WHERE aty.AircraftType = @AircraftTypeId",
+            new { AircraftTypeId = aircraftTypeId });
+    }
+
+    public async Task<List<PassengerIdentityRecord>> GetPassengerIdentitiesOnFlightAsync(int scheduledFlightId)
+    {
+        using var connection = new SqlConnection(_connectionString);
+
+        const string query = @"
+            SELECT per.FirstName + ' ' + per.LastName AS FullName,
+                   per.BirthDate,
+                   per.Nationality AS PassportCountry
+            FROM   Ticket     t
+            JOIN   Passenger  pa  ON t.PassengerHas = pa.Id
+            JOIN   Person     per ON pa.Id           = per.Id
+            WHERE  t.ScheduledId = @ScheduledFlightId";
+
+        var identities = await connection.QueryAsync<PassengerIdentityRecord>(query,
+            new { ScheduledFlightId = scheduledFlightId });
+
+        return identities.ToList();
     }
 }

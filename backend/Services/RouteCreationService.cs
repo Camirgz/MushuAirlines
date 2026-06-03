@@ -1,9 +1,10 @@
+using backend.Interfaces;
 using backend.Model;
 using backend.Repositories;
 
 namespace backend.Services
 {
-    public class RouteCreationService
+    public class RouteCreationService : IRouteCreationService
     {
         private readonly RouteCreationRepository routeCreationRepository;
 
@@ -57,6 +58,11 @@ namespace backend.Services
         public int GetOrCreateScheduledFlight(string routeCode, DateTime date)
         {
             return routeCreationRepository.GetOrCreateScheduledFlight(routeCode, date);
+        }
+
+        public int? FindExistingScheduledFlight(string routeCode, DateTime date)
+        {
+            return routeCreationRepository.FindExistingScheduledFlight(routeCode, date);
         }
         public RouteCreationModel GetRouteByCode(string code)
         {
