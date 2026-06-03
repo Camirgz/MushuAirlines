@@ -1,0 +1,15 @@
+use MushuAirlines;
+CREATE PROCEDURE GetPurchaseDetails
+    @PurchaseId INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT 
+        SeatClass,
+        SeatCount,
+        Subtotal
+    FROM PurchaseDetail
+    WHERE PurchaseId = @PurchaseId;
+END;
+GO
