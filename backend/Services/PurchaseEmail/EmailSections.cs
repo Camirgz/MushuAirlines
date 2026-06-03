@@ -27,11 +27,6 @@ namespace backend.Templates
                             {model.Email}
                         </p>
 
-                        <p>
-                            <strong>Pasaporte:</strong>
-                            {model.PassportNumber}
-                        </p>
-
                     </div>
 
                 </div>
