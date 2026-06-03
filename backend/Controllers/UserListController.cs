@@ -1,17 +1,20 @@
-using backend.Services;
+using backend.Interfaces;
+using backend.Model;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace backend.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize(Roles = "Administrator")]
 public class UserListController : ControllerBase
 {
-    private readonly UserListService _userListService;
+    private readonly IUserListService _userListService;
 
-    public UserListController()
+    public UserListController(IUserListService userListService)
     {
-        _userListService = new UserListService();
+        _userListService = userListService;
     }
 
     [HttpGet]
@@ -23,4 +26,18 @@ public class UserListController : ControllerBase
         var result = _userListService.GetUsers(page, pageSize, search);
         return Ok(result);
     }
+
+    [HttpPut("{id:int}")]
+    public ActionResult UpdateUser(int id, [FromBody] UserManagementUpdateModel user)
+    {
+        string result = _userListService.UpdateUser(id, user);
+
+        if (!string.IsNullOrWhiteSpace(result))
+        {
+            return BadRequest(result);
+        }
+
+        return Ok("Usuario actualizado correctamente.");
+    }
 }
+

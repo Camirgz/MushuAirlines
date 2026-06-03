@@ -1,8 +1,15 @@
 using backend.Interfaces;
 using backend.Repositories;
 using backend.Services;
+
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 var builder = WebApplication.CreateBuilder(args);
+
+var jwtKey = "MushuClaveLeo.ari,Cami,alex;dani";
 
 builder.Services.AddCors(options =>
 {
@@ -14,6 +21,30 @@ builder.Services.AddCors(options =>
                             .AllowAnyMethod();
                     });
 });
+
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.RequireHttpsMetadata = false;
+
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(jwtKey)
+            ),
+
+            ClockSkew = TimeSpan.Zero
+        };
+    });
+
+builder.Services.AddAuthorization();
+
 // DEPENDENCY INJECTION
 
 builder.Services.AddScoped<
@@ -44,6 +75,8 @@ builder.Services.AddControllers()
     .AddJsonOptions(options =>
         options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase);
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddScoped<IExternalApiRepository, ExternalApiRepository>();
+builder.Services.AddScoped<ExternalApiService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -56,6 +89,18 @@ builder.Services.AddScoped<backend.Interfaces.IPurchaseRepository,   backend.Rep
 
 builder.Services.AddScoped<IAirportRepository, AirportRepository>();
 builder.Services.AddScoped<IAirportService, AirportService>();
+
+builder.Services.AddScoped<IAircraftRepository, AircraftRepository>();
+builder.Services.AddScoped<IAircraftService, AircraftService>();
+
+builder.Services.AddScoped<IAircraftTypeRepository, AircraftTypeRepository>();
+builder.Services.AddScoped<IAircraftTypeService, AircraftTypeService>();
+
+builder.Services.AddScoped<IUserListRepository, UserListRepository>();
+builder.Services.AddScoped<IUserListService, UserListService>();
+
+builder.Services.AddScoped<IProfileRepository, ProfileRepository>();
+builder.Services.AddScoped<IProfileService, ProfileService>();
 
 builder.Services.AddScoped<IFlightRepository, RouteCreationRepository>();
 builder.Services.AddScoped<FlightAggregatorService>();
@@ -77,9 +122,10 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseAuthorization();
-
 app.UseCors(MyAllowSpecificOrigins);
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 

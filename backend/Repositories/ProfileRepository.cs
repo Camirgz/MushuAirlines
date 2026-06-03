@@ -5,88 +5,49 @@ using System.Data.SqlClient;
 
 namespace backend.Repositories;
 
-public class UserListRepository : IUserListRepository
+public class ProfileRepository : IProfileRepository
 {
     private readonly string _connectionString;
 
-    public UserListRepository(IConfiguration configuration)
+    public ProfileRepository(IConfiguration configuration)
     {
         _connectionString = configuration.GetConnectionString("LoginContext");
     }
 
-    public (List<UserManagementItemModel> Users, int TotalCount) GetUsers(
-        int page,
-        int pageSize,
-        string? search
-    )
+    public ProfileModel? GetProfileByUsername(string username)
     {
+        const string query = @"
+            SELECT TOP 1
+                p.FirstName,
+                p.LastName,
+                p.Ssn,
+                p.Nationality,
+                ae.Username AS Email,
+                e.Salary,
+                e.WorkSchedule,
+                e.Permissions,
+                CASE
+                    WHEN adm.Id IS NOT NULL THEN 'Administrator'
+                    WHEN op.Id IS NOT NULL THEN 'Operator'
+                    ELSE 'Unknown'
+                END AS Role
+            FROM AccountEmployee ae
+            INNER JOIN Employee e ON e.Id = ae.Id
+            INNER JOIN Person p ON p.Id = e.Id
+            LEFT JOIN Administrator adm ON adm.Id = e.Id
+            LEFT JOIN Operator op ON op.Id = e.Id
+            WHERE ae.Username = @Username;
+        ";
+
         using var connection = new SqlConnection(_connectionString);
 
-        var searchParam = string.IsNullOrWhiteSpace(search) ? null : search.Trim();
-        int offset = (page - 1) * pageSize;
-
-        const string cte = @"
-            WITH UserData AS (
-                SELECT
-                    e.Id,
-                    p.FirstName,
-                    p.LastName,
-                    p.FirstName + ' ' + p.LastName AS FullName,
-                    p.Ssn,
-                    p.Nationality,
-                    COALESCE(ae.Username, pa_sub.Email, '') AS Email,
-                    e.Salary,
-                    e.WorkSchedule,
-                    e.Permissions,
-                    CASE
-                        WHEN adm.Id IS NOT NULL THEN 'Administrator'
-                        WHEN op.Id IS NOT NULL THEN 'Operator'
-                        ELSE 'Unknown'
-                    END AS Role
-                FROM Employee e
-                INNER JOIN Person p ON p.Id = e.Id
-                LEFT JOIN AccountEmployee ae ON ae.Id = e.Id
-                LEFT JOIN (
-                    SELECT EmployeeId, MIN(Email) AS Email
-                    FROM PendingAccount
-                    GROUP BY EmployeeId
-                ) pa_sub ON pa_sub.EmployeeId = e.Id
-                LEFT JOIN Administrator adm ON adm.Id = e.Id
-                LEFT JOIN Operator op ON op.Id = e.Id
-            )";
-
-        const string where = @"
-            WHERE @Search IS NULL
-               OR FullName LIKE '%' + @Search + '%'
-               OR FirstName LIKE '%' + @Search + '%'
-               OR LastName LIKE '%' + @Search + '%'
-               OR Ssn LIKE '%' + @Search + '%'
-               OR Email LIKE '%' + @Search + '%'";
-
-        int total = connection.ExecuteScalar<int>(
-            cte + " SELECT COUNT(*) FROM UserData " + where,
-            new { Search = searchParam }
+        return connection.QueryFirstOrDefault<ProfileModel>(
+            query,
+            new { Username = username }
         );
-
-        var users = connection.Query<UserManagementItemModel>(
-            cte + @"
-            SELECT *
-            FROM UserData "
-            + where + @"
-            ORDER BY FullName
-            OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY",
-            new
-            {
-                Search = searchParam,
-                Offset = offset,
-                PageSize = pageSize
-            }
-        ).ToList();
-
-        return (users, total);
     }
 
-    public bool UpdateUser(int employeeId, UserManagementUpdateModel user)
+    public bool UpdateBasicProfile(string username, ProfileUpdateModel profile)
     {
         using var connection = new SqlConnection(_connectionString);
         connection.Open();
@@ -95,23 +56,15 @@ public class UserListRepository : IUserListRepository
 
         try
         {
-            bool exists = connection.ExecuteScalar<int>(
-                @"
-                SELECT COUNT(1)
-                FROM Employee
-                WHERE Id = @EmployeeId;
-                ",
-                new { EmployeeId = employeeId },
-                transaction
-            ) > 0;
+            int? employeeId = GetEmployeeIdByUsername(connection, transaction, username);
 
-            if (!exists)
+            if (employeeId == null)
             {
                 transaction.Rollback();
                 return false;
             }
 
-            ValidateDuplicatedSsn(connection, transaction, employeeId, user.Ssn!);
+            ValidateDuplicatedSsn(connection, transaction, employeeId.Value, profile.Ssn);
 
             connection.Execute(
                 @"
@@ -125,11 +78,61 @@ public class UserListRepository : IUserListRepository
                 ",
                 new
                 {
-                    user.FirstName,
-                    user.LastName,
-                    user.Ssn,
-                    user.Nationality,
-                    EmployeeId = employeeId
+                    profile.FirstName,
+                    profile.LastName,
+                    profile.Ssn,
+                    profile.Nationality,
+                    EmployeeId = employeeId.Value
+                },
+                transaction
+            );
+
+            transaction.Commit();
+            return true;
+        }
+        catch
+        {
+            transaction.Rollback();
+            throw;
+        }
+    }
+
+    public bool UpdateFullProfile(string username, ProfileUpdateModel profile)
+    {
+        using var connection = new SqlConnection(_connectionString);
+        connection.Open();
+
+        using var transaction = connection.BeginTransaction();
+
+        try
+        {
+            int? employeeId = GetEmployeeIdByUsername(connection, transaction, username);
+
+            if (employeeId == null)
+            {
+                transaction.Rollback();
+                return false;
+            }
+
+            ValidateDuplicatedSsn(connection, transaction, employeeId.Value, profile.Ssn);
+
+            connection.Execute(
+                @"
+                UPDATE Person
+                SET
+                    FirstName = @FirstName,
+                    LastName = @LastName,
+                    Ssn = @Ssn,
+                    Nationality = @Nationality
+                WHERE Id = @EmployeeId;
+                ",
+                new
+                {
+                    profile.FirstName,
+                    profile.LastName,
+                    profile.Ssn,
+                    profile.Nationality,
+                    EmployeeId = employeeId.Value
                 },
                 transaction
             );
@@ -145,15 +148,15 @@ public class UserListRepository : IUserListRepository
                 ",
                 new
                 {
-                    Salary = user.Salary!.Value,
-                    user.WorkSchedule,
-                    user.Permissions,
-                    EmployeeId = employeeId
+                    Salary = profile.Salary!.Value,
+                    profile.WorkSchedule,
+                    profile.Permissions,
+                    EmployeeId = employeeId.Value
                 },
                 transaction
             );
 
-            UpdateRole(connection, transaction, employeeId, user.Role!);
+            UpdateRole(connection, transaction, employeeId.Value, profile.Role);
 
             transaction.Commit();
             return true;
@@ -163,6 +166,23 @@ public class UserListRepository : IUserListRepository
             transaction.Rollback();
             throw;
         }
+    }
+
+    private static int? GetEmployeeIdByUsername(
+        SqlConnection connection,
+        SqlTransaction transaction,
+        string username
+    )
+    {
+        return connection.ExecuteScalar<int?>(
+            @"
+            SELECT Id
+            FROM AccountEmployee
+            WHERE Username = @Username;
+            ",
+            new { Username = username },
+            transaction
+        );
     }
 
     private static void ValidateDuplicatedSsn(

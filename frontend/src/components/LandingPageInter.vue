@@ -46,19 +46,21 @@
 
       <hr class="section-line" />
 
-      <h2>Administración de usuarios de la aerolínea</h2>
-
-      <div class="option-list">
-        <RouterLink to="/admin/users" class="admin-option">
-          <div class="option-left">
-            <div class="option-icon">
-              <i class="bi bi-people"></i>
+      <div v-if="isAdmin">
+        <h2>Administración de usuarios de la aerolínea</h2>
+  
+        <div class="option-list">
+          <RouterLink to="/admin/users" class="admin-option">
+            <div class="option-left">
+              <div class="option-icon">
+                <i class="bi bi-people"></i>
+              </div>
+              <span>Usuarios administradores y operarios</span>
             </div>
-            <span>Usuarios administradores y operarios</span>
-          </div>
-
-          <i class="bi bi-chevron-right option-arrow"></i>
-        </RouterLink>
+  
+            <i class="bi bi-chevron-right option-arrow"></i>
+          </RouterLink>
+        </div>
       </div>
 
       <hr class="section-line" />
@@ -98,8 +100,16 @@ export default {
   },
 
   computed: {
+    isAdmin() {
+      return this.userRole === "Administrator";
+    },
+
+    isOperator() {
+      return this.userRole === "Operator";
+    },
+
     isInternalUser() {
-      return this.userRole === "Administrator" || this.userRole === "Operator";
+      return this.isAdmin || this.isOperator;
     },
   },
 

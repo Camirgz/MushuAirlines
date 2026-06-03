@@ -1,17 +1,17 @@
+using backend.Interfaces;
 using backend.Model;
 using Dapper;
 using System.Data.SqlClient;
 
 namespace backend.Repositories
 {
-    public class AircraftTypeRepository
+    public class AircraftTypeRepository : IAircraftTypeRepository
     {
         private readonly string _connectionString;
 
-        public AircraftTypeRepository()
+        public AircraftTypeRepository(IConfiguration configuration)
         {
-            var builder = WebApplication.CreateBuilder();
-            _connectionString = builder.Configuration.GetConnectionString("LoginContext");
+            _connectionString = configuration.GetConnectionString("LoginContext");
         }
 
         public IEnumerable<AircraftTypeOptionModel> GetAll()
@@ -31,7 +31,11 @@ namespace backend.Repositories
                 FROM AircraftType aty
                 LEFT JOIN Aircraft a
                     ON a.[Type] = aty.Id
-                    AND a.Code = (SELECT MIN(Code) FROM Aircraft WHERE [Type] = aty.Id)";
+                    AND a.Code = (
+                        SELECT MIN(Code)
+                        FROM Aircraft
+                        WHERE [Type] = aty.Id
+                    )";
 
             return connection.Query<AircraftTypeOptionModel>(query);
         }
