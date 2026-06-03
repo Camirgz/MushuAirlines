@@ -167,6 +167,10 @@
 
         </div>
 
+        <div class="api-error" v-if="apiError">
+          <i class="bi bi-exclamation-circle-fill me-2"></i>{{ apiError }}
+        </div>
+
         <div class="bottom-box">
 
           <h4>Pago seguro</h4>
@@ -203,11 +207,11 @@
 </template>
 
 <script>
-import axios from 'axios';
 import AdminPageLayout from '@/components/layout/AdminPageLayout.vue';
 import AdminHero from '@/components/admin/ui/AdminHero.vue';
 import AdminCard from '@/components/admin/ui/AdminCard.vue';
 import { usePurchaseFlow } from '@/composables/usePurchaseFlow';
+import { validatePayment, createPurchase, sendConfirmation } from '@/services/PurchaseService';
 
 export default {
   name: 'PaymentForm',
@@ -219,8 +223,8 @@ export default {
   },
 
   setup() {
-    const { state, hasPassengers, setPayment } = usePurchaseFlow();
-    return { purchaseState: state, hasPassengers, setPayment };
+    const { state, hasPassengers, setPayment, buildPurchaseRequest, clear } = usePurchaseFlow();
+    return { purchaseState: state, hasPassengers, setPayment, buildPurchaseRequest, clear };
   },
 
   created() {
@@ -243,6 +247,7 @@ export default {
 
       errors: {},
       validFields: {},
+      apiError: null,
     };
   },
 
@@ -348,29 +353,46 @@ export default {
       if (!this.isFormValid) return;
 
       this.isProcessing = true;
+      this.apiError     = null;
 
+      const cardData = {
+        holder:        this.payment.holder,
+        cardNumber:    this.payment.cardNumber,
+        expiry:        this.payment.expiry,
+        cvv:           this.payment.cvv,
+        paymentMethod: this.payment.paymentMethod,
+      };
+
+      // Step 1 — validate card (payment simulation)
       try {
-        const response = await axios.post(
-          'http://localhost:5103/api/payment/approve',
-          {
-            holder: this.payment.holder,
-            cardNumber: this.payment.cardNumber,
-            expiry: this.payment.expiry,
-            cvv: this.payment.cvv,
-            paymentMethod: this.payment.paymentMethod,
-          }
-        );
-
-        const purchaseId =
-          response.data.purchaseId ?? response.data.PurchaseId;
-
-        this.$router.push(`/purchase-confirmation/${purchaseId}`);
-      } catch (error) {
-        console.error(error);
-        alert(error.response?.data || 'Error procesando el pago');
-      } finally {
+        await validatePayment(cardData);
+      } catch (err) {
+        this.apiError     = err.message ?? 'Error al procesar el pago.';
         this.isProcessing = false;
+        return;
       }
+
+      // Step 2 — persist payment info to the flow and create the purchase
+      this.setPayment({
+        method:       this.payment.paymentMethod,
+        contactEmail: this.purchaseState.passengers[0]?.email ?? '',
+      });
+
+      let purchaseResponse;
+      try {
+        purchaseResponse = await createPurchase(this.buildPurchaseRequest());
+      } catch (err) {
+        this.apiError     = err.message ?? 'Ocurrió un error al procesar la compra.';
+        this.isProcessing = false;
+        return;
+      }
+
+      // Step 3 — fire-and-forget confirmation email
+      sendConfirmation(purchaseResponse.purchaseId).catch(() => {});
+
+      // Step 4 — clear flow state and show the confirmation page
+      this.clear();
+      this.$router.push(`/purchase-confirmation/${purchaseResponse.purchaseId}`);
     },
 
     goBack() {
@@ -446,6 +468,16 @@ export default {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+.api-error {
+  background: #fff5f5;
+  border: 1.5px solid #fca5a5;
+  color: #b91c1c;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 0.88rem;
+  font-weight: 600;
 }
 
 .airline-payment-form {
