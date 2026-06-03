@@ -1,29 +1,24 @@
 <template>
   <AdminPageLayout>
 
+    <div class="purchase-layout">
+
+      <aside class="sidebar-col">
+        <PurchaseSummaryCard
+          v-if="flight"
+          :flight="flight"
+          :seats="purchaseState.seats"
+          :baggage="purchaseState.baggage"
+        />
+      </aside>
+
+      <div class="content-col">
+
     <AdminHero
       title="Información de Pago"
       subtitle="Complete los datos de su tarjeta para finalizar la compra."
       icon="bi bi-credit-card-fill"
     />
-
-    <!-- Order summary -->
-    <div class="order-summary" v-if="flight">
-      <div class="order-route">
-        <span class="order-airport">{{ flight.origin }}</span>
-        <i class="bi bi-arrow-right order-arrow"></i>
-        <span class="order-airport">{{ flight.destination }}</span>
-      </div>
-      <div class="order-meta">
-        <span><i class="bi bi-calendar3 me-1"></i>{{ flight.flightDate }}</span>
-        <span class="order-sep">·</span>
-        <span><i class="bi bi-people me-1"></i>{{ purchaseState.seats.length }} pasajero(s)</span>
-      </div>
-      <div class="order-total">
-        <span class="order-total-label">Total estimado</span>
-        <span class="order-total-amount">₡{{ estimatedTotal.toLocaleString() }}</span>
-      </div>
-    </div>
 
     <AdminCard>
 
@@ -203,6 +198,9 @@
 
     </AdminCard>
 
+      </div><!-- end content-col -->
+    </div><!-- end purchase-layout -->
+
   </AdminPageLayout>
 </template>
 
@@ -210,6 +208,7 @@
 import AdminPageLayout from '@/components/layout/AdminPageLayout.vue';
 import AdminHero from '@/components/admin/ui/AdminHero.vue';
 import AdminCard from '@/components/admin/ui/AdminCard.vue';
+import PurchaseSummaryCard from '@/components/purchase/PurchaseSummaryCard.vue';
 import { usePurchaseFlow } from '@/composables/usePurchaseFlow';
 import { validatePayment, createPurchase, sendConfirmation } from '@/services/PurchaseService';
 
@@ -220,6 +219,7 @@ export default {
     AdminPageLayout,
     AdminHero,
     AdminCard,
+    PurchaseSummaryCard,
   },
 
   setup() {
@@ -404,70 +404,29 @@ export default {
 
 <style scoped>
 
-/* ── Order summary ── */
-.order-summary {
-  background: linear-gradient(135deg, rgba(231,76,60,0.07) 0%, rgba(243,156,18,0.07) 100%);
-  border: 1.5px solid rgba(231,76,60,0.18);
-  border-radius: 12px;
-  padding: 16px 20px;
-  margin-bottom: 16px;
+/* ── Two-column purchase layout ── */
+.purchase-layout {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 28px;
 }
 
-.order-route {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.sidebar-col {
+  width: 256px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 84px;
 }
 
-.order-airport {
-  font-size: 1.2rem;
-  font-weight: 800;
-  color: #1a1a1a;
-  letter-spacing: 0.04em;
+.content-col {
+  flex: 1;
+  min-width: 0;
 }
 
-.order-arrow {
-  color: #e74c3c;
-}
-
-.order-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.85rem;
-  color: #555;
-}
-
-.order-sep {
-  color: #ccc;
-}
-
-.order-total {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
-}
-
-.order-total-label {
-  font-size: 0.72rem;
-  color: #888;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.order-total-amount {
-  font-size: 1.25rem;
-  font-weight: 800;
-  background: linear-gradient(135deg, #e74c3c 0%, #f39c12 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+@media (max-width: 900px) {
+  .sidebar-col {
+    display: none;
+  }
 }
 
 .api-error {

@@ -23,28 +23,24 @@
     </nav>
 
     <main class="page-main">
+      <div class="purchase-layout">
 
-      <AdminHero
-        icon="bi bi-person"
-        title="Información de Pasajeros"
-        subtitle="Complete los datos de todos los pasajeros"
-      />
+        <aside class="sidebar-col">
+          <PurchaseSummaryCard
+            v-if="flight"
+            :flight="flight"
+            :seats="purchaseState.seats"
+            :baggage="baggage"
+          />
+        </aside>
 
-      <!-- Flight summary banner -->
-      <div class="flight-summary" v-if="flight">
-        <div class="flight-summary-route">
-          <span class="summary-airport">{{ flight.origin }}</span>
-          <i class="bi bi-arrow-right summary-arrow"></i>
-          <span class="summary-airport">{{ flight.destination }}</span>
-        </div>
-        <div class="flight-summary-meta">
-          <span><i class="bi bi-calendar3 me-1"></i>{{ flight.flightDate }}</span>
-          <span class="summary-sep">·</span>
-          <span><i class="bi bi-person me-1"></i>{{ purchaseState.seats.length }} pasajero(s)</span>
-          <span class="summary-sep">·</span>
-          <span><i class="bi bi-award me-1"></i>{{ flightClassSummary }}</span>
-        </div>
-      </div>
+        <div class="content-col">
+
+        <AdminHero
+          icon="bi bi-person"
+          title="Información de Pasajeros"
+          subtitle="Complete los datos de todos los pasajeros"
+        />
 
       <AdminCard>
 
@@ -272,6 +268,8 @@
         <button class="btn-continue" type="button" @click="continueToPayment">Continuar al Pago</button>
       </div>
 
+        </div><!-- end content-col -->
+      </div><!-- end purchase-layout -->
     </main>
 
     <AppFooter />
@@ -282,6 +280,7 @@
 import AdminHero from "@/components/admin/ui/AdminHero.vue";
 import AdminCard from "@/components/admin/ui/AdminCard.vue";
 import AppFooter from "@/components/layout/AppFooter.vue";
+import PurchaseSummaryCard from "@/components/purchase/PurchaseSummaryCard.vue";
 import { usePurchaseFlow } from "@/composables/usePurchaseFlow";
 import { checkAvailability, checkPassengerDuplicates } from "@/services/PurchaseService";
 
@@ -292,6 +291,7 @@ export default {
     AdminHero,
     AdminCard,
     AppFooter,
+    PurchaseSummaryCard,
   },
 
   setup() {
@@ -528,56 +528,30 @@ export default {
 
 /* ── Main container ── */
 .page-main {
-  max-width: 860px;
+  max-width: 1160px;
   margin: 0 auto;
   padding: 40px 24px 72px;
   flex: 1;
   width: 100%;
 }
 
-/* ── Flight summary banner ── */
-.flight-summary {
-  background: linear-gradient(135deg, rgba(231,76,60,0.07) 0%, rgba(243,156,18,0.07) 100%);
-  border: 1.5px solid rgba(231,76,60,0.18);
-  border-radius: 12px;
-  padding: 14px 20px;
-  margin-bottom: 16px;
+/* ── Two-column purchase layout ── */
+.purchase-layout {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 28px;
 }
 
-.flight-summary-route {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.sidebar-col {
+  width: 256px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 80px;
 }
 
-.summary-airport {
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: #1a1a1a;
-  letter-spacing: 0.04em;
-}
-
-.summary-arrow {
-  color: #e74c3c;
-  font-size: 1rem;
-}
-
-.flight-summary-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.85rem;
-  color: #555;
-  flex-wrap: wrap;
-}
-
-.summary-sep {
-  color: #ccc;
+.content-col {
+  flex: 1;
+  min-width: 0;
 }
 
 /* ── Passenger section ── */
@@ -868,6 +842,12 @@ export default {
 }
 
 /* ── Responsive ── */
+@media (max-width: 900px) {
+  .sidebar-col {
+    display: none;
+  }
+}
+
 @media (max-width: 640px) {
   .form-grid {
     grid-template-columns: 1fr;
