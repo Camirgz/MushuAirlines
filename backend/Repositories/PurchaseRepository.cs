@@ -34,6 +34,52 @@ public class PurchaseRepository : IPurchaseRepository
         return taken == 0;
     }
 
+    public async Task<bool> HasAvailableSeatsAsync(int scheduledFlightId, int requestedCount)
+    {
+        using var connection = new SqlConnection(_connectionString);
+
+        // Tickets already booked on this flight
+        const string bookedQuery = @"
+            SELECT COUNT(SeatNumber)
+            FROM   Ticket
+            WHERE  ScheduledId = @ScheduledFlightId";
+
+        int booked = await connection.ExecuteScalarAsync<int>(bookedQuery,
+            new { ScheduledFlightId = scheduledFlightId });
+
+        // Total capacity from the route linked to this scheduled flight.
+        // Returns null when the route row is not found — treated as fail-open
+        // so bad data never silently blocks a purchase.
+        const string capacityQuery = @"
+            SELECT r.EconomyClassCapacity + r.FirstClassCapacity
+            FROM   ScheduledFlight sf
+            JOIN   Route           r  ON sf.RouteCode = r.Code
+            WHERE  sf.Id = @ScheduledFlightId";
+
+        int? capacity = await connection.QueryFirstOrDefaultAsync<int?>(capacityQuery,
+            new { ScheduledFlightId = scheduledFlightId });
+
+        if (capacity == null || capacity == 0)
+            return true; // Cannot determine capacity — let the purchase attempt decide
+
+        return (capacity.Value - booked) >= requestedCount;
+    }
+
+    public async Task<List<int>> GetNextAvailableSeatNumbersAsync(int scheduledFlightId, int count)
+    {
+        using var connection = new SqlConnection(_connectionString);
+
+        const string query = @"
+            SELECT ISNULL(MAX(SeatNumber), 0)
+            FROM   Ticket
+            WHERE  ScheduledId = @ScheduledFlightId";
+
+        int maxUsed = await connection.ExecuteScalarAsync<int>(query,
+            new { ScheduledFlightId = scheduledFlightId });
+
+        return Enumerable.Range(maxUsed + 1, count).ToList();
+    }
+
     public async Task<bool> ReservationCodeExistsAsync(string code)
     {
         using var connection = new SqlConnection(_connectionString);

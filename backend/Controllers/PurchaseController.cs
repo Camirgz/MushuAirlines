@@ -16,6 +16,19 @@ public class PurchaseController : ControllerBase
         _purchaseService = purchaseService;
     }
 
+    [HttpGet("check-availability")]
+    public async Task<ActionResult> CheckAvailability(
+        [FromQuery] string routeCode,
+        [FromQuery] string flightDate,
+        [FromQuery] int count)
+    {
+        if (!DateOnly.TryParse(flightDate, out DateOnly date))
+            return BadRequest(new { message = "Formato de fecha inválido." });
+
+        bool available = await _purchaseService.IsFlightAvailableAsync(routeCode, date, count);
+        return Ok(new { available });
+    }
+
     [HttpPost]
     public async Task<ActionResult<PurchaseResponseModel>> CreatePurchase(
         [FromBody] PurchaseRequestModel request)

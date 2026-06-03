@@ -59,6 +59,30 @@ export async function createPurchase(requestBody) {
 }
 
 /**
+ * Check if a flight has enough available seats for the requested passenger count.
+ *
+ * GET /api/purchase/check-availability?routeCode=...&flightDate=...&count=N
+ *
+ * Returns true if seats are available, false if the flight is full.
+ * Gracefully returns true on network error to avoid blocking the flow unnecessarily.
+ *
+ * @param {string} routeCode
+ * @param {string} flightDate  — YYYY-MM-DD
+ * @param {number} count       — number of seats needed
+ * @returns {Promise<boolean>}
+ */
+export async function checkAvailability(routeCode, flightDate, count) {
+  try {
+    const response = await axios.get(`${BASE}/purchase/check-availability`, {
+      params: { routeCode, flightDate, count }
+    })
+    return response.data.available === true
+  } catch {
+    return true // fail-open: let the purchase attempt handle it
+  }
+}
+
+/**
  * Fetch purchase confirmation data without triggering another email.
  *
  * GET /api/purchaseconfirmation/{purchaseId}

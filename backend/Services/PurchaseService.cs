@@ -50,12 +50,16 @@ public class PurchaseService : IPurchaseService
             request.Flight.RouteCode,
             request.Flight.FlightDate.ToDateTime(TimeOnly.MinValue));
 
-        foreach (var seat in request.SeatSelections)
-        {
-            bool available = await _purchaseRepo.IsSeatAvailableAsync(scheduledFlightId, seat.SeatNumber);
-            if (!available)
-                throw new SeatUnavailableException(seat.SeatNumber.ToString(), scheduledFlightId);
-        }
+        // Check capacity as a whole — no per-seat numbers on the client side
+        bool hasSeats = await _purchaseRepo.HasAvailableSeatsAsync(
+            scheduledFlightId, request.SeatSelections.Count);
+
+        if (!hasSeats)
+            throw new SeatUnavailableException(scheduledFlightId);
+
+        // Auto-assign sequential seat numbers from the next available slot
+        var assignedSeatNumbers = await _purchaseRepo.GetNextAvailableSeatNumbersAsync(
+            scheduledFlightId, request.SeatSelections.Count);
 
         var totals = _pricingCalculator.Calculate(
             request.SeatSelections,
@@ -98,16 +102,19 @@ public class PurchaseService : IPurchaseService
                 purchaseId, detail.SeatClass, detail.SeatCount, detail.Subtotal);
 
         var tickets = new List<TicketSummary>(request.SeatSelections.Count);
-        foreach (var seat in request.SeatSelections)
+        for (int seatIdx = 0; seatIdx < request.SeatSelections.Count; seatIdx++)
         {
-            int passengerId = passengerIdMap[seat.PassengerIndex];
-            await _purchaseRepo.CreateTicketAsync(scheduledFlightId, passengerId, seat.SeatNumber);
+            var seat         = request.SeatSelections[seatIdx];
+            int passengerId  = passengerIdMap[seat.PassengerIndex];
+            int seatNumber   = assignedSeatNumbers[seatIdx];
+
+            await _purchaseRepo.CreateTicketAsync(scheduledFlightId, passengerId, seatNumber);
 
             var passenger = request.Passengers[seat.PassengerIndex];
             tickets.Add(new TicketSummary
             {
                 PassengerFullName = $"{passenger.FirstName} {passenger.LastName}",
-                SeatNumber        = seat.SeatNumber.ToString(),
+                SeatNumber        = seatNumber.ToString(),
                 SeatClass         = seat.SeatClass
             });
         }
@@ -125,6 +132,17 @@ public class PurchaseService : IPurchaseService
             DetailByClass   = totals.DetailByClass,
             Tickets         = tickets
         };
+    }
+
+    public async Task<bool> IsFlightAvailableAsync(string routeCode, DateOnly flightDate, int requestedCount)
+    {
+        var flightDateTime    = flightDate.ToDateTime(TimeOnly.MinValue);
+        int? scheduledFlightId = _routeCreationService.FindExistingScheduledFlight(routeCode, flightDateTime);
+
+        if (!scheduledFlightId.HasValue)
+            return true; // No scheduled flight created yet → fully available
+
+        return await _purchaseRepo.HasAvailableSeatsAsync(scheduledFlightId.Value, requestedCount);
     }
 
     private async Task<int> ResolvePassengerAsync(PassengerInfo passenger)

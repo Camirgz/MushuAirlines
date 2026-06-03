@@ -58,6 +58,11 @@ namespace backend.Services
         {
             return routeCreationRepository.GetOrCreateScheduledFlight(routeCode, date);
         }
+
+        public int? FindExistingScheduledFlight(string routeCode, DateTime date)
+        {
+            return routeCreationRepository.FindExistingScheduledFlight(routeCode, date);
+        }
         public RouteCreationModel GetRouteByCode(string code)
         {
             var r = routeCreationRepository.GetRouteByCode(code);

@@ -294,6 +294,7 @@ import AdminHero from "@/components/admin/ui/AdminHero.vue";
 import AdminCard from "@/components/admin/ui/AdminCard.vue";
 import AppFooter from "@/components/layout/AppFooter.vue";
 import { usePurchaseFlow } from "@/composables/usePurchaseFlow";
+import { checkAvailability } from "@/services/PurchaseService";
 
 export default {
   name: "PassengerInfoPage",
@@ -446,8 +447,19 @@ export default {
       }
     },
 
-    continueToPayment() {
+    async continueToPayment() {
       if (!this.validateAllPassengers()) return;
+
+      const available = await checkAvailability(
+        this.flight.code,
+        this.flight.flightDate,
+        this.purchaseState.seats.length
+      );
+      if (!available) {
+        this.validationError = "Lo sentimos, este vuelo ya no tiene asientos disponibles. Por favor regrese y seleccione otro vuelo.";
+        return;
+      }
+
       this.setPassengers(this.passengers, this.baggage);
       this.$router.push("/payment");
     },

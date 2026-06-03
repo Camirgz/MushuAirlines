@@ -183,6 +183,9 @@ namespace backend.Repositories
             LinkFlightSchedule(flightScheduleId, scheduledFlightId);
             return scheduledFlightId;
         }
+        public int? FindExistingScheduledFlight(string routeCode, DateTime date)
+            => GetExistingScheduledFlight(routeCode, date);
+
         private int? GetExistingScheduledFlight(string routeCode,DateTime date)
         {
            using var connection = new SqlConnection(_connectionString);

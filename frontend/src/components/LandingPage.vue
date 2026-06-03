@@ -540,6 +540,10 @@
             </div>
           </div>
 
+          <div v-if="seatAvailabilityError" class="modal-seat-error">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ seatAvailabilityError }}
+          </div>
+
           <div class="modal-actions">
             <button class="modal-cancel-btn" @click="closeFlightDetails">Cancelar</button>
             <button
@@ -562,6 +566,7 @@
 import FlightResultCard from './FlightResultCard.vue'
 import { findStopoverConnections, isOvernightFlight, addDaysToDateString } from '@/services/connectionFinder.js'
 import { usePurchaseFlow } from '@/composables/usePurchaseFlow'
+import { checkAvailability } from '@/services/PurchaseService'
 
 function durationToHours(dur) {
   const [h, m] = dur.split(':')
@@ -670,6 +675,7 @@ export default {
       firstClassCount: 0,
       handBagsCount: 0,
       checkedBagsCount: 0,
+      seatAvailabilityError: null,
     }
   },
 
@@ -1011,6 +1017,7 @@ export default {
       this.firstClassCount = 0
       this.handBagsCount = 0
       this.checkedBagsCount = 0
+      this.seatAvailabilityError = null
       document.body.style.overflow = 'hidden'
     },
 
@@ -1024,8 +1031,15 @@ export default {
       console.log('Itinerario con escala seleccionado:', connection)
     },
 
-    startPurchase() {
+    async startPurchase() {
       const f = this.selectedFlight
+
+      // Verify seat availability before navigating
+      const available = await checkAvailability(f.id, f.date, this.passengerCount)
+      if (!available) {
+        this.seatAvailabilityError = 'Lo sentimos, este vuelo ya no tiene asientos disponibles para la cantidad de pasajeros solicitada.'
+        return
+      }
 
       // Build one seat entry per passenger, ordered First Class first then Economy.
       const seats = [
@@ -2172,6 +2186,17 @@ export default {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+.modal-seat-error {
+  background: #fff5f5;
+  border: 1.5px solid #fca5a5;
+  color: #b91c1c;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 12px;
 }
 
 .modal-actions {
