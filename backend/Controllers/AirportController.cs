@@ -24,6 +24,15 @@ public class AirportController : ControllerBase
         return Ok(airports);
     }
 
+    [HttpGet("suggestions")]
+    public ActionResult GetSuggestions([FromQuery] string q)
+    {
+        if (string.IsNullOrWhiteSpace(q))
+            return Ok(new List<object>());
+
+        return Ok(_airportService.GetSuggestions(q));
+    }
+
     [HttpGet("countries")]
     public ActionResult<List<AirportCatalogDto>> GetCountries()
     {
