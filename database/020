@@ -1,0 +1,23 @@
+USE MushuAirlines;
+
+CREATE TABLE PurchaseBaggageDetail (
+    PurchaseId INT NOT NULL,
+
+    BaggageType VARCHAR(50) NOT NULL,  -- 'HandBaggage' or 'CheckedBaggage'
+
+    Quantity INT NOT NULL,
+
+    UnitPrice DECIMAL(18,2) NOT NULL,
+
+    Subtotal DECIMAL(18,2) NOT NULL,
+
+    CONSTRAINT PK_PurchaseBaggageDetail
+    PRIMARY KEY (
+        PurchaseId,
+        BaggageType
+    ),
+
+    CONSTRAINT FK_PurchaseBaggageDetail_Purchase
+    FOREIGN KEY (PurchaseId)
+    REFERENCES Purchase(Id)
+);

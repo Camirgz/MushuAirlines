@@ -28,6 +28,14 @@ namespace backend.Model
         public DateTime? DepartureDate2 { get; set; }
         public DateTime? ArrivalDate2 { get; set; }
 
+        // Seat details
         public List<SeatClassSubtotal> Details { get; set; } = new();
+
+        // Baggage details
+        public List<BaggageSubtotal> BaggageDetails { get; set; } = new();
+        public int HandBaggageCount { get; set; }
+        public decimal HandBaggageSubtotal { get; set; }
+        public int CheckedBaggageCount { get; set; }
+        public decimal CheckedBaggageSubtotal { get; set; }
     }
 }

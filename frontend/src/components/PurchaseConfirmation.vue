@@ -108,9 +108,30 @@
             <span>{{ detail.seatCount }}</span>
             <span>₡{{ detail.subtotal.toLocaleString() }}</span>
           </div>
+        </div>
+
+        <div class="breakdown-section" v-if="purchase.baggageDetails && purchase.baggageDetails.length">
+          <div class="breakdown-title">Desglose de equipaje</div>
+          <div class="breakdown-row breakdown-row--header">
+            <span>Tipo</span>
+            <span>Cantidad</span>
+            <span>Subtotal</span>
+          </div>
+          <div
+            class="breakdown-row"
+            v-for="baggage in purchase.baggageDetails"
+            :key="baggage.type"
+          >
+            <span>{{ translateBaggageType(baggage.type) }}</span>
+            <span>{{ baggage.quantity }}</span>
+            <span>₡{{ baggage.subtotal.toLocaleString() }}</span>
+          </div>
+        </div>
+
+        <div class="breakdown-section">
           <div class="breakdown-row breakdown-row--total">
             <span>Total</span>
-            <span>{{ purchase.totalSeats }} pax</span>
+            <span>{{ totalItems }} artículos</span>
             <span class="total-amount">₡{{ purchase.totalPaid.toLocaleString() }}</span>
           </div>
         </div>
@@ -182,6 +203,15 @@ export default {
     };
   },
 
+  computed: {
+    totalItems() {
+      if (!this.purchase) return 0;
+      const seatCount = this.purchase.totalSeats || 0;
+      const baggageCount = (this.purchase.baggageDetails || []).reduce((sum, b) => sum + (b.quantity || 0), 0);
+      return seatCount + baggageCount;
+    },
+  },
+
   beforeUnmount() {
     if (this._cancelConfetti) this._cancelConfetti();
   },
@@ -210,6 +240,12 @@ export default {
       if (seatClass === 'FirstClass') return 'Primera Clase';
       if (seatClass === 'Economy')    return 'Clase Turista';
       return seatClass;
+    },
+
+    translateBaggageType(baggageType) {
+      if (baggageType === 'HandBaggage')    return 'Equipaje de Mano';
+      if (baggageType === 'CheckedBaggage') return 'Equipaje Documentado';
+      return baggageType;
     },
 
     launchCelebration() {
