@@ -36,6 +36,44 @@ namespace backend.Templates
         public static string BuildFlightSection(
             PurchaseConfirmationModel model)
         {
+            string secondFlightHtml = "";
+
+            if (!string.IsNullOrEmpty(model.FlightNumber2))
+            {
+                secondFlightHtml = $@"
+                    <hr style='margin:20px 0;'>
+
+                    <h4>
+                        Segundo vuelo
+                    </h4>
+
+                    <p>
+                        <strong>Número de vuelo:</strong>
+                        {model.FlightNumber2}
+                    </p>
+
+                    <p>
+                        <strong>Origen:</strong>
+                        {model.OriginAirport2}
+                    </p>
+
+                    <p>
+                        <strong>Destino:</strong>
+                        {model.DestinationAirport2}
+                    </p>
+
+                    <p>
+                        <strong>Salida:</strong>
+                        {model.DepartureDate2}
+                    </p>
+
+                    <p>
+                        <strong>Llegada:</strong>
+                        {model.ArrivalDate2}
+                    </p>
+                ";
+            }
+
             return $@"
                 <div style='{EmailStyles.Section}'>
 
@@ -44,6 +82,10 @@ namespace backend.Templates
                     </h3>
 
                     <div style='{EmailStyles.FlightCard}'>
+
+                        <h4>
+                            Primer vuelo
+                        </h4>
 
                         <p>
                             <strong>Número de vuelo:</strong>
@@ -77,8 +119,12 @@ namespace backend.Templates
 
                         <p>
                             <strong>Escalas:</strong>
-                            {model.Layover}
+                            {(string.IsNullOrWhiteSpace(model.FlightNumber2)
+                                ? "Vuelo directo"
+                                : model.OriginAirport2)}
                         </p>
+
+                        {secondFlightHtml}
 
                     </div>
 
