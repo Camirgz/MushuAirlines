@@ -1,0 +1,69 @@
+USE MushuAirlines;
+ALTER TABLE Ticket
+DROP CONSTRAINT PK_Ticket;
+GO
+
+ALTER TABLE Ticket
+DROP COLUMN Qr;
+GO
+
+ALTER TABLE Ticket
+ADD CONSTRAINT PK_Ticket
+PRIMARY KEY (
+    ScheduledId,
+    PassengerHas,
+    SeatNumber
+);
+
+
+CREATE TABLE Purchase (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+
+    PassengerId INT NOT NULL,
+
+    BookingCode INT NOT NULL,
+
+    ReservationCode VARCHAR(6) NOT NULL UNIQUE,
+
+    InvoiceNumber VARCHAR(255) NOT NULL UNIQUE,
+
+    PaymentMethod VARCHAR(100) NOT NULL,
+
+    Email VARCHAR(255) NOT NULL,
+
+    TotalPaid DECIMAL(18,2) NOT NULL,
+
+    TotalSeats INT NOT NULL,
+
+    PurchaseDate DATETIME NOT NULL,
+
+    EmailSent BIT DEFAULT 0,
+
+    CONSTRAINT FK_Purchase_Passenger
+    FOREIGN KEY (PassengerId)
+    REFERENCES Passenger(Id),
+
+    CONSTRAINT FK_Purchase_Itinerary
+    FOREIGN KEY (BookingCode)
+    REFERENCES Itinerary(BookingCode)
+);
+
+CREATE TABLE PurchaseDetail (
+    PurchaseId INT NOT NULL,
+
+    SeatClass VARCHAR(50) NOT NULL,
+
+    SeatCount INT NOT NULL,
+
+    Subtotal DECIMAL(18,2) NOT NULL,
+
+    CONSTRAINT PK_PurchaseDetail
+    PRIMARY KEY (
+        PurchaseId,
+        SeatClass
+    ),
+
+    CONSTRAINT FK_PurchaseDetail_Purchase
+    FOREIGN KEY (PurchaseId)
+    REFERENCES Purchase(Id)
+);
