@@ -10,19 +10,16 @@
       icon="bi bi-check-circle-fill"
     />
 
-    <!-- Loading state -->
     <div v-if="loading" class="loading-state">
       <i class="bi bi-arrow-repeat spin me-2"></i> Cargando información de la compra...
     </div>
 
-    <!-- Error state -->
     <div v-else-if="loadError" class="error-box" style="margin-bottom: 16px;">
       <i class="bi bi-exclamation-circle-fill me-2"></i>{{ loadError }}
     </div>
 
     <template v-else-if="purchase">
 
-      <!-- Card 1: Purchase details -->
       <AdminCard>
 
         <div class="email-bar">
@@ -30,7 +27,6 @@
           Confirmación enviada a: <strong>{{ purchase.email }}</strong>
         </div>
 
-        <!-- Reservation code — prominent -->
         <div class="reservation-block">
           <span class="reservation-label">Código de Reserva</span>
           <span class="reservation-code">{{ purchase.reservationCode }}</span>
@@ -72,7 +68,6 @@
 
         </div>
 
-        <!-- Seat class breakdown -->
         <div class="breakdown-section" v-if="purchase.details && purchase.details.length">
           <div class="breakdown-title">Desglose de asientos</div>
           <div class="breakdown-row breakdown-row--header">
@@ -98,7 +93,6 @@
 
       </AdminCard>
 
-      <!-- Card 2: Email actions -->
       <AdminCard>
 
         <div
@@ -284,7 +278,6 @@ export default {
 
       rafId = requestAnimationFrame(draw);
 
-      // Clean up if component is destroyed before animation ends
       this._cancelConfetti = () => {
         if (rafId) cancelAnimationFrame(rafId);
       };
@@ -311,7 +304,6 @@ export default {
 
 <style scoped>
 
-/* ── Celebration overlay ── */
 .confirmation-root {
   position: relative;
 }
@@ -325,7 +317,6 @@ export default {
   z-index: 9998;
 }
 
-/* ── Loading ── */
 .loading-state {
   text-align: center;
   padding: 40px;
@@ -342,7 +333,6 @@ export default {
   to { transform: rotate(360deg); }
 }
 
-/* ── Email bar ── */
 .email-bar {
   background: #f5f5f5;
   padding: 14px 24px;
@@ -353,7 +343,6 @@ export default {
   color: #555;
 }
 
-/* ── Reservation code ── */
 .reservation-block {
   display: flex;
   flex-direction: column;
@@ -379,7 +368,6 @@ export default {
   background-clip: text;
 }
 
-/* ── Details grid ── */
 .details-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -406,7 +394,6 @@ export default {
   font-weight: 700;
 }
 
-/* ── Seat class breakdown ── */
 .breakdown-section {
   border-top: 1.5px solid #f0f0f0;
   padding-top: 20px;
@@ -460,7 +447,6 @@ export default {
   font-weight: 900;
 }
 
-/* ── Alert boxes ── */
 .alert-box {
   padding: 12px 16px;
   border-radius: 10px;
@@ -488,7 +474,6 @@ export default {
   font-size: 0.9rem;
 }
 
-/* ── Bottom action box ── */
 .bottom-box {
   background: #eef5ff;
   border-radius: 16px;
@@ -515,7 +500,6 @@ export default {
   flex-wrap: wrap;
 }
 
-/* ── Buttons ── */
 .btn-outline-custom {
   border: 1.5px solid #e74c3c;
   background: white;
@@ -556,7 +540,6 @@ export default {
   opacity: 0.88;
 }
 
-/* ── Responsive ── */
 @media (max-width: 560px) {
   .details-grid {
     grid-template-columns: 1fr;

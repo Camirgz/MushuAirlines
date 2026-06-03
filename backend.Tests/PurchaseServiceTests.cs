@@ -105,7 +105,6 @@ public class PurchaseServiceTests
     [Test]
     public async Task IsFlightAvailable_RequestedCountExceedsTotalCapacity_ShouldReturnFalse()
     {
-        // Arrange — capacity = 6 + 2 = 8, requesting 9
         _mockRouteService.Setup(s => s.GetRouteByCode("R1")).Returns(Route(6, 2));
 
         // Act

@@ -258,14 +258,11 @@ namespace backend.Repositories
         {
             using var connection = new SqlConnection(_connectionString);
 
-            // Primary: aircraft of the specific type assigned to the route
             int? aircraftCode = connection.QueryFirstOrDefault<int?>(@"SELECT dbo.GetAircraftCode(@Type)", new
             {
                 Type = aircraftType
             });
 
-            // Fallback: any available aircraft (covers cases where type data
-            // is not yet set up in the dev environment)
             if (aircraftCode == null)
             {
                 aircraftCode = connection.QueryFirstOrDefault<int?>(@"

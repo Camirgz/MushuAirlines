@@ -50,14 +50,12 @@ public class PurchaseService : IPurchaseService
             request.Flight.RouteCode,
             request.Flight.FlightDate.ToDateTime(TimeOnly.MinValue));
 
-        // Check capacity as a whole — no per-seat numbers on the client side
         bool hasSeats = await _purchaseRepo.HasAvailableSeatsAsync(
             scheduledFlightId, request.SeatSelections.Count);
 
         if (!hasSeats)
             throw new SeatUnavailableException(scheduledFlightId);
 
-        // Auto-assign sequential seat numbers from the next available slot
         var assignedSeatNumbers = await _purchaseRepo.GetNextAvailableSeatNumbersAsync(
             scheduledFlightId, request.SeatSelections.Count);
 
@@ -138,22 +136,20 @@ public class PurchaseService : IPurchaseService
     {
         RouteCreationModel route;
         try { route = _routeCreationService.GetRouteByCode(routeCode); }
-        catch { return true; } // Unknown route — fail-open, purchase flow handles it
+        catch { return true; } 
 
-        // Prefer the capacity stored on the route; fall back to the aircraft type's seat count
-        // for routes created before the capacity columns existed (migration 009 set them to 0).
+
         int capacity = route.EconomyClassCapacity + route.FirstClassCapacity;
         if (capacity == 0)
             capacity = await _purchaseRepo.GetAircraftCapacityByTypeAsync(route.AircraftTypeId);
-        if (capacity == 0) return true; // Cannot determine capacity — fail-open
-
+        if (capacity == 0) return true; 
         if (requestedCount > capacity) return false;
 
         var flightDateTime     = flightDate.ToDateTime(TimeOnly.MinValue);
         int? scheduledFlightId = _routeCreationService.FindExistingScheduledFlight(routeCode, flightDateTime);
 
         if (!scheduledFlightId.HasValue)
-            return true; // No prior bookings and requestedCount <= capacity (checked above)
+            return true;
 
         int bookedSeats = await _purchaseRepo.GetBookedSeatsAsync(scheduledFlightId.Value);
         return requestedCount + bookedSeats <= capacity;
@@ -205,7 +201,6 @@ public class PurchaseService : IPurchaseService
                 throw new PassengerDataException("BirthDate",       "la fecha de nacimiento debe ser anterior a hoy");
         }
 
-        // Within-purchase duplicate check (fullName + birthDate + passportCountry)
         var seen = new HashSet<string>();
         foreach (var p in passengers)
         {

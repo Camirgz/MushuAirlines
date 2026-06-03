@@ -38,7 +38,6 @@ public class PurchaseRepository : IPurchaseRepository
     {
         using var connection = new SqlConnection(_connectionString);
 
-        // Tickets already booked on this flight
         const string bookedQuery = @"
             SELECT COUNT(SeatNumber)
             FROM   Ticket
@@ -47,9 +46,7 @@ public class PurchaseRepository : IPurchaseRepository
         int booked = await connection.ExecuteScalarAsync<int>(bookedQuery,
             new { ScheduledFlightId = scheduledFlightId });
 
-        // Total capacity from the route linked to this scheduled flight.
-        // Returns null when the route row is not found — treated as fail-open
-        // so bad data never silently blocks a purchase.
+
         const string capacityQuery = @"
             SELECT r.EconomyClassCapacity + r.FirstClassCapacity
             FROM   ScheduledFlight sf
@@ -60,7 +57,7 @@ public class PurchaseRepository : IPurchaseRepository
             new { ScheduledFlightId = scheduledFlightId });
 
         if (capacity == null || capacity == 0)
-            return true; // Cannot determine capacity — let the purchase attempt decide
+            return true;
 
         return (capacity.Value - booked) >= requestedCount;
     }
