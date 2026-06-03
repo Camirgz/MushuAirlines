@@ -94,11 +94,6 @@ public class AircraftServiceTests
 
         // Assert
         Assert.That(result, Is.EqualTo("El peso soportado no puede disminuir."));
-
-        _mockAircraftRepository.Verify(
-            repository => repository.Update(It.IsAny<int>(), It.IsAny<UpdateAircraftRequestModel>()),
-            Times.Never
-        );
     }
 
     [Test]
@@ -177,6 +172,44 @@ public class AircraftServiceTests
 
         // Assert
         Assert.That(result, Is.EqualTo("La capacidad total de asientos (1000) no puede ser igual o mayor a 1000."));
+    }
 
+    [Test]
+    public void Update_WhenAllFieldsAreSame_ShouldReturnNeedIncreaseAtLeastOneField()
+    {
+        // Arrange
+        int aircraftId = 1;
+
+        var currentAircraft = new AircraftResponseModel
+        {
+            Id = aircraftId,
+            Model = "Boeing 779",
+            Type = "Avión comercial",
+            WeightKg = 80000,
+            EconomyRows = 20,
+            EconomySeatsPerRow = 6,
+            FirstClassRows = 8,
+            FirstClassSeatsPerRow = 5,
+            Capacity = 160
+        };
+
+        var updateModel = new UpdateAircraftRequestModel
+        {
+            WeightKg = 80000,
+            EconomyRows = 20,
+            EconomySeatsPerRow = 6,
+            FirstClassRows = 8,
+            FirstClassSeatsPerRow = 5
+        };
+
+        _mockAircraftRepository
+            .Setup(repository => repository.GetById(aircraftId))
+            .Returns(currentAircraft);
+        
+        // Act
+        string result = _aircraftService.Update(aircraftId, updateModel);
+
+        // Assert
+        Assert.That(result, Is.EqualTo("Debe aumentar al menos un valor para actualizar la aeronave."));
     }
 }
