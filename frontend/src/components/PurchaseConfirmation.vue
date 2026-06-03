@@ -1,4 +1,7 @@
 <template>
+  <div class="confirmation-root">
+
+  <canvas ref="confettiCanvas" class="confetti-canvas" />
   <AdminPageLayout>
 
     <AdminHero
@@ -131,6 +134,8 @@
     </template>
 
   </AdminPageLayout>
+
+  </div>
 </template>
 
 <script>
@@ -159,7 +164,13 @@ export default {
     };
   },
 
+  beforeUnmount() {
+    if (this._cancelConfetti) this._cancelConfetti();
+  },
+
   async mounted() {
+    this.launchCelebration();
+
     const purchaseId = parseInt(this.$route.params.id);
     try {
       this.purchase = await getPurchaseData(purchaseId);
@@ -183,6 +194,102 @@ export default {
       return seatClass;
     },
 
+    launchCelebration() {
+      this.$nextTick(() => {
+        this.launchConfetti();
+      });
+    },
+
+    launchConfetti() {
+      const canvas = this.$refs.confettiCanvas;
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+
+      const resize = () => {
+        canvas.width  = window.innerWidth;
+        canvas.height = window.innerHeight;
+      };
+      resize();
+
+      const COLORS = [
+        '#e74c3c', '#f39c12', '#3498db', '#2ecc71',
+        '#9b59b6', '#e67e22', '#f1c40f', '#1abc9c',
+        '#e91e8c', '#ffffff',
+      ];
+
+      const rand = (min, max) => Math.random() * (max - min) + min;
+
+      const pieces = Array.from({ length: 160 }, () => ({
+        x:     rand(0, window.innerWidth),
+        y:     rand(-window.innerHeight * 0.8, -10),
+        w:     rand(6, 14),
+        h:     rand(3, 8),
+        color: COLORS[Math.floor(Math.random() * COLORS.length)],
+        angle: rand(0, Math.PI * 2),
+        spin:  rand(-0.12, 0.12),
+        vx:    rand(-2, 2),
+        vy:    rand(1.5, 4),
+        shape: Math.random() > 0.5 ? 'rect' : 'circle',
+      }));
+
+      const ACTIVE_MS = 4000;
+      const FADE_MS   = 1500;
+      const start     = Date.now();
+      let   rafId     = null;
+
+      const draw = () => {
+        const elapsed = Date.now() - start;
+
+        if (elapsed > ACTIVE_MS + FADE_MS) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          canvas.style.display = 'none';
+          return;
+        }
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const alpha = elapsed > ACTIVE_MS
+          ? 1 - (elapsed - ACTIVE_MS) / FADE_MS
+          : 1;
+
+        pieces.forEach(p => {
+          p.x     += p.vx;
+          p.y     += p.vy;
+          p.angle += p.spin;
+
+          if (p.y > canvas.height + 20 && elapsed < ACTIVE_MS) {
+            p.y  = rand(-80, -10);
+            p.x  = rand(0, canvas.width);
+            p.vy = rand(1.5, 4);
+          }
+
+          ctx.save();
+          ctx.globalAlpha = alpha;
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.angle);
+          ctx.fillStyle = p.color;
+
+          if (p.shape === 'circle') {
+            ctx.beginPath();
+            ctx.arc(0, 0, p.w / 2, 0, Math.PI * 2);
+            ctx.fill();
+          } else {
+            ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+          }
+
+          ctx.restore();
+        });
+
+        rafId = requestAnimationFrame(draw);
+      };
+
+      rafId = requestAnimationFrame(draw);
+
+      // Clean up if component is destroyed before animation ends
+      this._cancelConfetti = () => {
+        if (rafId) cancelAnimationFrame(rafId);
+      };
+    },
+
     async resendEmail() {
       if (this.resending) return;
       this.resending    = true;
@@ -203,6 +310,20 @@ export default {
 </script>
 
 <style scoped>
+
+/* ── Celebration overlay ── */
+.confirmation-root {
+  position: relative;
+}
+
+.confetti-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9998;
+}
 
 /* ── Loading ── */
 .loading-state {
