@@ -189,6 +189,13 @@ public class AirportService : IAirportService
         return string.Empty;
     }
 
+    public List<AirportSuggestionDto> GetSuggestions(string query)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+            return new List<AirportSuggestionDto>();
+        return _airportRepository.GetSuggestions(query);
+    }
+
     private static void NormalizeAirport(AirportModel airport)
     {
         airport.Code = airport.Code?.Trim().ToUpper() ?? string.Empty;

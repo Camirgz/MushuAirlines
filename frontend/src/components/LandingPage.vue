@@ -670,7 +670,7 @@ export default {
 
   async created() {
     try {
-      const airportRes = await fetch('http://localhost:5103/api/AirportCreation')
+      const airportRes = await fetch('http://localhost:5103/api/airport')
       this.airports = await airportRes.json()
     } catch (e) {
       console.error('Error cargando aeropuertos:', e)
@@ -850,7 +850,7 @@ export default {
       const q = this.originQuery.trim()
       if (!q) { this.originSuggestions = []; return }
       try {
-        const res = await fetch(`http://localhost:5103/api/AirportCreation/suggestions?q=${encodeURIComponent(q)}`)
+        const res = await fetch(`http://localhost:5103/api/airport/suggestions?q=${encodeURIComponent(q)}`)
         this.originSuggestions = await res.json()
       } catch (e) {
         this.originSuggestions = []
@@ -872,7 +872,7 @@ export default {
       const q = this.destinationQuery.trim()
       if (!q) { this.destinationSuggestions = []; return }
       try {
-        const res = await fetch(`http://localhost:5103/api/AirportCreation/suggestions?q=${encodeURIComponent(q)}`)
+        const res = await fetch(`http://localhost:5103/api/airport/suggestions?q=${encodeURIComponent(q)}`)
         this.destinationSuggestions = await res.json()
       } catch (e) {
         this.destinationSuggestions = []
@@ -1208,7 +1208,6 @@ export default {
   align-items: center;
   padding: 56px 24px 72px;
   position: relative;
-  overflow: hidden;
 }
 
 .hero-plane-bg {
