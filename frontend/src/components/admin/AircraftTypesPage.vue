@@ -1,685 +1,1627 @@
 <template>
-    <div class="admin-page">
-        <!-- Navbar -->
-        <nav class="navbar bg-white shadow-sm px-4 py-2">
-            <RouterLink to="/" class="navbar-brand d-flex align-items-center gap-2">
-                <img src="@/assets/logo.png" alt="Logo Mushu Airlines" class="logo-img" />
-                <div>
-                    <div class="brand-name">Mushu Airlines</div>
-                    <div class="brand-tagline">Vuela con el dragón</div>
-                </div>
-            </RouterLink>
+  <AdminPageLayout>
+    <template v-if="isListMode">
+      <AdminHero
+        title="Lista de Aeronaves"
+        subtitle="Panel de administración para operadores de Mushu Airlines"
+        icon="bi bi-airplane"
+        back-to="/admin"
+        back-text="Volver al panel"
+      />
 
-            <div class="nav-actions">
-                <RouterLink to="/" class="nav-link-item">
-                    <i class="bi bi-search me-2"></i>
-                    Buscar vuelos
-                </RouterLink>
-                <a href="#" class="nav-link-item">
-                    <i class="bi bi-briefcase me-2"></i>
-                    Mis vuelos
-                </a>
-                <a href="#" class="nav-link-item">
-                    <i class="bi bi-calendar-check me-2"></i>
-                    Check-in
-                </a>
+      <div v-if="successMessage" class="success-message">
+        <i class="bi bi-check-circle-fill"></i>
+        <span>{{ successMessage }}</span>
+      </div>
 
-                <div class="management-wrapper">
-                    <button class="management-btn" @click="ToggleDropdown">
-                        <i class="bi bi-gear me-2"></i>
-                        Gestión
-                        <i class="bi ms-2" :class="IsDropdownOpen ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
-                    </button>
+      <div v-if="errorMessage" class="error-message">
+        <i class="bi bi-exclamation-circle-fill"></i>
+        <span>{{ errorMessage }}</span>
+      </div>
 
-                    <div v-if="IsDropdownOpen" class="management-dropdown">
-                        <RouterLink to="/admin" class="dropdown-item-custom" @click="CloseDropdown">
-                            <i class="bi bi-grid"></i>
-                            <span>Página principal interna</span>
-                        </RouterLink>
-                        <RouterLink to="/admin/aircraft-types" class="dropdown-item-custom" @click="CloseDropdown">
-                            <i class="bi bi-airplane"></i>
-                            <span>Tipos de aeronaves</span>
-                        </RouterLink>
-                        <RouterLink to="/admin/routes" class="dropdown-item-custom" @click="CloseDropdown">
-                            <i class="bi bi-geo-alt"></i>
-                            <span>Rutas</span>
-                        </RouterLink>
-                        <RouterLink to="/admin/airports" class="dropdown-item-custom" @click="CloseDropdown">
-                            <i class="bi bi-airplane-engines"></i>
-                            <span>Aeropuertos</span>
-                        </RouterLink>
-                        <RouterLink to="/admin/users" class="dropdown-item-custom" @click="CloseDropdown">
-                            <i class="bi bi-people"></i>
-                            <span>Usuarios administradores y operarios</span>
-                        </RouterLink>
+      <AdminCard class="aircraft-card">
+        <div class="card-header-row">
+          <h2>
+            Aeronaves ({{ filteredAircraftTypes.length }}
+            <span v-if="searchQuery" class="total-hint">
+              de {{ aircraftTypes.length }}
+            </span>)
+          </h2>
+
+          <RouterLink
+            v-if="isAdmin"
+            to="/admin/aircraft-types/create"
+            class="create-aircraft-btn"
+          >
+            <i class="bi bi-plus-lg me-2"></i>
+            Crear Aeronave
+          </RouterLink>
+        </div>
+
+        <div class="search-wrapper">
+          <i class="bi bi-search"></i>
+
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Buscar por modelo o tipo..."
+            aria-label="Buscar aeronave"
+          />
+        </div>
+
+        <div v-if="isLoading" class="status-message">
+          <i class="bi bi-arrow-repeat spin"></i>
+          <span>Cargando aeronaves...</span>
+        </div>
+
+        <template v-else>
+          <div v-if="filteredAircraftTypes.length > 0" class="table-wrapper">
+            <table class="aircraft-table">
+              <thead>
+                <tr>
+                  <th>Modelo</th>
+                  <th>Tipo</th>
+                  <th>Peso (KG)</th>
+                  <th>Capacidad</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                <tr
+                  v-for="aircraft in paginatedAircraftTypes"
+                  :key="aircraft.id ?? aircraft.model"
+                >
+                  <td>
+                    <span class="model-code">{{ aircraft.model }}</span>
+                  </td>
+
+                  <td>{{ aircraft.type }}</td>
+
+                  <td>{{ formatNumber(aircraft.weightKg) }} kg</td>
+
+                  <td>
+                    <span class="capacity-badge">
+                      {{ aircraft.capacity }} asientos
+                    </span>
+                  </td>
+
+                  <td>
+                    <div class="actions-wrapper">
+                      <button
+                        type="button"
+                        class="view-btn"
+                        @click="openAircraftDetails(aircraft)"
+                      >
+                        <i class="bi bi-eye me-1"></i>
+                        Ver
+                      </button>
+
+                      <button
+                        v-if="isAdmin"
+                        type="button"
+                        class="edit-btn"
+                        @click="openAircraftEdit(aircraft)"
+                      >
+                        <i class="bi bi-pencil me-1"></i>
+                        Editar
+                      </button>
                     </div>
-                </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
 
-                <button class="logout-btn" @click="Logout">
-                    <i class="bi bi-box-arrow-right me-2"></i>
-                    Logout
-                </button>
+            <div v-if="totalPages > 1" class="pagination">
+              <button
+                class="page-btn"
+                type="button"
+                :disabled="currentPage === 1"
+                @click="goToPage(currentPage - 1)"
+              >
+                <i class="bi bi-chevron-left"></i>
+              </button>
+
+              <button
+                v-for="page in totalPages"
+                :key="page"
+                class="page-btn"
+                type="button"
+                :class="{ 'page-btn--active': page === currentPage }"
+                @click="goToPage(page)"
+              >
+                {{ page }}
+              </button>
+
+              <button
+                class="page-btn"
+                type="button"
+                :disabled="currentPage === totalPages"
+                @click="goToPage(currentPage + 1)"
+              >
+                <i class="bi bi-chevron-right"></i>
+              </button>
+
+              <span class="page-info">
+                Página {{ currentPage }} de {{ totalPages }}
+              </span>
             </div>
-        </nav>
+          </div>
 
-        <!-- Main content -->
-        <main class="admin-main">
-            <!-- Hero banner -->
-            <section class="admin-hero">
-                <i class="bi bi-airplane hero-icon"></i>
-                <div>
-                    <h1>Lista de Aeronaves</h1>
-                    <p>Panel de administración para operadores de Mushu Airlines</p>
-                </div>
-            </section>
+          <div v-else class="empty-state">
+            <div class="empty-icon">
+              <i class="bi bi-airplane"></i>
+            </div>
 
-            <!-- Content card -->
-            <section class="content-card">
-                <div class="card-header">
-                    <h2>
-                        Aeronaves ({{ FilteredAircraftTypes.length }}
-                        <span v-if="SearchQuery" class="total-hint">de {{ AircraftTypes.length }}</span>)
-                    </h2>
-                    <RouterLink to="/admin/aircraft-types/create" class="create-btn">
-                        <i class="bi bi-plus-lg me-2"></i>
-                        Crear Aeronave
-                    </RouterLink>
-                </div>
+            <h3>{{ emptyTitle }}</h3>
+            <p>{{ emptyDescription }}</p>
 
-                <div class="search-bar">
-                    <i class="bi bi-search search-icon"></i>
-                    <input v-model="SearchQuery"
-                           type="text"
-                           class="search-input"
-                           placeholder="Buscar por modelo o tipo..." />
-                    <button v-if="SearchQuery" class="search-clear" @click="SearchQuery = ''">
-                        <i class="bi bi-x-lg"></i>
-                    </button>
-                </div>
+            <RouterLink
+              v-if="isAdmin"
+              to="/admin/aircraft-types/create"
+              class="empty-create-btn"
+            >
+              <i class="bi bi-plus-lg me-2"></i>
+              Crear primera aeronave
+            </RouterLink>
+          </div>
+        </template>
+      </AdminCard>
+    </template>
 
-                <div v-if="IsLoading" class="status-msg">
-                    <i class="bi bi-arrow-repeat spin me-2"></i>
-                    Cargando aeronaves...
-                </div>
+    <template v-else-if="selectedAircraft">
+      <AdminHero
+        title="Detalles de la Aeronave"
+        subtitle="Información completa de la aeronave"
+        icon="bi bi-airplane"
+      />
 
-                <div v-else-if="ErrorMessage" class="error-msg">
-                    <i class="bi bi-exclamation-circle me-2"></i>
-                    {{ ErrorMessage }}
-                </div>
+      <AdminCard class="details-card">
+        <div class="detail-group detail-full">
+          <span class="detail-label">Modelo</span>
+          <span class="model-code model-code-large">
+            {{ selectedAircraft.model }}
+          </span>
+        </div>
 
-                <template v-else>
-                    <table class="aircraft-table">
-                        <thead>
-                            <tr>
-                                <th>MODELO</th>
-                                <th>TIPO</th>
-                                <th>PESO (KG)</th>
-                                <th>CAPACIDAD</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-if="FilteredAircraftTypes.length === 0">
-                                <td colspan="4" class="empty-msg">No se encontraron aeronaves.</td>
-                            </tr>
-                            <tr v-for="Aircraft in PaginatedAircraftTypes" :key="Aircraft.Id">
-                                <td>{{ Aircraft.model }}</td>
-                                <td class="type-cell">{{ Aircraft.type }}</td>
-                                <td>{{ Aircraft.weightKg.toLocaleString() }}</td>
-                                <td>
-                                    <span class="capacity-badge">{{ Aircraft.capacity }} asientos</span>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+        <hr class="details-line" />
 
-                    <div v-if="TotalPages > 1" class="pagination">
-                        <button class="page-btn"
-                                :disabled="CurrentPage === 1"
-                                @click="GoToPage(CurrentPage - 1)">
-                            <i class="bi bi-chevron-left"></i>
-                        </button>
+        <div class="detail-grid">
+          <div class="detail-group">
+            <span class="detail-label">Tipo de aeronave</span>
+            <p>{{ selectedAircraft.type }}</p>
+          </div>
 
-                        <button v-for="Page in TotalPages"
-                                :key="Page"
-                                class="page-btn"
-                                :class="{ 'page-btn--active': Page === CurrentPage }"
-                                @click="GoToPage(Page)">
-                            {{ Page }}
-                        </button>
+          <div class="detail-group">
+            <span class="detail-label">Peso soportado</span>
+            <p>{{ formatNumber(selectedAircraft.weightKg) }} kg</p>
+          </div>
+        </div>
 
-                        <button class="page-btn"
-                                :disabled="CurrentPage === TotalPages"
-                                @click="GoToPage(CurrentPage + 1)">
-                            <i class="bi bi-chevron-right"></i>
-                        </button>
+        <hr class="details-line" />
 
-                        <span class="page-info">
-                            Página {{ CurrentPage }} de {{ TotalPages }}
-                        </span>
-                    </div>
-                </template>
-            </section>
-        </main>
-    </div>
+        <div class="detail-group detail-full">
+          <span class="detail-label">Primera Clase</span>
+
+          <div class="class-summary first-class-summary">
+            <div class="summary-box">
+              <span>Filas</span>
+              <strong>{{ selectedAircraft.firstClassRows }}</strong>
+            </div>
+
+            <div class="summary-box">
+              <span>Asientos/fila</span>
+              <strong>{{ selectedAircraft.firstClassSeatsPerRow }}</strong>
+            </div>
+
+            <div class="summary-box summary-box-strong">
+              <span>Subtotal</span>
+              <strong>{{ firstClassSubtotal(selectedAircraft) }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <hr class="details-line" />
+
+        <div class="detail-group detail-full">
+          <span class="detail-label">Clase Turista</span>
+
+          <div class="class-summary economy-summary">
+            <div class="summary-box">
+              <span>Filas</span>
+              <strong>{{ selectedAircraft.economyRows }}</strong>
+            </div>
+
+            <div class="summary-box">
+              <span>Asientos/fila</span>
+              <strong>{{ selectedAircraft.economySeatsPerRow }}</strong>
+            </div>
+
+            <div class="summary-box summary-box-strong">
+              <span>Subtotal</span>
+              <strong>{{ economySubtotal(selectedAircraft) }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <hr class="details-line" />
+
+        <div class="detail-group detail-full">
+          <span class="detail-label">Capacidad total</span>
+
+          <div class="total-capacity-box">
+            <i class="bi bi-people"></i>
+            <strong>{{ selectedAircraft.capacity }} asientos</strong>
+          </div>
+        </div>
+
+        <hr class="details-line" />
+
+        <button type="button" class="close-details-btn" @click="closeMode">
+            Cerrar
+        </button>
+      </AdminCard>
+    </template>
+
+    <template v-else-if="editingAircraft">
+      <AdminHero
+        title="Editar Aeronave"
+        subtitle="Solo se permite aumentar valores numéricos"
+        icon="bi bi-airplane"
+      />
+
+      <div v-if="successMessage" class="success-message">
+        <i class="bi bi-check-circle-fill"></i>
+        <span>{{ successMessage }}</span>
+      </div>
+
+      <div v-if="errorMessage" class="error-message">
+        <i class="bi bi-exclamation-circle-fill"></i>
+        <span>{{ errorMessage }}</span>
+      </div>
+
+      <AdminCard class="edit-card">
+        <form @submit.prevent="saveAircraftChanges">
+
+          <div class="detail-group detail-full">
+            <span class="detail-label">Modelo</span>
+            <span class="model-code model-code-large">
+              {{ editingAircraft.model }}
+            </span>
+          </div>
+                    
+          <hr class="details-line" />
+
+          <div class="detail-group">
+              <span class="detail-label">Tipo de aeronave</span>
+              <p>{{ editingAircraft.type }}</p>
+          </div>
+
+          <hr class="details-line" />
+
+          <div
+            class="form-group"
+            :class="{ 'has-error': editSubmitted && editErrors.weightKg }"
+          >
+            <label class="form-label">
+              Peso soportado (kg) <span class="required">*</span>
+            </label>
+
+            <input
+              v-model.number="editForm.weightKg"
+              type="number"
+              class="form-input"
+              :min="editingAircraft.weightKg"
+              required
+            />
+
+            <small>Actual: {{ formatNumber(editingAircraft.weightKg) }} kg</small>
+
+            <small
+              v-if="editSubmitted && editErrors.weightKg"
+              class="error-text"
+            >
+              El peso soportado debe ser mayor al valor actual.
+            </small>
+          </div>
+
+          <hr class="section-divider" />
+
+          <h3 class="section-title">Primera Clase</h3>
+
+          <div class="form-row">
+            <div
+              class="form-group"
+              :class="{ 'has-error': editSubmitted && editErrors.firstClassRows }"
+            >
+              <label class="form-label">
+                Cantidad de filas <span class="required">*</span>
+              </label>
+
+              <input
+                v-model.number="editForm.firstClassRows"
+                type="number"
+                class="form-input"
+                :min="editingAircraft.firstClassRows"
+                required
+              />
+
+              <small>Actual: {{ editingAircraft.firstClassRows }}</small>
+
+              <small
+                v-if="editSubmitted && editErrors.firstClassRows"
+                class="error-text"
+              >
+                Debe ser mayor al valor actual.
+              </small>
+            </div>
+
+            <div
+              class="form-group"
+              :class="{
+                'has-error':
+                  editSubmitted && editErrors.firstClassSeatsPerRow,
+              }"
+            >
+              <label class="form-label">
+                Asientos por fila <span class="required">*</span>
+              </label>
+
+              <input
+                v-model.number="editForm.firstClassSeatsPerRow"
+                type="number"
+                class="form-input"
+                :min="editingAircraft.firstClassSeatsPerRow"
+                required
+              />
+
+              <small>Actual: {{ editingAircraft.firstClassSeatsPerRow }}</small>
+
+              <small
+                v-if="editSubmitted && editErrors.firstClassSeatsPerRow"
+                class="error-text"
+              >
+                Debe ser mayor al valor actual.
+              </small>
+            </div>
+          </div>
+
+          <hr class="section-divider" />
+
+          <h3 class="section-title">Clase Turista</h3>
+
+          <div class="form-row">
+            <div
+              class="form-group"
+              :class="{ 'has-error': editSubmitted && editErrors.economyRows }"
+            >
+              <label class="form-label">
+                Cantidad de filas <span class="required">*</span>
+              </label>
+
+              <input
+                v-model.number="editForm.economyRows"
+                type="number"
+                class="form-input"
+                :min="editingAircraft.economyRows"
+                required
+              />
+
+              <small>Actual: {{ editingAircraft.economyRows }}</small>
+
+              <small
+                v-if="editSubmitted && editErrors.economyRows"
+                class="error-text"
+              >
+                Debe ser mayor al valor actual.
+              </small>
+            </div>
+
+            <div
+              class="form-group"
+              :class="{
+                'has-error':
+                  editSubmitted && editErrors.economySeatsPerRow,
+              }"
+            >
+              <label class="form-label">
+                Asientos por fila <span class="required">*</span>
+              </label>
+
+              <input
+                v-model.number="editForm.economySeatsPerRow"
+                type="number"
+                class="form-input"
+                :min="editingAircraft.economySeatsPerRow"
+                required
+              />
+
+              <small>Actual: {{ editingAircraft.economySeatsPerRow }}</small>
+
+              <small
+                v-if="editSubmitted && editErrors.economySeatsPerRow"
+                class="error-text"
+              >
+                Debe ser mayor al valor actual.
+              </small>
+            </div>
+          </div>
+
+          <div
+            class="seat-counter"
+            :class="{ 'seat-counter--danger': editTotalSeats >= 1000 }"
+          >
+            <i class="bi bi-person-fill me-2"></i>
+
+            Nueva capacidad total:
+            <strong>{{ editTotalSeats }} asientos</strong>
+
+            <span v-if="editTotalSeats >= 1000" class="seat-limit-msg">
+              — máximo permitido: 999
+            </span>
+          </div>
+
+          <div class="edit-note">
+            <i class="bi bi-info-circle"></i>
+            Solo se permite aumentar los valores. No se puede disminuir ni mantener
+            el mismo número.
+          </div>
+
+          <div class="edit-actions">
+            <button
+              type="submit"
+              class="save-btn"
+              :disabled="isSubmitting || !canSaveEdit"
+            >
+              {{ isSubmitting ? "Guardando..." : "Guardar cambios" }}
+            </button>
+
+            <button type="button" class="cancel-btn" @click="closeMode">
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </AdminCard>
+    </template>
+  </AdminPageLayout>
 </template>
 
 <script>
-    import { GetAircraftTypes } from "../../services/AircraftTypesService";
+import AdminPageLayout from "@/components/layout/AdminPageLayout.vue";
+import AdminHero from "@/components/admin/ui/AdminHero.vue";
+import AdminCard from "@/components/admin/ui/AdminCard.vue";
 
-    export default {
-        name: "AircraftTypesPage",
+import {
+  getAircraftTypes,
+  getAircraftTypeById,
+  updateAircraftType,
+} from "../../services/AircraftTypesService";
 
-        computed: {
-            FilteredAircraftTypes() {
-                const Query = this.SearchQuery.trim().toLowerCase();
-                if (!Query) return this.AircraftTypes;
-                return this.AircraftTypes.filter(
-                    (A) =>
-                        (A.model ?? "").toLowerCase().includes(Query) ||
-                        (A.type ?? "").toLowerCase().includes(Query)
-                );
-            },
-            TotalPages() {
-                return Math.ceil(this.FilteredAircraftTypes.length / this.PageSize) || 1;
-            },
-            PaginatedAircraftTypes() {
-                const Start = (this.CurrentPage - 1) * this.PageSize;
-                return this.FilteredAircraftTypes.slice(Start, Start + this.PageSize);
-            },
-        },
+const minPage = 1;
+const maxSeatCapacity = 1000;
 
-        watch: {
-            SearchQuery() {
-                this.CurrentPage = 1;
-            },
-        },
+export default {
+  name: "AircraftTypesPage",
 
-        data() {
-            return {
-                IsDropdownOpen: false,
-                AircraftTypes: [],
-                SearchQuery: "",
-                CurrentPage: 1,
-                PageSize: 10,
-                IsLoading: false,
-                ErrorMessage: "",
-            };
-        },
+  components: {
+    AdminPageLayout,
+    AdminHero,
+    AdminCard,
+  },
 
-        mounted() {
-            this.LoadAircraftTypes();
-        },
-
-        methods: {
-            ToggleDropdown() {
-                this.IsDropdownOpen = !this.IsDropdownOpen;
-            },
-            CloseDropdown() {
-                this.IsDropdownOpen = false;
-            },
-            LoadAircraftTypes() {
-                this.IsLoading = true;
-                this.ErrorMessage = "";
-
-                GetAircraftTypes()
-                    .then((Response) => {
-                        this.AircraftTypes = Response.data;
-                    })
-                    .catch(() => {
-                        this.ErrorMessage = "No se pudieron cargar las aeronaves. Intente de nuevo.";
-                    })
-                    .finally(() => {
-                        this.IsLoading = false;
-                    });
-            },
-            GoToPage(Page) {
-                if (Page < 1 || Page > this.TotalPages) return;
-                this.CurrentPage = Page;
-            },
-            Logout() {
-                localStorage.removeItem("token");
-                this.$router.push("/");
-            },
-        },
+  data() {
+    return {
+      aircraftTypes: [],
+      searchQuery: "",
+      currentPage: 1,
+      pageSize: 10,
+      isLoading: false,
+      isSubmitting: false,
+      errorMessage: "",
+      successMessage: "",
+      selectedAircraft: null,
+      editingAircraft: null,
+      editSubmitted: false,
+      editErrors: {},
+      editForm: {
+        weightKg: null,
+        economyRows: null,
+        economySeatsPerRow: null,
+        firstClassRows: null,
+        firstClassSeatsPerRow: null,
+      },
+      userRole: null,
     };
+  },
+
+  computed: {
+    isAdmin() {
+      return this.userRole === "Administrator";
+    },
+
+    isListMode() {
+      return !this.selectedAircraft && !this.editingAircraft;
+    },
+
+    filteredAircraftTypes() {
+      const query = this.searchQuery.trim().toLowerCase();
+
+      if (!query) {
+        return this.aircraftTypes;
+      }
+
+      return this.aircraftTypes.filter((aircraft) => {
+        return (
+          (aircraft.model ?? "").toLowerCase().includes(query) ||
+          (aircraft.type ?? "").toLowerCase().includes(query)
+        );
+      });
+    },
+
+    totalPages() {
+      return Math.ceil(this.filteredAircraftTypes.length / this.pageSize) || minPage;
+    },
+
+    paginatedAircraftTypes() {
+      const start = (this.currentPage - minPage) * this.pageSize;
+
+      return this.filteredAircraftTypes.slice(start, start + this.pageSize);
+    },
+
+    emptyTitle() {
+      return this.aircraftTypes.length === 0
+        ? "No hay aeronaves creadas"
+        : "No se encontraron aeronaves";
+    },
+
+    emptyDescription() {
+      return this.aircraftTypes.length === 0
+        ? "Cuando registre aeronaves, aparecerán en esta lista."
+        : "Intente buscar por otro modelo o tipo.";
+    },
+
+    editTotalSeats() {
+      const economy =
+        (this.editForm.economyRows || 0) *
+        (this.editForm.economySeatsPerRow || 0);
+
+      const firstClass =
+        (this.editForm.firstClassRows || 0) *
+        (this.editForm.firstClassSeatsPerRow || 0);
+
+      return economy + firstClass;
+    },
+
+    canSaveEdit() {
+      if (!this.editingAircraft) {
+        return false;
+      }
+
+      const hasIncreasedValue =
+        this.editForm.weightKg > this.editingAircraft.weightKg ||
+        this.editForm.economyRows > this.editingAircraft.economyRows ||
+        this.editForm.economySeatsPerRow >
+          this.editingAircraft.economySeatsPerRow ||
+        this.editForm.firstClassRows > this.editingAircraft.firstClassRows ||
+        this.editForm.firstClassSeatsPerRow >
+          this.editingAircraft.firstClassSeatsPerRow;
+
+      const hasDecreasedValue =
+        this.editForm.weightKg < this.editingAircraft.weightKg ||
+        this.editForm.economyRows < this.editingAircraft.economyRows ||
+        this.editForm.economySeatsPerRow <
+          this.editingAircraft.economySeatsPerRow ||
+        this.editForm.firstClassRows < this.editingAircraft.firstClassRows ||
+        this.editForm.firstClassSeatsPerRow <
+          this.editingAircraft.firstClassSeatsPerRow;
+
+      return (
+        this.editTotalSeats < maxSeatCapacity &&
+        hasIncreasedValue &&
+        !hasDecreasedValue
+      );
+    },
+  },
+
+  watch: {
+    searchQuery() {
+      this.currentPage = minPage;
+    },
+  },
+
+  mounted() {
+    this.loadUser();
+    this.loadAircraftTypes();
+  },
+
+  methods: {
+    getRoleFromToken() {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        return null;
+      }
+
+      try {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+
+        return (
+          payload["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] ||
+          payload.role ||
+          payload.Role ||
+          null
+        );
+      } catch (error) {
+        console.error("Error leyendo el token:", error);
+        return null;
+      }
+    },
+
+    loadUser() {
+      this.userRole = this.getRoleFromToken();
+    },
+
+    loadAircraftTypes() {
+      this.isLoading = true;
+      this.errorMessage = "";
+
+      getAircraftTypes()
+        .then((response) => {
+          this.aircraftTypes = response.data.map((aircraft) =>
+            this.normalizeAircraft(aircraft)
+          );
+        })
+        .catch(() => {
+          this.errorMessage =
+            "No se pudieron cargar las aeronaves. Intente de nuevo.";
+        })
+        .finally(() => {
+          this.isLoading = false;
+        });
+    },
+
+    normalizeAircraft(aircraft) {
+      const firstClassRows = Number(
+        aircraft.firstClassRows ??
+          aircraft.FirstClassRows ??
+          aircraft.firstClass?.rowCount ??
+          aircraft.FirstClass?.RowCount ??
+          0
+      );
+
+      const firstClassSeatsPerRow = Number(
+        aircraft.firstClassSeatsPerRow ??
+          aircraft.FirstClassSeatsPerRow ??
+          aircraft.firstClass?.seatsPerRow ??
+          aircraft.FirstClass?.SeatsPerRow ??
+          0
+      );
+
+      const economyRows = Number(
+        aircraft.economyRows ??
+          aircraft.EconomyRows ??
+          aircraft.economyClass?.rowCount ??
+          aircraft.EconomyClass?.RowCount ??
+          0
+      );
+
+      const economySeatsPerRow = Number(
+        aircraft.economySeatsPerRow ??
+          aircraft.EconomySeatsPerRow ??
+          aircraft.economyClass?.seatsPerRow ??
+          aircraft.EconomyClass?.SeatsPerRow ??
+          0
+      );
+
+      const calculatedCapacity =
+        firstClassRows * firstClassSeatsPerRow +
+        economyRows * economySeatsPerRow;
+
+      return {
+        id:
+          aircraft.id ??
+          aircraft.Id ??
+          aircraft.code ??
+          aircraft.Code ??
+          aircraft.aircraftTypeId ??
+          aircraft.AircraftTypeId ??
+          null,
+        model: aircraft.model ?? aircraft.Model ?? "",
+        type: aircraft.type ?? aircraft.Type ?? "",
+        weightKg: Number(aircraft.weightKg ?? aircraft.WeightKg ?? 0),
+        firstClassRows,
+        firstClassSeatsPerRow,
+        economyRows,
+        economySeatsPerRow,
+        capacity: Number(
+          aircraft.capacity ?? aircraft.Capacity ?? calculatedCapacity
+        ),
+      };
+    },
+
+    async openAircraftDetails(aircraft) {
+      this.successMessage = "";
+      this.errorMessage = "";
+      this.searchQuery = "";
+
+      const aircraftId =
+        aircraft.id ??
+        aircraft.code ??
+        aircraft.Code ??
+        null;
+
+      if (!aircraftId) {
+        this.selectedAircraft = { ...aircraft };
+        this.editingAircraft = null;
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+
+      try {
+        const response = await getAircraftTypeById(aircraftId);
+        this.selectedAircraft = this.normalizeAircraft(response.data);
+        this.editingAircraft = null;
+
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } catch (error) {
+        this.selectedAircraft = { ...aircraft };
+        this.editingAircraft = null;
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    },
+
+    async openAircraftEdit(aircraft) {
+      this.successMessage = "";
+      this.errorMessage = "";
+      this.editSubmitted = false;
+      this.editErrors = {};
+      this.searchQuery = "";
+
+      const aircraftId =
+        aircraft.id ??
+        aircraft.code ??
+        aircraft.Code ??
+        null;
+
+      let currentAircraft = { ...aircraft };
+
+      if (aircraftId) {
+        try {
+          const response = await getAircraftTypeById(aircraftId);
+          currentAircraft = this.normalizeAircraft(response.data);
+        } catch (error) {
+          currentAircraft = { ...aircraft };
+        }
+      }
+
+      this.editingAircraft = currentAircraft;
+      this.selectedAircraft = null;
+
+      this.editForm = {
+        weightKg: currentAircraft.weightKg,
+        economyRows: currentAircraft.economyRows,
+        economySeatsPerRow: currentAircraft.economySeatsPerRow,
+        firstClassRows: currentAircraft.firstClassRows,
+        firstClassSeatsPerRow: currentAircraft.firstClassSeatsPerRow,
+      };
+
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    },
+
+    closeMode() {
+      this.selectedAircraft = null;
+      this.editingAircraft = null;
+      this.successMessage = "";
+      this.errorMessage = "";
+      this.editSubmitted = false;
+      this.editErrors = {};
+
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    },
+
+    validateEditForm() {
+      this.editErrors = {};
+
+      const hasIncreasedValue =
+        this.editForm.weightKg > this.editingAircraft.weightKg ||
+        this.editForm.economyRows > this.editingAircraft.economyRows ||
+        this.editForm.economySeatsPerRow >
+          this.editingAircraft.economySeatsPerRow ||
+        this.editForm.firstClassRows > this.editingAircraft.firstClassRows ||
+        this.editForm.firstClassSeatsPerRow >
+          this.editingAircraft.firstClassSeatsPerRow;
+
+      if (this.editForm.weightKg < this.editingAircraft.weightKg) {
+        this.editErrors.weightKg = true;
+      }
+
+      if (this.editForm.firstClassRows < this.editingAircraft.firstClassRows) {
+        this.editErrors.firstClassRows = true;
+      }
+
+      if (
+        this.editForm.firstClassSeatsPerRow <
+        this.editingAircraft.firstClassSeatsPerRow
+      ) {
+        this.editErrors.firstClassSeatsPerRow = true;
+      }
+
+      if (this.editForm.economyRows < this.editingAircraft.economyRows) {
+        this.editErrors.economyRows = true;
+      }
+
+      if (
+        this.editForm.economySeatsPerRow <
+        this.editingAircraft.economySeatsPerRow
+      ) {
+        this.editErrors.economySeatsPerRow = true;
+      }
+
+      if (this.editTotalSeats >= maxSeatCapacity) {
+        this.editErrors.capacity = true;
+      }
+
+      if (!hasIncreasedValue) {
+        this.editErrors.noChanges = true;
+      }
+
+      return Object.keys(this.editErrors).length === 0;
+    },
+
+    saveAircraftChanges() {
+      this.editSubmitted = true;
+      this.successMessage = "";
+      this.errorMessage = "";
+
+      if (!this.validateEditForm()) {
+        this.errorMessage =
+          "Debe aumentar al menos un valor. No se permite disminuir valores y la capacidad total debe ser menor a 1000.";
+        return;
+      }
+
+      this.isSubmitting = true;
+
+      const payload = {
+        WeightKg: this.editForm.weightKg,
+        EconomyRows: this.editForm.economyRows,
+        EconomySeatsPerRow: this.editForm.economySeatsPerRow,
+        FirstClassRows: this.editForm.firstClassRows,
+        FirstClassSeatsPerRow: this.editForm.firstClassSeatsPerRow,
+      };
+
+      updateAircraftType(this.editingAircraft.id, payload)
+        .then(() => {
+          const updatedAircraft = this.normalizeAircraft({
+            ...this.editingAircraft,
+            weightKg: this.editForm.weightKg,
+            economyRows: this.editForm.economyRows,
+            economySeatsPerRow: this.editForm.economySeatsPerRow,
+            firstClassRows: this.editForm.firstClassRows,
+            firstClassSeatsPerRow: this.editForm.firstClassSeatsPerRow,
+            capacity: this.editTotalSeats,
+          });
+
+          const aircraftIndex = this.aircraftTypes.findIndex(
+            (aircraft) =>
+              aircraft.id === this.editingAircraft.id ||
+              aircraft.model === this.editingAircraft.model
+          );
+
+          if (aircraftIndex !== -1) {
+            this.aircraftTypes.splice(aircraftIndex, 1, updatedAircraft);
+          }
+
+          this.successMessage = "La aeronave fue actualizada correctamente.";
+          this.editingAircraft = null;
+          this.editSubmitted = false;
+          this.editErrors = {};
+
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        })
+        .catch((error) => {
+          this.errorMessage = this.parseError(error);
+        })
+        .finally(() => {
+          this.isSubmitting = false;
+        });
+    },
+
+    firstClassSubtotal(aircraft) {
+      return aircraft.firstClassRows * aircraft.firstClassSeatsPerRow;
+    },
+
+    economySubtotal(aircraft) {
+      return aircraft.economyRows * aircraft.economySeatsPerRow;
+    },
+
+    formatNumber(value) {
+      return Number(value ?? 0).toLocaleString();
+    },
+
+    goToPage(page) {
+      if (page < minPage || page > this.totalPages) {
+        return;
+      }
+
+      this.currentPage = page;
+    },
+
+    parseError(error) {
+      if (!error.response) {
+        return "No se pudo conectar con el servidor. Verifique su conexión e intente de nuevo.";
+      }
+
+      const data = error.response.data;
+
+      if (data && typeof data === "object") {
+        if (data.errors) {
+          const messages = Object.values(data.errors).flat();
+
+          if (messages.length) {
+            return messages.join(" ");
+          }
+        }
+
+        if (data.title) {
+          return data.title;
+        }
+
+        return "Ocurrió un error inesperado. Intente de nuevo.";
+      }
+
+      if (typeof data === "string") {
+        if (data.startsWith("Ya existe")) {
+          return data;
+        }
+
+        if (data.startsWith("La capacidad total")) {
+          return data;
+        }
+
+        if (data.includes("CHK_SeatsPerRow")) {
+          return "El número de asientos por fila no está dentro del rango permitido para este tipo de aeronave.";
+        }
+
+        if (data.includes("CHECK constraint")) {
+          return "Los datos ingresados no cumplen las restricciones de la aeronave. Verifique los valores e intente de nuevo.";
+        }
+
+        if (data.includes("PRIMARY KEY") || data.includes("UNIQUE KEY")) {
+          return "Ya existe una aeronave registrada con esos datos.";
+        }
+
+        if (data.includes("FOREIGN KEY")) {
+          return "Uno de los valores ingresados no corresponde a un registro existente.";
+        }
+      }
+
+      return "Ocurrió un error al guardar la aeronave. Verifique los datos e intente de nuevo.";
+    },
+  },
+};
 </script>
 
 <style scoped>
-    .admin-page {
-        min-height: 100vh;
-        background: var(--bg-page);
-        color: var(--text-dark);
-    }
+.success-message,
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
 
-    /* Navbar */
-    .navbar {
-        position: sticky;
-        top: 0;
-        z-index: 100;
-        min-height: var(--navbar-min-height);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background: var(--navbar-bg);
-        border-bottom: var(--navbar-border);
-    }
+.success-message {
+  background: #ecfdf5;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
 
-    .navbar-brand {
-        text-decoration: none;
-        color: inherit;
-    }
+.error-message {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
 
-    .logo-img {
-        width: 46px;
-        height: 46px;
-        border-radius: 12px;
-        object-fit: contain;
-    }
+.aircraft-card {
+  padding: 0;
+  overflow: hidden;
+}
 
-    .brand-name {
-        font-weight: 800;
-        font-size: 1.25rem;
-        color: var(--text-dark);
-        line-height: 1.1;
-    }
+.card-header-row {
+  padding: 24px 24px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
 
-    .brand-tagline {
-        font-size: 0.78rem;
-        color: var(--text-medium);
-    }
+.card-header-row h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a1a1a;
+}
 
-    .nav-actions {
-        display: flex;
-        align-items: center;
-        gap: 18px;
-    }
+.total-hint {
+  font-weight: 400;
+  color: #888;
+}
 
-    .nav-link-item {
-        text-decoration: none;
-        color: var(--text-dark);
-        font-size: 0.95rem;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        transition: 0.2s ease;
-    }
+.create-aircraft-btn,
+.empty-create-btn {
+  text-decoration: none;
+  background: linear-gradient(to right, #e74c3c, #f39c12);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 11px 18px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
 
-        .nav-link-item:hover {
-            color: var(--color-primary-hover);
-        }
+.create-aircraft-btn:hover,
+.empty-create-btn:hover {
+  color: #ffffff;
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
 
-    /* Management dropdown */
-    .management-wrapper {
-        position: relative;
-    }
+.search-wrapper {
+  margin: 0 24px 24px;
+  height: 44px;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 13px;
+  background: #ffffff;
+  transition: border-color 0.2s ease;
+}
 
-    .management-btn {
-        padding: 11px 18px;
-        background: var(--gradient-brand-diagonal);
-        color: #ffffff;
-        border: none;
-        border-radius: var(--radius-btn);
-        font-weight: 800;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        box-shadow: var(--shadow-btn-primary);
-        transition: 0.2s ease;
-    }
+.search-wrapper:focus-within {
+  border-color: #e74c3c;
+}
 
-        .management-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: var(--shadow-btn-primary-hover);
-        }
+.search-wrapper i {
+  color: #bbb;
+  font-size: 1rem;
+}
 
-    .management-dropdown {
-        position: absolute;
-        top: 56px;
-        right: 0;
-        width: 340px;
-        background: var(--bg-card);
-        border: 1px solid var(--border-color);
-        border-radius: var(--radius-panel);
-        box-shadow: var(--shadow-dropdown);
-        padding: 8px;
-        z-index: 200;
-    }
+.search-wrapper input {
+  width: 100%;
+  height: 100%;
+  border: none;
+  outline: none;
+  color: #333;
+  font-size: 0.88rem;
+}
 
-    .dropdown-item-custom {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        text-decoration: none;
-        color: var(--text-dark);
-        padding: 12px 14px;
-        border-radius: 9px;
-        font-size: 0.9rem;
-        font-weight: 700;
-        transition: 0.2s ease;
-    }
+.search-wrapper input::placeholder {
+  color: #bbb;
+}
 
-        .dropdown-item-custom i {
-            color: var(--color-accent-soft);
-            font-size: 1rem;
-        }
+.status-message {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 24px;
+  color: #888;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
 
-        .dropdown-item-custom:hover {
-            background: var(--bg-dropdown-hover);
-            color: var(--color-accent-soft);
-        }
+.table-wrapper {
+  overflow-x: auto;
+}
 
-        .dropdown-item-custom.router-link-exact-active {
-            background: var(--gradient-brand-diagonal);
-            color: #ffffff;
-        }
+.aircraft-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
 
-            .dropdown-item-custom.router-link-exact-active i {
-                color: #ffffff;
-            }
+.aircraft-table thead {
+  background: #f8f9fa;
+}
 
-    /* Logout */
-    .logout-btn {
-        text-decoration: none;
-        padding: 10px 18px;
-        border: 1px solid #ff4b4b;
-        color: var(--color-primary-hover);
-        border-radius: var(--radius-btn);
-        font-weight: 800;
-        display: flex;
-        align-items: center;
-        background: var(--bg-card);
-        transition: 0.2s ease;
-    }
+.aircraft-table th {
+  padding: 14px 24px;
+  color: #888;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: left;
+  font-weight: 700;
+}
 
-        .logout-btn:hover {
-            background: var(--color-primary-hover);
-            color: #ffffff;
-            box-shadow: 0 8px 18px rgba(240, 24, 24, 0.18);
-        }
+.aircraft-table td {
+  padding: 18px 24px;
+  border-top: 1px solid #f0f0f0;
+  color: #333;
+}
 
-    /* Main */
-    .admin-main {
-        max-width: var(--content-max-width);
-        margin: 0 auto;
-        padding: var(--content-padding);
-    }
+.model-code {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff0ee;
+  color: #e74c3c;
+  border-radius: 6px;
+  padding: 4px 9px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
 
-    /* Hero */
-    .admin-hero {
-        background: var(--gradient-hero);
-        color: #ffffff;
-        border-radius: var(--radius-card);
-        padding: 34px 38px;
-        display: flex;
-        align-items: center;
-        gap: 22px;
-        box-shadow: 0 18px 32px rgba(15, 23, 42, 0.16);
-        margin-bottom: 32px;
-    }
+.model-code-large {
+  font-size: 1rem;
+  padding: 8px 13px;
+  margin-top: 4px;
+}
 
-    .hero-icon {
-        font-size: 2.6rem;
-    }
+.capacity-badge {
+  display: inline-block;
+  padding: 5px 12px;
+  background: #fff3e0;
+  color: #e65c00;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
 
-    .admin-hero h1 {
-        font-size: 1.95rem;
-        font-weight: 900;
-        margin: 0 0 6px;
-    }
+.actions-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
 
-    .admin-hero p {
-        margin: 0;
-        font-size: 1rem;
-        color: rgba(255, 255, 255, 0.95);
-    }
+.view-btn,
+.edit-btn {
+  border: none;
+  background: transparent;
+  font-size: 0.88rem;
+  font-weight: 700;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
 
-    /* Content card */
-    .content-card {
-        background: var(--bg-card);
-        border-radius: var(--radius-card);
-        padding: 32px;
-        box-shadow: var(--shadow-card);
-    }
+.view-btn {
+  color: #e74c3c;
+}
 
-    .card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 28px;
-    }
+.edit-btn {
+  color: #2563eb;
+}
 
-        .card-header h2 {
-            font-size: 1.35rem;
-            font-weight: 900;
-            color: #07172c;
-            margin: 0;
-        }
+.view-btn:hover,
+.edit-btn:hover {
+  text-decoration: underline;
+}
 
-    .create-btn {
-        text-decoration: none;
-        padding: 11px 22px;
-        background: var(--gradient-brand-diagonal);
-        color: #ffffff;
-        border-radius: var(--radius-btn);
-        font-weight: 800;
-        display: flex;
-        align-items: center;
-        box-shadow: var(--shadow-btn-primary);
-        transition: 0.2s ease;
-    }
+.empty-state {
+  margin: 0 24px 24px;
+  border: 1.5px dashed #e0e0e0;
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 34px 24px;
+  text-align: center;
+}
 
-        .create-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: var(--shadow-btn-primary-hover);
-        }
+.empty-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 14px;
+  border-radius: 14px;
+  background: #fff0ee;
+  color: #e74c3c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+}
 
-    /* Table */
-    .aircraft-table {
-        width: 100%;
-        border-collapse: collapse;
-    }
+.empty-state h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #333;
+}
 
-        .aircraft-table thead tr {
-            border-bottom: 2px solid var(--border-color);
-        }
+.empty-state p {
+  margin: 0 auto 18px;
+  max-width: 440px;
+  color: #888;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
 
-        .aircraft-table th {
-            text-align: left;
-            font-size: 0.78rem;
-            font-weight: 700;
-            color: var(--text-medium);
-            letter-spacing: 0.05em;
-            padding: 0 16px 14px 0;
-        }
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 20px 24px 24px;
+  border-top: 1px solid #f3f4f6;
+}
 
-        .aircraft-table tbody tr {
-            border-bottom: 1px solid #f3f4f6;
-            transition: background 0.15s ease;
-        }
+.page-btn {
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #374151;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.15s ease;
+}
 
-            .aircraft-table tbody tr:last-child {
-                border-bottom: none;
-            }
+.page-btn:hover:not(:disabled) {
+  border-color: #e74c3c;
+  color: #e74c3c;
+}
 
-            .aircraft-table tbody tr:hover {
-                background: #fffaf5;
-            }
+.page-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
 
-        .aircraft-table td {
-            padding: 18px 16px 18px 0;
-            font-size: 0.95rem;
-            color: var(--text-dark);
-        }
+.page-btn--active {
+  background: linear-gradient(to right, #e74c3c, #f39c12);
+  border-color: transparent;
+  color: #ffffff;
+}
 
-    .type-cell {
-        color: var(--color-accent-warm);
-        font-weight: 600;
-    }
+.page-info {
+  margin-left: 8px;
+  font-size: 0.85rem;
+  color: #888;
+}
 
-    .total-hint {
-        font-weight: 400;
-        font-size: 1rem;
-        color: var(--text-medium);
-    }
+.back-list-btn {
+  border: none;
+  background: transparent;
+  color: #e74c3c;
+  font-size: 0.9rem;
+  font-weight: 800;
+  padding: 0;
+  margin-bottom: 16px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
 
-    /* Search bar */
-    .search-bar {
-        position: relative;
-        display: flex;
-        align-items: center;
-        margin-bottom: 24px;
-    }
+.back-list-btn:hover {
+  text-decoration: underline;
+}
 
-    .search-icon {
-        position: absolute;
-        left: 14px;
-        color: var(--text-muted);
-        font-size: 0.95rem;
-        pointer-events: none;
-    }
+.details-card,
+.edit-card {
+  width: 100%;
+  padding: 36px;
+  font-size: 0.9rem;
+}
 
-    .search-input {
-        width: 100%;
-        padding: 11px 40px;
-        border: 1.5px solid var(--border-color);
-        border-radius: var(--radius-btn);
-        font-size: 0.95rem;
-        color: var(--text-dark);
-        background: var(--bg-card);
-        transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    }
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 34px;
+  margin: 26px 0;
+}
 
-        .search-input::placeholder {
-            color: var(--text-muted);
-        }
+.detail-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 
-        .search-input:focus {
-            outline: none;
-            border-color: var(--color-accent-warm);
-            box-shadow: 0 0 0 3px rgba(255, 90, 0, 0.1);
-        }
+.detail-full {
+  width: 100%;
+}
 
-    .search-clear {
-        position: absolute;
-        right: 12px;
-        background: none;
-        border: none;
-        color: var(--text-muted);
-        cursor: pointer;
-        padding: 4px;
-        display: flex;
-        align-items: center;
-        font-size: 0.8rem;
-        transition: color 0.15s ease;
-    }
+.detail-label {
+  color: #888;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
 
-        .search-clear:hover {
-            color: #374151;
-        }
+.detail-group p {
+  margin: 0;
+  color: #333;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
 
-    .empty-msg {
-        text-align: center;
-        padding: 32px 0;
-        color: var(--text-medium);
-        font-size: 0.95rem;
-    }
+.details-line {
+  border: none;
+  border-top: 1px solid #f0f0f0;
+  margin: 24px 0;
+}
 
-    /* Pagination */
-    .pagination {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        margin-top: 24px;
-        padding-top: 20px;
-        border-top: 1px solid #f3f4f6;
-    }
+.class-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
 
-    .page-btn {
-        min-width: 36px;
-        height: 36px;
-        padding: 0 10px;
-        border: 1.5px solid var(--border-color);
-        border-radius: var(--radius-input);
-        background: var(--bg-card);
-        color: #374151;
-        font-size: 0.88rem;
-        font-weight: 600;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: 0.15s ease;
-    }
+.summary-box {
+  border-radius: 12px;
+  padding: 14px 16px;
+  text-align: center;
+}
 
-        .page-btn:hover:not(:disabled) {
-            border-color: var(--color-accent-warm);
-            color: var(--color-accent-warm);
-        }
+.summary-box span {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-bottom: 8px
+}
 
-        .page-btn:disabled {
-            opacity: 0.35;
-            cursor: not-allowed;
-        }
+.summary-box strong {
+  font-size: 1rem;
+  font-weight: 700;
+}
 
-    .page-btn--active {
-        background: var(--gradient-brand-diagonal);
-        border-color: transparent;
-        color: #ffffff;
-    }
+.first-class-summary .summary-box {
+  background: #fff7ed;
+  color: #ea580c;
+  border: 1px solid #fed7aa;
+}
 
-        .page-btn--active:hover {
-            border-color: transparent;
-            color: #ffffff;
-        }
+.first-class-summary .summary-box-strong {
+  background: #ffedd5;
+}
 
-    .page-info {
-        margin-left: 8px;
-        font-size: 0.85rem;
-        color: var(--text-medium);
-    }
+.economy-summary .summary-box {
+  background: #eff6ff;
+  color: #0b5cff;
+  border: 1px solid #bfdbfe;
+}
 
-    .capacity-badge {
-        display: inline-block;
-        padding: 5px 12px;
-        background: #fff3e0;
-        color: #e65c00;
-        border-radius: 20px;
-        font-size: 0.85rem;
-        font-weight: 700;
-    }
+.economy-summary .summary-box-strong {
+  background: #dbeafe;
+}
 
-    .status-msg {
-        padding: 24px 0;
-        color: var(--text-medium);
-        font-size: 0.95rem;
-        display: flex;
-        align-items: center;
-    }
+.total-capacity-box {
+  margin-top: 4px;
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.9rem;
+}
 
-    .error-msg {
-        padding: 16px 20px;
-        background: #fff1f1;
-        color: #b91c1c;
-        border: 1px solid #fecaca;
-        border-radius: var(--radius-btn);
-        font-size: 0.95rem;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-    }
+.total-capacity-box i {
+  font-size: 1.2rem;
+}
 
-    @keyframes spin {
-        from {
-            transform: rotate(0deg);
-        }
+.details-actions,
+.edit-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 26px;
+}
 
-        to {
-            transform: rotate(360deg);
-        }
-    }
+.close-details-btn,
+.edit-details-btn,
+.save-btn,
+.cancel-btn {
+  width: 100%;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  padding: 14px 18px;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
+}
 
-    .spin {
-        display: inline-block;
-        animation: spin 0.8s linear infinite;
-    }
+.close-details-btn,
+.cancel-btn {
+  background: #f3f4f6;
+  color: #1f2937;
+}
+
+.close-details-btn:hover,
+.cancel-btn:hover {
+  background: #e5e7eb;
+  transform: translateY(-1px);
+}
+
+.edit-details-btn,
+.save-btn {
+  background: linear-gradient(to right, #e74c3c, #f39c12);
+  color: #ffffff;
+}
+
+.edit-details-btn:hover,
+.save-btn:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.save-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-bottom: 20px;
+}
+
+.form-label {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #374151;
+}
+
+.required {
+  color: #e74c3c;
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  color: #333;
+  background: #ffffff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #ff5f00;
+  box-shadow: 0 0 0 3px rgba(255, 95, 0, 0.12);
+}
+
+.form-group small {
+  color: #6b7280;
+  font-size: 0.76rem;
+}
+
+.form-group.has-error input {
+  border-color: #e74c3c;
+  background: #fff7f7;
+}
+
+.error-text {
+  color: #e74c3c !important;
+  font-weight: 700;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.section-divider {
+  border: none;
+  border-top: 1.5px solid #e5e7eb;
+  margin: 8px 0 24px;
+}
+
+.section-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #07172c;
+  margin: 0 0 18px;
+}
+
+.seat-counter {
+  margin-top: 20px;
+  padding: 12px 18px;
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: 0.2s ease;
+}
+
+.seat-counter--danger {
+  background: #fff1f1;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.seat-limit-msg {
+  margin-left: 4px;
+  font-weight: 700;
+}
+
+.edit-note {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  font-size: 0.86rem;
+  font-weight: 700;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin {
+  display: inline-block;
+  animation: spin 0.8s linear infinite;
+}
+
+@media (max-width: 768px) {
+  .card-header-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .create-aircraft-btn {
+    justify-content: center;
+  }
+
+  .detail-grid,
+  .form-row,
+  .class-summary,
+  .details-actions,
+  .edit-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .actions-wrapper {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .details-card,
+  .edit-card {
+    padding: 24px;
+  }
+
+  .seat-counter {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
 </style>
