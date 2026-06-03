@@ -11,14 +11,14 @@
     <AdminCard class="create-aircraft-card">
       <h2>Crear Aeronave</h2>
 
-      <form @submit.prevent="Submit">
+      <form @submit.prevent="submit">
         <div class="form-group">
           <label class="form-label">
             Modelo <span class="required">*</span>
           </label>
 
           <input
-            v-model="Form.Model"
+            v-model="form.model"
             type="text"
             class="form-input"
             placeholder="Ej: 737-800"
@@ -32,20 +32,20 @@
           </label>
 
           <input
-            v-model="Form.Type"
+            v-model="form.type"
             list="AircraftTypesList"
             type="text"
             class="form-input"
             placeholder="Ej: Avión comercial, Helicóptero..."
-            @input="OnTypeNameChanged"
+            @input="onTypeNameChanged"
             required
           />
 
           <datalist id="AircraftTypesList">
             <option
-              v-for="Option in AircraftTypeOptions"
-              :key="Option.id ?? Option.Id"
-              :value="Option.name ?? Option.Name"
+              v-for="option in aircraftTypeOptions"
+              :key="option.id ?? option.Id"
+              :value="option.name ?? option.Name"
             />
           </datalist>
         </div>
@@ -56,7 +56,7 @@
           </label>
 
           <input
-            v-model.number="Form.WeightKg"
+            v-model.number="form.weightKg"
             type="number"
             class="form-input"
             placeholder="Ej: 75000"
@@ -76,7 +76,7 @@
             </label>
 
             <input
-              v-model.number="Form.FirstClass.RowCount"
+              v-model.number="form.firstClass.rowCount"
               type="number"
               class="form-input"
               placeholder="Ej: 4"
@@ -91,7 +91,7 @@
             </label>
 
             <input
-              v-model.number="Form.FirstClass.SeatsPerRow"
+              v-model.number="form.firstClass.seatsPerRow"
               type="number"
               class="form-input"
               placeholder="Ej: 4"
@@ -112,11 +112,11 @@
             </label>
 
             <input
-              v-model.number="Form.EconomyClass.RowCount"
+              v-model.number="form.economyClass.rowCount"
               type="number"
               class="form-input"
               placeholder="Ej: 20"
-              min="0"
+              min="1"
               required
             />
           </div>
@@ -127,11 +127,11 @@
             </label>
 
             <input
-              v-model.number="Form.EconomyClass.SeatsPerRow"
+              v-model.number="form.economyClass.seatsPerRow"
               type="number"
               class="form-input"
               placeholder="Ej: 6"
-              min="0"
+              min="1"
               required
             />
           </div>
@@ -139,29 +139,29 @@
 
         <div
           class="seat-counter"
-          :class="{ 'seat-counter--danger': TotalSeats >= 1000 }"
+          :class="{ 'seat-counter--danger': totalSeats >= 1000 }"
         >
           <i class="bi bi-person-fill me-2"></i>
 
           Capacidad total:
-          <strong>{{ TotalSeats }} asientos</strong>
+          <strong>{{ totalSeats }} asientos</strong>
 
-          <span v-if="TotalSeats >= 1000" class="seat-limit-msg">
+          <span v-if="totalSeats >= 1000" class="seat-limit-msg">
             — máximo permitido: 999
           </span>
         </div>
 
-        <div v-if="ErrorMessage" class="error-message">
+        <div v-if="errorMessage" class="error-message">
           <i class="bi bi-exclamation-circle-fill"></i>
-          <span>{{ ErrorMessage }}</span>
+          <span>{{ errorMessage }}</span>
         </div>
 
         <div class="form-actions">
           <button
             type="button"
             class="cancel-btn"
-            :disabled="IsSubmitting"
-            @click="Cancel"
+            :disabled="isSubmitting"
+            @click="cancel"
           >
             <i class="bi bi-x-lg me-2"></i>
             Cancelar
@@ -170,10 +170,10 @@
           <button
             type="submit"
             class="submit-btn"
-            :disabled="IsSubmitting || TotalSeats >= 1000"
+            :disabled="isSubmitting || totalSeats >= 1000"
           >
             <i class="bi bi-floppy me-2"></i>
-            {{ IsSubmitting ? "Guardando..." : "Guardar" }}
+            {{ isSubmitting ? "Guardando..." : "Guardar" }}
           </button>
         </div>
       </form>
@@ -187,8 +187,8 @@ import AdminHero from "@/components/admin/ui/AdminHero.vue";
 import AdminCard from "@/components/admin/ui/AdminCard.vue";
 
 import {
-  CreateAircraftType,
-  GetAircraftTypeOptions,
+  createAircraftType,
+  getAircraftTypeOptions,
 } from "../../services/AircraftTypesService";
 
 export default {
@@ -202,173 +202,173 @@ export default {
 
   data() {
     return {
-      IsSubmitting: false,
-      ErrorMessage: "",
-      AircraftTypeOptions: [],
-      Form: {
-        Model: "",
-        Type: "",
-        WeightKg: null,
-        EconomyClass: {
-          RowCount: null,
-          SeatsPerRow: null,
+      isSubmitting: false,
+      errorMessage: "",
+      aircraftTypeOptions: [],
+      form: {
+        model: "",
+        type: "",
+        weightKg: null,
+        economyClass: {
+          rowCount: null,
+          seatsPerRow: null,
         },
-        FirstClass: {
-          RowCount: null,
-          SeatsPerRow: null,
+        firstClass: {
+          rowCount: null,
+          seatsPerRow: null,
         },
       },
     };
   },
 
   computed: {
-    TotalSeats() {
-      const Economy =
-        (this.Form.EconomyClass.RowCount || 0) *
-        (this.Form.EconomyClass.SeatsPerRow || 0);
+    totalSeats() {
+      const economy =
+        (this.form.economyClass.rowCount || 0) *
+        (this.form.economyClass.seatsPerRow || 0);
 
-      const FirstClass =
-        (this.Form.FirstClass.RowCount || 0) *
-        (this.Form.FirstClass.SeatsPerRow || 0);
+      const firstClass =
+        (this.form.firstClass.rowCount || 0) *
+        (this.form.firstClass.seatsPerRow || 0);
 
-      return Economy + FirstClass;
+      return economy + firstClass;
     },
   },
 
   mounted() {
-    this.LoadAircraftTypeOptions();
+    this.loadAircraftTypeOptions();
   },
 
   methods: {
-    LoadAircraftTypeOptions() {
-      GetAircraftTypeOptions()
-        .then((Response) => {
-          this.AircraftTypeOptions = Response.data;
+    loadAircraftTypeOptions() {
+      getAircraftTypeOptions()
+        .then((response) => {
+          this.aircraftTypeOptions = response.data;
         })
         .catch(() => {});
     },
 
-    OnTypeNameChanged() {
-      const Option = this.AircraftTypeOptions.find((AircraftOption) => {
+    onTypeNameChanged() {
+      const option = this.aircraftTypeOptions.find((aircraftOption) => {
         return (
-          (AircraftOption.Name ?? AircraftOption.name) === this.Form.Type
+          (aircraftOption.Name ?? aircraftOption.name) === this.form.type
         );
       });
 
-      if (!Option) {
+      if (!option) {
         return;
       }
 
-      const DefaultModel = Option.DefaultModel ?? Option.defaultModel;
-      const DefaultWeightKg =
-        Option.DefaultWeightKg ?? Option.defaultWeightKg;
-      const DefaultEconomyRows =
-        Option.DefaultEconomyRows ?? Option.defaultEconomyRows;
-      const DefaultEconomySeatsPerRow =
-        Option.DefaultEconomySeatsPerRow ??
-        Option.defaultEconomySeatsPerRow;
-      const DefaultFirstClassRows =
-        Option.DefaultFirstClassRows ?? Option.defaultFirstClassRows;
-      const DefaultFirstClassSeatsPerRow =
-        Option.DefaultFirstClassSeatsPerRow ??
-        Option.defaultFirstClassSeatsPerRow;
+      const defaultModel = option.DefaultModel ?? option.defaultModel;
+      const defaultWeightKg =
+        option.DefaultWeightKg ?? option.defaultWeightKg;
+      const defaultEconomyRows =
+        option.DefaultEconomyRows ?? option.defaultEconomyRows;
+      const defaultEconomySeatsPerRow =
+        option.DefaultEconomySeatsPerRow ??
+        option.defaultEconomySeatsPerRow;
+      const defaultFirstClassRows =
+        option.DefaultFirstClassRows ?? option.defaultFirstClassRows;
+      const defaultFirstClassSeatsPerRow =
+        option.DefaultFirstClassSeatsPerRow ??
+        option.defaultFirstClassSeatsPerRow;
 
-      if (DefaultModel) {
-        this.Form.Model = DefaultModel;
+      if (defaultModel) {
+        this.form.model = defaultModel;
       }
 
-      if (DefaultWeightKg) {
-        this.Form.WeightKg = DefaultWeightKg;
+      if (defaultWeightKg) {
+        this.form.weightKg = defaultWeightKg;
       }
 
-      if (DefaultEconomyRows) {
-        this.Form.EconomyClass.RowCount = DefaultEconomyRows;
+      if (defaultEconomyRows) {
+        this.form.economyClass.rowCount = defaultEconomyRows;
       }
 
-      if (DefaultEconomySeatsPerRow) {
-        this.Form.EconomyClass.SeatsPerRow = DefaultEconomySeatsPerRow;
+      if (defaultEconomySeatsPerRow) {
+        this.form.economyClass.seatsPerRow = defaultEconomySeatsPerRow;
       }
 
-      if (DefaultFirstClassRows) {
-        this.Form.FirstClass.RowCount = DefaultFirstClassRows;
+      if (defaultFirstClassRows) {
+        this.form.firstClass.rowCount = defaultFirstClassRows;
       }
 
-      if (DefaultFirstClassSeatsPerRow) {
-        this.Form.FirstClass.SeatsPerRow = DefaultFirstClassSeatsPerRow;
+      if (defaultFirstClassSeatsPerRow) {
+        this.form.firstClass.seatsPerRow = defaultFirstClassSeatsPerRow;
       }
     },
 
-    Submit() {
-      this.IsSubmitting = true;
-      this.ErrorMessage = "";
+    submit() {
+      this.isSubmitting = true;
+      this.errorMessage = "";
 
-      const Payload = {
-        Model: this.Form.Model,
-        Type: this.Form.Type,
-        WeightKg: this.Form.WeightKg,
-        EconomyRows: this.Form.EconomyClass.RowCount || 0,
-        EconomySeatsPerRow: this.Form.EconomyClass.SeatsPerRow || 0,
-        FirstClassRows: this.Form.FirstClass.RowCount,
-        FirstClassSeatsPerRow: this.Form.FirstClass.SeatsPerRow,
+      const payload = {
+        Model: this.form.model,
+        Type: this.form.type,
+        WeightKg: this.form.weightKg,
+        EconomyRows: this.form.economyClass.rowCount || 0,
+        EconomySeatsPerRow: this.form.economyClass.seatsPerRow || 0,
+        FirstClassRows: this.form.firstClass.rowCount,
+        FirstClassSeatsPerRow: this.form.firstClass.seatsPerRow,
       };
 
-      CreateAircraftType(Payload)
+      createAircraftType(payload)
         .then(() => {
           this.$router.push("/admin/aircraft-types");
         })
-        .catch((Err) => {
-          this.ErrorMessage = this.ParseError(Err);
+        .catch((err) => {
+          this.errorMessage = this.parseError(err);
         })
         .finally(() => {
-          this.IsSubmitting = false;
+          this.isSubmitting = false;
         });
     },
 
-    ParseError(Err) {
-      if (!Err.response) {
+    parseError(err) {
+      if (!err.response) {
         return "No se pudo conectar con el servidor. Verifique su conexión e intente de nuevo.";
       }
 
-      const Data = Err.response.data;
+      const data = err.response.data;
 
-      if (Data && typeof Data === "object") {
-        if (Data.errors) {
-          const Messages = Object.values(Data.errors).flat();
+      if (data && typeof data === "object") {
+        if (data.errors) {
+          const messages = Object.values(data.errors).flat();
 
-          if (Messages.length) {
-            return Messages.join(" ");
+          if (messages.length) {
+            return messages.join(" ");
           }
         }
 
-        if (Data.title) {
-          return Data.title;
+        if (data.title) {
+          return data.title;
         }
 
         return "Ocurrió un error inesperado. Intente de nuevo.";
       }
 
-      if (typeof Data === "string") {
-        if (Data.startsWith("Ya existe")) {
-          return Data;
+      if (typeof data === "string") {
+        if (data.startsWith("Ya existe")) {
+          return data;
         }
 
-        if (Data.startsWith("La capacidad total")) {
-          return Data;
+        if (data.startsWith("La capacidad total")) {
+          return data;
         }
 
-        if (Data.includes("CHK_SeatsPerRow")) {
+        if (data.includes("CHK_SeatsPerRow")) {
           return "El número de asientos por fila no está dentro del rango permitido para este tipo de aeronave.";
         }
 
-        if (Data.includes("CHECK constraint")) {
+        if (data.includes("CHECK constraint")) {
           return "Los datos ingresados no cumplen las restricciones de la aeronave. Verifique los valores e intente de nuevo.";
         }
 
-        if (Data.includes("PRIMARY KEY") || Data.includes("UNIQUE KEY")) {
+        if (data.includes("PRIMARY KEY") || data.includes("UNIQUE KEY")) {
           return "Ya existe una aeronave registrada con esos datos.";
         }
 
-        if (Data.includes("FOREIGN KEY")) {
+        if (data.includes("FOREIGN KEY")) {
           return "Uno de los valores ingresados no corresponde a un registro existente.";
         }
       }
@@ -376,7 +376,7 @@ export default {
       return "Ocurrió un error al guardar la aeronave. Verifique los datos e intente de nuevo.";
     },
 
-    Cancel() {
+    cancel() {
       this.$router.push("/admin/aircraft-types");
     },
   },
