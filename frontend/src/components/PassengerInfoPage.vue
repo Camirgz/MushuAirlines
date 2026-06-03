@@ -226,37 +226,6 @@
           </div>
         </div>
 
-        <!-- ── Price summary ── -->
-        <div class="baggage-separator" v-if="priceSummary">
-          <hr />
-        </div>
-
-        <div class="price-summary" v-if="priceSummary">
-          <h3 class="passenger-title" style="margin-bottom: 16px;">Resumen de Precio</h3>
-
-          <div class="price-line" v-if="priceSummary.fcCount > 0">
-            <span>{{ priceSummary.fcCount }} × Primera Clase</span>
-            <span>₡{{ priceSummary.fcTotal.toLocaleString() }}</span>
-          </div>
-          <div class="price-line" v-if="priceSummary.ecCount > 0">
-            <span>{{ priceSummary.ecCount }} × Turista</span>
-            <span>₡{{ priceSummary.ecTotal.toLocaleString() }}</span>
-          </div>
-          <div class="price-line" v-if="baggage.handCount > 0">
-            <span>{{ baggage.handCount }} × Equipaje de Mano</span>
-            <span>₡{{ priceSummary.handBagTotal.toLocaleString() }}</span>
-          </div>
-          <div class="price-line" v-if="baggage.checkedCount > 0">
-            <span>{{ baggage.checkedCount }} × Equipaje Documentado</span>
-            <span>₡{{ priceSummary.checkedBagTotal.toLocaleString() }}</span>
-          </div>
-
-          <div class="price-total-row">
-            <span>Total estimado</span>
-            <span class="price-total-amount">₡{{ priceSummary.total.toLocaleString() }}</span>
-          </div>
-        </div>
-
       </AdminCard>
 
       <div v-if="validationError" class="validation-error">
@@ -348,30 +317,6 @@ export default {
       return new Date().toISOString().split("T")[0];
     },
 
-    flightClassSummary() {
-      const seats = this.purchaseState.seats;
-      const fc = seats.filter((s) => s.seatClass === "FirstClass").length;
-      const ec = seats.filter((s) => s.seatClass === "Economy").length;
-      const parts = [];
-      if (fc > 0) parts.push(`${fc} Primera Clase`);
-      if (ec > 0) parts.push(`${ec} Turista`);
-      return parts.join(" · ");
-    },
-
-    priceSummary() {
-      const f     = this.flight;
-      const seats = this.purchaseState.seats;
-      if (!f) return null;
-
-      const fcCount  = seats.filter(s => s.seatClass === "FirstClass").length;
-      const ecCount  = seats.filter(s => s.seatClass === "Economy").length;
-      const fcTotal  = fcCount * (f.priceFirstClass || 0);
-      const ecTotal  = ecCount * (f.priceEconomy    || 0);
-      const handBagTotal    = this.baggage.handCount    * (f.handBagPrice || 0);
-      const checkedBagTotal = this.baggage.checkedCount * (f.bagPrice     || 0) * (f.bagMultiplier || 1);
-      const total = fcTotal + ecTotal + handBagTotal + checkedBagTotal;
-      return { fcCount, ecCount, fcTotal, ecTotal, handBagTotal, checkedBagTotal, total };
-    },
   },
 
   methods: {
@@ -752,39 +697,6 @@ export default {
   font-size: 0.8rem;
   color: #888;
   margin-bottom: 10px;
-}
-
-/* ── Price summary ── */
-.price-summary {
-  margin-top: 4px;
-}
-
-.price-line {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.9rem;
-  color: #374151;
-  padding: 6px 0;
-  border-bottom: 1px solid #f3f4f6;
-}
-
-.price-total-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  padding: 12px 0 4px;
-  font-weight: 700;
-  font-size: 0.95rem;
-  color: #1a1a1a;
-}
-
-.price-total-amount {
-  font-size: 1.35rem;
-  font-weight: 900;
-  background: linear-gradient(135deg, #e74c3c 0%, #f39c12 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
 }
 
 /* ── Validation error ── */
