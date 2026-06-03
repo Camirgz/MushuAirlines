@@ -91,10 +91,9 @@ export function usePurchaseFlow() {
         lastName:        p.lastName,
         gender:          p.gender,
         passportCountry: p.passportCountry,
-        passportNumber:  p.passportNumber,
         birthDate:       p.birthDate,
-        email:           p.email   ?? '',
-        phone:           p.phone   ?? '',
+        email:           p.email  ?? '',
+        phone:           p.phone  ?? '',
       })),
       seatSelections: _state.seats.map(s => ({
         passengerIndex: s.passengerIndex,

@@ -159,4 +159,23 @@ public class PurchaseRepository : IPurchaseRepository
             BookingCode = bookingCode
         });
     }
+
+    public async Task<List<PassengerIdentityRecord>> GetPassengerIdentitiesOnFlightAsync(int scheduledFlightId)
+    {
+        using var connection = new SqlConnection(_connectionString);
+
+        const string query = @"
+            SELECT per.FirstName + ' ' + per.LastName AS FullName,
+                   per.BirthDate,
+                   per.Nationality AS PassportCountry
+            FROM   Ticket     t
+            JOIN   Passenger  pa  ON t.PassengerHas = pa.Id
+            JOIN   Person     per ON pa.Id           = per.Id
+            WHERE  t.ScheduledId = @ScheduledFlightId";
+
+        var identities = await connection.QueryAsync<PassengerIdentityRecord>(query,
+            new { ScheduledFlightId = scheduledFlightId });
+
+        return identities.ToList();
+    }
 }

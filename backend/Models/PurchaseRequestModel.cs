@@ -28,3 +28,18 @@ public class PaymentInfo
     public string Method       { get; set; } = string.Empty;
     public string ContactEmail { get; set; } = string.Empty;
 }
+
+public class PassengerDuplicateCheckRequest
+{
+    public string   RouteCode  { get; set; } = string.Empty;
+    public DateOnly FlightDate { get; set; }
+    public List<PassengerCheckInfo> Passengers { get; set; } = [];
+}
+
+public class PassengerCheckInfo
+{
+    public string   FirstName       { get; set; } = string.Empty;
+    public string   LastName        { get; set; } = string.Empty;
+    public DateOnly BirthDate       { get; set; }
+    public string   PassportCountry { get; set; } = string.Empty;
+}

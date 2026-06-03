@@ -59,6 +59,35 @@ export async function createPurchase(requestBody) {
 }
 
 /**
+ * Check if any of the provided passengers already have a ticket on the same flight.
+ * All three fields (name, birthDate, passportCountry) must match for a duplicate to be detected.
+ *
+ * POST /api/purchase/check-passenger-duplicates
+ *
+ * @param {string} routeCode
+ * @param {string} flightDate  — YYYY-MM-DD
+ * @param {{ firstName, lastName, birthDate, passportCountry }[]} passengers
+ * @returns {Promise<{ hasDuplicates: boolean, duplicates: string[] }>}
+ */
+export async function checkPassengerDuplicates(routeCode, flightDate, passengers) {
+  try {
+    const response = await axios.post(`${BASE}/purchase/check-passenger-duplicates`, {
+      routeCode,
+      flightDate,
+      passengers: passengers.map(p => ({
+        firstName:       p.firstName.trim(),
+        lastName:        p.lastName.trim(),
+        birthDate:       p.birthDate,
+        passportCountry: p.passportCountry,
+      })),
+    })
+    return response.data
+  } catch {
+    return { hasDuplicates: false, duplicates: [] } // fail-open
+  }
+}
+
+/**
  * Check if a flight has enough available seats for the requested passenger count.
  *
  * GET /api/purchase/check-availability?routeCode=...&flightDate=...&count=N

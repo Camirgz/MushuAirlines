@@ -136,21 +136,37 @@ public class PurchaseService : IPurchaseService
 
     public async Task<bool> IsFlightAvailableAsync(string routeCode, DateOnly flightDate, int requestedCount)
     {
-        var flightDateTime    = flightDate.ToDateTime(TimeOnly.MinValue);
+        var flightDateTime     = flightDate.ToDateTime(TimeOnly.MinValue);
         int? scheduledFlightId = _routeCreationService.FindExistingScheduledFlight(routeCode, flightDateTime);
 
         if (!scheduledFlightId.HasValue)
-            return true; // No scheduled flight created yet → fully available
+            return true;
 
         return await _purchaseRepo.HasAvailableSeatsAsync(scheduledFlightId.Value, requestedCount);
     }
 
-    private async Task<int> ResolvePassengerAsync(PassengerInfo passenger)
+    public async Task<List<string>> CheckPassengerDuplicatesAsync(
+        string routeCode, DateOnly flightDate, IEnumerable<PassengerCheckInfo> passengers)
     {
-        int? existing = await _passengerRepo.FindPassengerByDocumentAsync(passenger.PassportNumber);
+        var flightDateTime     = flightDate.ToDateTime(TimeOnly.MinValue);
+        int? scheduledFlightId = _routeCreationService.FindExistingScheduledFlight(routeCode, flightDateTime);
 
-        return existing ?? await _passengerRepo.CreatePassengerAsync(passenger);
+        if (!scheduledFlightId.HasValue)
+            return [];
+
+        var existing = await _purchaseRepo.GetPassengerIdentitiesOnFlightAsync(scheduledFlightId.Value);
+
+        return passengers
+            .Where(p => existing.Any(e =>
+                string.Equals(e.FullName, $"{p.FirstName.Trim()} {p.LastName.Trim()}", StringComparison.OrdinalIgnoreCase) &&
+                e.BirthDate.HasValue && DateOnly.FromDateTime(e.BirthDate.Value) == p.BirthDate &&
+                string.Equals(e.PassportCountry.Trim(), p.PassportCountry.Trim(), StringComparison.OrdinalIgnoreCase)))
+            .Select(p => $"{p.FirstName} {p.LastName}")
+            .ToList();
     }
+
+    private async Task<int> ResolvePassengerAsync(PassengerInfo passenger)
+        => await _passengerRepo.CreatePassengerAsync(passenger);
 
     private static void ValidatePassengers(List<PassengerInfo> passengers)
     {
@@ -165,9 +181,6 @@ public class PurchaseService : IPurchaseService
             if (string.IsNullOrWhiteSpace(p.LastName))
                 throw new PassengerDataException("LastName",        "el apellido no puede estar vacío");
 
-            if (string.IsNullOrWhiteSpace(p.PassportNumber))
-                throw new PassengerDataException("PassportNumber",  "el número de pasaporte no puede estar vacío");
-
             if (string.IsNullOrWhiteSpace(p.PassportCountry))
                 throw new PassengerDataException("PassportCountry", "el país del pasaporte no puede estar vacío");
 
@@ -176,6 +189,16 @@ public class PurchaseService : IPurchaseService
 
             if (p.BirthDate >= DateOnly.FromDateTime(DateTime.UtcNow))
                 throw new PassengerDataException("BirthDate",       "la fecha de nacimiento debe ser anterior a hoy");
+        }
+
+        // Within-purchase duplicate check (fullName + birthDate + passportCountry)
+        var seen = new HashSet<string>();
+        foreach (var p in passengers)
+        {
+            string key = $"{p.FirstName.Trim().ToLowerInvariant()}|{p.LastName.Trim().ToLowerInvariant()}|{p.BirthDate}|{p.PassportCountry.Trim().ToLowerInvariant()}";
+            if (!seen.Add(key))
+                throw new PassengerDataException("Pasajeros",
+                    $"'{p.FirstName} {p.LastName}' aparece más de una vez en la compra con la misma fecha de nacimiento y país.");
         }
     }
 }

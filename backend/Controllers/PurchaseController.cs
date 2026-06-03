@@ -29,6 +29,15 @@ public class PurchaseController : ControllerBase
         return Ok(new { available });
     }
 
+    [HttpPost("check-passenger-duplicates")]
+    public async Task<ActionResult> CheckPassengerDuplicates(
+        [FromBody] PassengerDuplicateCheckRequest request)
+    {
+        var duplicates = await _purchaseService.CheckPassengerDuplicatesAsync(
+            request.RouteCode, request.FlightDate, request.Passengers);
+        return Ok(new { hasDuplicates = duplicates.Count > 0, duplicates });
+    }
+
     [HttpPost]
     public async Task<ActionResult<PurchaseResponseModel>> CreatePurchase(
         [FromBody] PurchaseRequestModel request)

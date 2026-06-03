@@ -15,19 +15,6 @@ public class PassengerRepository : IPassengerRepository
         _connectionString = builder.Configuration.GetConnectionString("LoginContext")!;
     }
 
-    public async Task<int?> FindPassengerByDocumentAsync(string passportNumber)
-    {
-        using var connection = new SqlConnection(_connectionString);
-
-        const string query = @"
-            SELECT p.Id
-            FROM   Passenger p
-            INNER JOIN Person per ON per.Id = p.Id
-            WHERE  per.Ssn = @PassportNumber";
-
-        return await connection.QueryFirstOrDefaultAsync<int?>(query, new { PassportNumber = passportNumber });
-    }
-
     public async Task<int> CreatePassengerAsync(PassengerInfo data)
     {
         using var connection = new SqlConnection(_connectionString);
@@ -44,16 +31,17 @@ public class PassengerRepository : IPassengerRepository
                 insertUser, transaction: transaction);
 
             const string insertPerson = @"
-                INSERT INTO Person (Id, FirstName, LastName, Ssn, Nationality)
-                VALUES (@Id, @FirstName, @LastName, @Ssn, @Nationality)";
+                INSERT INTO Person (Id, FirstName, LastName, Ssn, Nationality, BirthDate)
+                VALUES (@Id, @FirstName, @LastName, @Ssn, @Nationality, @BirthDate)";
 
             await connection.ExecuteAsync(insertPerson, new
             {
                 Id          = userId,
                 data.FirstName,
                 data.LastName,
-                Ssn         = data.PassportNumber,
-                Nationality = string.Empty
+                Ssn         = Guid.NewGuid().ToString("N")[..20],
+                Nationality = data.PassportCountry,
+                BirthDate   = data.BirthDate.ToDateTime(TimeOnly.MinValue)
             }, transaction);
 
             const string insertPassenger = @"

@@ -122,17 +122,6 @@
             </div>
 
             <div class="form-group">
-              <label class="field-label">Número de Pasaporte <span class="required">*</span></label>
-              <input
-                type="text"
-                :class="['field-input', { 'field-input--error': fieldErrors[`${index}_passportNumber`] }]"
-                v-model="passenger.passportNumber"
-                placeholder="Ingrese número de pasaporte"
-                @input="clearFieldError(index, 'passportNumber')"
-              />
-            </div>
-
-            <div class="form-group">
               <label class="field-label">Fecha de Nacimiento <span class="required">*</span></label>
               <input
                 type="date"
@@ -294,7 +283,7 @@ import AdminHero from "@/components/admin/ui/AdminHero.vue";
 import AdminCard from "@/components/admin/ui/AdminCard.vue";
 import AppFooter from "@/components/layout/AppFooter.vue";
 import { usePurchaseFlow } from "@/composables/usePurchaseFlow";
-import { checkAvailability } from "@/services/PurchaseService";
+import { checkAvailability, checkPassengerDuplicates } from "@/services/PurchaseService";
 
 export default {
   name: "PassengerInfoPage",
@@ -392,7 +381,6 @@ export default {
         lastName:        "",
         gender:          "",
         passportCountry: "",
-        passportNumber:  "",
         birthDate:       "",
         email:           "",
         phone:           "",
@@ -420,7 +408,6 @@ export default {
         if (!p.lastName.trim())        errors[`${i}_lastName`]        = true;
         if (!p.gender)                 errors[`${i}_gender`]          = true;
         if (!p.passportCountry.trim()) errors[`${i}_passportCountry`] = true;
-        if (!p.passportNumber.trim())  errors[`${i}_passportNumber`]  = true;
         if (!p.birthDate)              errors[`${i}_birthDate`]       = true;
         if (i === 0) {
           if (!p.email.trim())  errors[`${i}_email`]  = true;
@@ -434,6 +421,19 @@ export default {
         this.validationError = "Por favor complete todos los campos requeridos marcados en rojo.";
         return false;
       }
+
+      // Within-purchase duplicate check
+      const seen = new Map();
+      for (let i = 0; i < this.passengers.length; i++) {
+        const p   = this.passengers[i];
+        const key = `${p.firstName.trim().toLowerCase()}|${p.lastName.trim().toLowerCase()}|${p.birthDate}|${p.passportCountry.trim().toLowerCase()}`;
+        if (seen.has(key)) {
+          this.validationError = `El Pasajero ${i + 1} tiene los mismos datos que el Pasajero ${seen.get(key) + 1}. No se puede agregar el mismo pasajero dos veces en la misma compra.`;
+          return false;
+        }
+        seen.set(key, i);
+      }
+
       this.validationError = null;
       return true;
     },
@@ -449,6 +449,17 @@ export default {
 
     async continueToPayment() {
       if (!this.validateAllPassengers()) return;
+
+      // Flight-level duplicate check — same passenger already booked on this flight?
+      const { hasDuplicates, duplicates } = await checkPassengerDuplicates(
+        this.flight.code,
+        this.flight.flightDate,
+        this.passengers
+      );
+      if (hasDuplicates) {
+        this.validationError = `Ya existe una reserva en este vuelo para: ${duplicates.join(', ')}. Un pasajero no puede tener más de un boleto en el mismo vuelo.`;
+        return;
+      }
 
       const available = await checkAvailability(
         this.flight.code,
