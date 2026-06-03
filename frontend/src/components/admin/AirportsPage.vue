@@ -5,6 +5,8 @@
         title="Lista de Aeropuertos"
         subtitle="Panel de administración para operadores de Mushu Airlines"
         icon="bi bi-airplane-engines"
+        back-to="/admin"
+        back-text="Volver al panel"
       />
 
       <div v-if="errorMessage" class="error-message">
@@ -86,7 +88,7 @@
             </tbody>
           </table>
         </div>
-
+          
         <div v-else class="empty-state">
           <div v-if="isAdmin">
             <div class="empty-icon">
@@ -105,6 +107,7 @@
             </RouterLink>
           </div>
         </div>
+
       </AdminCard>
     </template>
 
