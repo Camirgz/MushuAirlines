@@ -1,17 +1,17 @@
+using backend.Interfaces;
 using backend.Model;
 using Dapper;
 using System.Data.SqlClient;
 
 namespace backend.Repositories
 {
-    public class AircraftRepository
+    public class AircraftRepository : IAircraftRepository
     {
         private readonly string _connectionString;
 
-        public AircraftRepository()
+        public AircraftRepository(IConfiguration configuration)
         {
-            var builder = WebApplication.CreateBuilder();
-            _connectionString = builder.Configuration.GetConnectionString("LoginContext");
+            _connectionString = configuration.GetConnectionString("LoginContext");
         }
 
         public IEnumerable<AircraftResponseModel> GetAll()
@@ -24,23 +24,64 @@ namespace backend.Repositories
                     a.Model,
                     aty.AircraftType AS Type,
                     a.MaxTakeOffWeight AS WeightKg,
-                    (a.EconomyRows * a.EconomySeatsPerRow
-                        + a.FirstClassRows * a.FirstClassSeatsPerRow) AS Capacity
+                    a.EconomyRows,
+                    a.EconomySeatsPerRow,
+                    a.FirstClassRows,
+                    a.FirstClassSeatsPerRow,
+                    (
+                        a.EconomyRows * a.EconomySeatsPerRow
+                        + a.FirstClassRows * a.FirstClassSeatsPerRow
+                    ) AS Capacity
                 FROM Aircraft a
                 JOIN AircraftType aty ON a.[Type] = aty.Id";
 
             return connection.Query<AircraftResponseModel>(query);
         }
 
+        public AircraftResponseModel? GetById(int id)
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            string query = @"
+                SELECT
+                    a.Code AS Id,
+                    a.Model,
+                    aty.AircraftType AS Type,
+                    a.MaxTakeOffWeight AS WeightKg,
+                    a.EconomyRows,
+                    a.EconomySeatsPerRow,
+                    a.FirstClassRows,
+                    a.FirstClassSeatsPerRow,
+                    (
+                        a.EconomyRows * a.EconomySeatsPerRow
+                        + a.FirstClassRows * a.FirstClassSeatsPerRow
+                    ) AS Capacity
+                FROM Aircraft a
+                JOIN AircraftType aty ON a.[Type] = aty.Id
+                WHERE a.Code = @Id";
+
+            return connection.QueryFirstOrDefault<AircraftResponseModel>(
+                query,
+                new { Id = id }
+            );
+        }
+
         public bool AircraftExists(string model, string type)
         {
             using var connection = new SqlConnection(_connectionString);
+
             int count = connection.ExecuteScalar<int>(@"
                 SELECT COUNT(*)
                 FROM Aircraft a
                 JOIN AircraftType aty ON a.[Type] = aty.Id
-                WHERE a.Model = @Model AND aty.AircraftType = @TypeName",
-                new { Model = model, TypeName = type });
+                WHERE a.Model = @Model 
+                  AND aty.AircraftType = @TypeName",
+                new
+                {
+                    Model = model,
+                    TypeName = type
+                });
+
             return count > 0;
         }
 
@@ -48,7 +89,6 @@ namespace backend.Repositories
         {
             using var connection = new SqlConnection(_connectionString);
 
-            // Resolve or create the AircraftType entry
             int? typeId = connection.QueryFirstOrDefault<int?>(
                 "SELECT Id FROM AircraftType WHERE AircraftType = @TypeName",
                 new { TypeName = aircraft.Type });
@@ -68,25 +108,61 @@ namespace backend.Repositories
 
             connection.Execute(@"
                 INSERT INTO Aircraft
-                    (Code, Model, [Type], MaxTakeOffWeight,
-                     EconomyRows, EconomySeatsPerRow,
-                     FirstClassRows, FirstClassSeatsPerRow)
+                    (
+                        Code,
+                        Model,
+                        [Type],
+                        MaxTakeOffWeight,
+                        EconomyRows,
+                        EconomySeatsPerRow,
+                        FirstClassRows,
+                        FirstClassSeatsPerRow
+                    )
                 SELECT
                     ISNULL(MAX(Code), 0) + 1,
-                    @Model, @TypeId, @WeightKg,
-                    @EconomyRows, @EconomySeatsPerRow,
-                    @FirstClassRows, @FirstClassSeatsPerRow
+                    @Model,
+                    @TypeId,
+                    @WeightKg,
+                    @EconomyRows,
+                    @EconomySeatsPerRow,
+                    @FirstClassRows,
+                    @FirstClassSeatsPerRow
                 FROM Aircraft",
                 new
                 {
-                    Model                 = aircraft.Model,
-                    TypeId                = typeId,
-                    WeightKg              = aircraft.WeightKg,
-                    EconomyRows           = aircraft.EconomyRows,
-                    EconomySeatsPerRow    = aircraft.EconomySeatsPerRow,
-                    FirstClassRows        = aircraft.FirstClassRows ?? 0,
+                    Model = aircraft.Model,
+                    TypeId = typeId,
+                    WeightKg = aircraft.WeightKg,
+                    EconomyRows = aircraft.EconomyRows,
+                    EconomySeatsPerRow = aircraft.EconomySeatsPerRow,
+                    FirstClassRows = aircraft.FirstClassRows ?? 0,
                     FirstClassSeatsPerRow = aircraft.FirstClassSeatsPerRow ?? 1
                 });
+        }
+
+        public void Update(int id, UpdateAircraftRequestModel aircraft)
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            string query = @"
+                UPDATE Aircraft
+                SET
+                    MaxTakeOffWeight = @WeightKg,
+                    EconomyRows = @EconomyRows,
+                    EconomySeatsPerRow = @EconomySeatsPerRow,
+                    FirstClassRows = @FirstClassRows,
+                    FirstClassSeatsPerRow = @FirstClassSeatsPerRow
+                WHERE Code = @Id";
+
+            connection.Execute(query, new
+            {
+                Id = id,
+                WeightKg = aircraft.WeightKg,
+                EconomyRows = aircraft.EconomyRows,
+                EconomySeatsPerRow = aircraft.EconomySeatsPerRow,
+                FirstClassRows = aircraft.FirstClassRows,
+                FirstClassSeatsPerRow = aircraft.FirstClassSeatsPerRow
+            });
         }
     }
 }

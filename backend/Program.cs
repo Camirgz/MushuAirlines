@@ -88,6 +88,12 @@ builder.Services.AddScoped<backend.Interfaces.IPurchaseRepository,   backend.Rep
 builder.Services.AddScoped<IAirportRepository, AirportRepository>();
 builder.Services.AddScoped<IAirportService, AirportService>();
 
+builder.Services.AddScoped<IAircraftRepository, AircraftRepository>();
+builder.Services.AddScoped<IAircraftService, AircraftService>();
+
+builder.Services.AddScoped<IAircraftTypeRepository, AircraftTypeRepository>();
+builder.Services.AddScoped<IAircraftTypeService, AircraftTypeService>();
+
 builder.Services.AddScoped<IUserListRepository, UserListRepository>();
 builder.Services.AddScoped<IUserListService, UserListService>();
 
