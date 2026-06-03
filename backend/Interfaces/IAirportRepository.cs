@@ -20,4 +20,5 @@ public interface IAirportRepository
     );
     void InsertAirport(AirportModel airport);
     bool UpdateAirportName(string code, string airportName);
+    List<AirportSuggestionDto> GetSuggestions(string query);
 }
