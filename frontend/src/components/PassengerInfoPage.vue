@@ -123,7 +123,7 @@
                 type="date"
                 :class="['field-input', { 'field-input--error': fieldErrors[`${index}_birthDate`] }]"
                 v-model="passenger.birthDate"
-                :max="todayDate"
+                :max="yesterdayDate"
                 @change="clearFieldError(index, 'birthDate')"
               />
             </div>
@@ -313,8 +313,10 @@ export default {
       return this.purchaseState.flight?.passengerCount ?? 9;
     },
 
-    todayDate() {
-      return new Date().toISOString().split("T")[0];
+    yesterdayDate() {
+      const d = new Date();
+      d.setDate(d.getDate() - 1);
+      return d.toISOString().split("T")[0];
     },
 
   },
@@ -346,6 +348,10 @@ export default {
 
     validateAllPassengers() {
       const errors = {};
+      let hasInvalidBirthDate = false;
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
       for (let i = 0; i < this.passengers.length; i++) {
         const p = this.passengers[i];
@@ -353,7 +359,14 @@ export default {
         if (!p.lastName.trim())        errors[`${i}_lastName`]        = true;
         if (!p.gender)                 errors[`${i}_gender`]          = true;
         if (!p.passportCountry.trim()) errors[`${i}_passportCountry`] = true;
-        if (!p.birthDate)              errors[`${i}_birthDate`]       = true;
+
+        if (!p.birthDate) {
+          errors[`${i}_birthDate`] = true;
+        } else if (new Date(p.birthDate) >= today) {
+          errors[`${i}_birthDate`] = true;
+          hasInvalidBirthDate = true;
+        }
+
         if (i === 0) {
           if (!p.email.trim())  errors[`${i}_email`]  = true;
           if (!p.phone.trim())  errors[`${i}_phone`]  = true;
@@ -363,7 +376,9 @@ export default {
       this.fieldErrors = errors;
 
       if (Object.keys(errors).length > 0) {
-        this.validationError = "Por favor complete todos los campos requeridos marcados en rojo.";
+        this.validationError = hasInvalidBirthDate
+          ? "La fecha de nacimiento debe ser anterior al día de hoy."
+          : "Por favor complete todos los campos requeridos marcados en rojo.";
         return false;
       }
 
