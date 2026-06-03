@@ -116,6 +116,7 @@ public class PurchaseService : IPurchaseService
 
         return new PurchaseResponseModel
         {
+            PurchaseId      = purchaseId,
             ReservationCode = reservationCode,
             InvoiceNumber   = invoiceNumber,
             TotalPaid       = totals.TotalPaid,
