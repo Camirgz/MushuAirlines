@@ -59,6 +59,27 @@ export async function createPurchase(requestBody) {
 }
 
 /**
+ * Fetch purchase confirmation data without triggering another email.
+ *
+ * GET /api/purchaseconfirmation/{purchaseId}
+ *
+ * Returns PurchaseConfirmationModel on success.
+ * Throws { type: 'notFound', message } when the purchase does not exist.
+ *
+ * @param {number} purchaseId
+ * @returns {Promise<Object>} PurchaseConfirmationModel
+ */
+export async function getPurchaseData(purchaseId) {
+  try {
+    const response = await axios.get(`${BASE}/purchaseconfirmation/${purchaseId}`)
+    return response.data
+  } catch (err) {
+    const data = err.response?.data ?? {}
+    throw { type: 'notFound', message: data.message ?? 'Compra no encontrada.' }
+  }
+}
+
+/**
  * Trigger the confirmation + invoice email for a completed purchase.
  *
  * POST /api/purchaseconfirmation/send/{purchaseId}

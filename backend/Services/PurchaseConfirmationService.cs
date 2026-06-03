@@ -30,6 +30,14 @@ namespace backend.Services
             return purchase;
         }
 
+        public PurchaseConfirmationModel GetPurchaseData(int purchaseId)
+        {
+            var purchase = repository.GetPurchase(purchaseId);
+            if (purchase == null)
+                throw new Exception("Compra no encontrada.");
+            return purchase;
+        }
+
         public void ResendEmail(int purchaseId)
         {
             var purchase = repository.GetPurchase(purchaseId);
