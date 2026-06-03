@@ -1,9 +1,10 @@
+using backend.Interfaces;
 using backend.Model;
 using backend.Repositories;
 
 namespace backend.Services
 {
-    public class RouteCreationService
+    public class RouteCreationService : IRouteCreationService
     {
         private readonly RouteCreationRepository routeCreationRepository;
 

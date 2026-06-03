@@ -63,7 +63,7 @@ builder.Services.AddScoped<FlightAggregatorService>();
 // Purchase services
 builder.Services.AddSingleton<backend.Interfaces.ICodeGenerator,     backend.Services.CodeGenerator>();
 builder.Services.AddSingleton<backend.Interfaces.IPricingCalculator, backend.Services.PurchasePricingCalculator>();
-builder.Services.AddScoped<backend.Services.RouteCreationService>();
+builder.Services.AddScoped<backend.Interfaces.IRouteCreationService, backend.Services.RouteCreationService>();
 builder.Services.AddScoped<backend.Interfaces.IPurchaseService,      backend.Services.PurchaseService>();
 
 var app = builder.Build();

@@ -13,4 +13,7 @@ public interface IPurchaseRepository
     Task CreateTicketAsync(int scheduledFlightId, int passengerHas, int seatNumber);
     Task LinkItineraryToScheduledFlightAsync(int bookingCode, int scheduledFlightId);
     Task<List<PassengerIdentityRecord>> GetPassengerIdentitiesOnFlightAsync(int scheduledFlightId);
+    Task UpdateFlightBookingAsync(int scheduledFlightId, int firstPassengerId, int seatCount);
+    Task<int> GetBookedSeatsAsync(int scheduledFlightId);
+    Task<int> GetAircraftCapacityByTypeAsync(string aircraftTypeId);
 }

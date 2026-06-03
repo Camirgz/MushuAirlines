@@ -11,15 +11,15 @@ public class PurchaseService : IPurchaseService
     private readonly IPurchaseRepository  _purchaseRepo;
     private readonly ICodeGenerator       _codeGenerator;
     private readonly IPricingCalculator   _pricingCalculator;
-    private readonly RouteCreationService _routeCreationService;
+    private readonly IRouteCreationService _routeCreationService;
 
     public PurchaseService(
-        IPassengerRepository passengerRepo,
-        IItineraryRepository itineraryRepo,
-        IPurchaseRepository  purchaseRepo,
-        ICodeGenerator       codeGenerator,
-        IPricingCalculator   pricingCalculator,
-        RouteCreationService routeCreationService)
+        IPassengerRepository  passengerRepo,
+        IItineraryRepository  itineraryRepo,
+        IPurchaseRepository   purchaseRepo,
+        ICodeGenerator        codeGenerator,
+        IPricingCalculator    pricingCalculator,
+        IRouteCreationService routeCreationService)
     {
         _passengerRepo        = passengerRepo;
         _itineraryRepo        = itineraryRepo;
@@ -136,13 +136,27 @@ public class PurchaseService : IPurchaseService
 
     public async Task<bool> IsFlightAvailableAsync(string routeCode, DateOnly flightDate, int requestedCount)
     {
+        RouteCreationModel route;
+        try { route = _routeCreationService.GetRouteByCode(routeCode); }
+        catch { return true; } // Unknown route — fail-open, purchase flow handles it
+
+        // Prefer the capacity stored on the route; fall back to the aircraft type's seat count
+        // for routes created before the capacity columns existed (migration 009 set them to 0).
+        int capacity = route.EconomyClassCapacity + route.FirstClassCapacity;
+        if (capacity == 0)
+            capacity = await _purchaseRepo.GetAircraftCapacityByTypeAsync(route.AircraftTypeId);
+        if (capacity == 0) return true; // Cannot determine capacity — fail-open
+
+        if (requestedCount > capacity) return false;
+
         var flightDateTime     = flightDate.ToDateTime(TimeOnly.MinValue);
         int? scheduledFlightId = _routeCreationService.FindExistingScheduledFlight(routeCode, flightDateTime);
 
         if (!scheduledFlightId.HasValue)
-            return true;
+            return true; // No prior bookings and requestedCount <= capacity (checked above)
 
-        return await _purchaseRepo.HasAvailableSeatsAsync(scheduledFlightId.Value, requestedCount);
+        int bookedSeats = await _purchaseRepo.GetBookedSeatsAsync(scheduledFlightId.Value);
+        return requestedCount + bookedSeats <= capacity;
     }
 
     public async Task<List<string>> CheckPassengerDuplicatesAsync(

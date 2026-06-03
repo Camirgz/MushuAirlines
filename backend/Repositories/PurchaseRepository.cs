@@ -160,6 +160,49 @@ public class PurchaseRepository : IPurchaseRepository
         });
     }
 
+    public async Task UpdateFlightBookingAsync(int scheduledFlightId, int firstPassengerId, int seatCount)
+    {
+        using var connection = new SqlConnection(_connectionString);
+
+        await connection.ExecuteAsync(@"
+            UPDATE ScheduledFlight
+            SET    BookedSeats = BookedSeats + @SeatCount
+            WHERE  Id = @ScheduledFlightId",
+            new { ScheduledFlightId = scheduledFlightId, SeatCount = seatCount });
+
+        await connection.ExecuteAsync(@"
+            UPDATE FlightSchedule
+            SET    PassengerBooked = @PassengerId
+            WHERE  Id IN (
+                SELECT FlightScheduleId
+                FROM   FlightScheduleHasScheduledFlight
+                WHERE  ScheduledFlightId = @ScheduledFlightId
+            )
+            AND PassengerBooked IS NULL",
+            new { ScheduledFlightId = scheduledFlightId, PassengerId = firstPassengerId });
+    }
+
+    public async Task<int> GetBookedSeatsAsync(int scheduledFlightId)
+    {
+        using var connection = new SqlConnection(_connectionString);
+        return await connection.ExecuteScalarAsync<int>(@"
+            SELECT ISNULL(BookedSeats, 0) FROM ScheduledFlight WHERE Id = @Id",
+            new { Id = scheduledFlightId });
+    }
+
+    public async Task<int> GetAircraftCapacityByTypeAsync(string aircraftTypeId)
+    {
+        using var connection = new SqlConnection(_connectionString);
+        return await connection.ExecuteScalarAsync<int>(@"
+            SELECT TOP 1
+                ISNULL(a.EconomyRows * a.EconomySeatsPerRow
+                       + a.FirstClassRows * a.FirstClassSeatsPerRow, 0)
+            FROM Aircraft a
+            JOIN AircraftType aty ON a.[Type] = aty.Id
+            WHERE aty.AircraftType = @AircraftTypeId",
+            new { AircraftTypeId = aircraftTypeId });
+    }
+
     public async Task<List<PassengerIdentityRecord>> GetPassengerIdentitiesOnFlightAsync(int scheduledFlightId)
     {
         using var connection = new SqlConnection(_connectionString);
