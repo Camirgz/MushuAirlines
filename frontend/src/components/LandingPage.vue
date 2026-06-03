@@ -542,8 +542,12 @@
 
           <div class="modal-actions">
             <button class="modal-cancel-btn" @click="closeFlightDetails">Cancelar</button>
-            <button class="modal-cart-btn" :disabled="firstClassCount + economyCount === 0">
-              <i class="bi bi-cart3 me-2"></i>Agregar al carrito
+            <button
+              class="modal-cart-btn"
+              :disabled="passengerCount === 0"
+              @click="startPurchase"
+            >
+              <i class="bi bi-arrow-right-circle me-2"></i>Continuar con la compra
             </button>
           </div>
 
@@ -557,6 +561,7 @@
 <script>
 import FlightResultCard from './FlightResultCard.vue'
 import { findStopoverConnections, isOvernightFlight, addDaysToDateString } from '@/services/connectionFinder.js'
+import { usePurchaseFlow } from '@/composables/usePurchaseFlow'
 
 function durationToHours(dur) {
   const [h, m] = dur.split(':')
@@ -1017,6 +1022,42 @@ export default {
     handleStopoverSelect(connection) {
       // Stopover booking flow — available in a future update.
       console.log('Itinerario con escala seleccionado:', connection)
+    },
+
+    startPurchase() {
+      const f = this.selectedFlight
+
+      // Build one seat entry per passenger, ordered First Class first then Economy.
+      const seats = [
+        ...Array.from({ length: this.firstClassCount }, (_, i) => ({
+          passengerIndex: i,
+          seatClass:      'FirstClass',
+          seatNumber:     i + 1,
+        })),
+        ...Array.from({ length: this.economyCount }, (_, i) => ({
+          passengerIndex: this.firstClassCount + i,
+          seatClass:      'Economy',
+          seatNumber:     this.firstClassCount + i + 1,
+        })),
+      ]
+
+      const { setFlight } = usePurchaseFlow()
+      setFlight({
+        code:            f.id,
+        flightDate:      f.date,
+        origin:          f.origin,
+        destination:     f.destination,
+        originCity:      f.originCity      ?? '',
+        destinationCity: f.destinationCity ?? '',
+        departureTime:   f.departureTime,
+        arrivalTime:     f.arrivalTime,
+        priceEconomy:    f.priceEconomy,
+        priceFirstClass: f.priceFirstClass,
+        passengerCount:  this.passengerCount,
+      }, seats)
+
+      this.closeFlightDetails()
+      this.$router.push('/purchase/passengers')
     },
 
     setFilterPriceClass(className) {

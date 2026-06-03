@@ -30,6 +30,22 @@
         subtitle="Complete los datos de todos los pasajeros"
       />
 
+      <!-- Flight summary banner -->
+      <div class="flight-summary" v-if="flight">
+        <div class="flight-summary-route">
+          <span class="summary-airport">{{ flight.origin }}</span>
+          <i class="bi bi-arrow-right summary-arrow"></i>
+          <span class="summary-airport">{{ flight.destination }}</span>
+        </div>
+        <div class="flight-summary-meta">
+          <span><i class="bi bi-calendar3 me-1"></i>{{ flight.flightDate }}</span>
+          <span class="summary-sep">·</span>
+          <span><i class="bi bi-person me-1"></i>{{ purchaseState.seats.length }} pasajero(s)</span>
+          <span class="summary-sep">·</span>
+          <span><i class="bi bi-award me-1"></i>{{ flightClassSummary }}</span>
+        </div>
+      </div>
+
       <AdminCard>
 
         <!-- ── Passenger list ── -->
@@ -223,7 +239,7 @@
       </AdminCard>
 
       <div class="action-row">
-        <button class="btn-back" type="button">Volver</button>
+        <button class="btn-back" type="button" @click="goBack">Volver</button>
         <button class="btn-continue" type="button">Continuar al Pago</button>
       </div>
 
@@ -237,6 +253,7 @@
 import AdminHero from "@/components/admin/ui/AdminHero.vue";
 import AdminCard from "@/components/admin/ui/AdminCard.vue";
 import AppFooter from "@/components/layout/AppFooter.vue";
+import { usePurchaseFlow } from "@/composables/usePurchaseFlow";
 
 export default {
   name: "PassengerInfoPage",
@@ -245,6 +262,11 @@ export default {
     AdminHero,
     AdminCard,
     AppFooter,
+  },
+
+  setup() {
+    const { state, hasFlight } = usePurchaseFlow();
+    return { purchaseState: state, hasFlight };
   },
 
   data() {
@@ -257,6 +279,33 @@ export default {
         checkedWeight: 0,
       },
     };
+  },
+
+  created() {
+    if (!this.hasFlight) {
+      this.$router.push("/");
+      return;
+    }
+    const seatCount = this.purchaseState.seats.length;
+    if (seatCount > 1) {
+      this.passengers = Array.from({ length: seatCount }, () => this.emptyPassenger());
+    }
+  },
+
+  computed: {
+    flight() {
+      return this.purchaseState.flight;
+    },
+
+    flightClassSummary() {
+      const seats = this.purchaseState.seats;
+      const fc = seats.filter((s) => s.seatClass === "FirstClass").length;
+      const ec = seats.filter((s) => s.seatClass === "Economy").length;
+      const parts = [];
+      if (fc > 0) parts.push(`${fc} Primera Clase`);
+      if (ec > 0) parts.push(`${ec} Turista`);
+      return parts.join(" · ");
+    },
   },
 
   methods: {
@@ -279,6 +328,10 @@ export default {
 
     removePassenger(index) {
       this.passengers.splice(index, 1);
+    },
+
+    goBack() {
+      this.$router.push("/");
     },
   },
 };
@@ -339,6 +392,51 @@ export default {
   padding: 40px 24px 72px;
   flex: 1;
   width: 100%;
+}
+
+/* ── Flight summary banner ── */
+.flight-summary {
+  background: linear-gradient(135deg, rgba(231,76,60,0.07) 0%, rgba(243,156,18,0.07) 100%);
+  border: 1.5px solid rgba(231,76,60,0.18);
+  border-radius: 12px;
+  padding: 14px 20px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.flight-summary-route {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.summary-airport {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #1a1a1a;
+  letter-spacing: 0.04em;
+}
+
+.summary-arrow {
+  color: #e74c3c;
+  font-size: 1rem;
+}
+
+.flight-summary-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: #555;
+  flex-wrap: wrap;
+}
+
+.summary-sep {
+  color: #ccc;
 }
 
 /* ── Passenger section ── */
