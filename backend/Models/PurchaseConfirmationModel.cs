@@ -11,6 +11,8 @@ namespace backend.Model
         public string PaymentMethod { get; set; }
         public decimal TotalPaid { get; set; }
         public int TotalSeats { get; set; }
+
+        // Leg 1
         public string FlightNumber { get; set; }
         public string AircraftType { get; set; }
         public string OriginAirport { get; set; }
@@ -18,6 +20,14 @@ namespace backend.Model
         public DateTime DepartureDate { get; set; }
         public DateTime ArrivalDate { get; set; }
         public string Layover { get; set; }
+
+        // Leg 2 (null for direct flights)
+        public string FlightNumber2 { get; set; }
+        public string OriginAirport2 { get; set; }
+        public string DestinationAirport2 { get; set; }
+        public DateTime? DepartureDate2 { get; set; }
+        public DateTime? ArrivalDate2 { get; set; }
+
         public List<SeatClassSubtotal> Details { get; set; } = new();
     }
 }

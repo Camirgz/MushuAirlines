@@ -45,27 +45,51 @@
           </div>
 
           <div class="detail-item">
-            <span class="detail-label"><i class="bi bi-geo-alt me-1"></i>Ruta</span>
-            <strong class="detail-value">
-              {{ purchase.originAirport }} → {{ purchase.destinationAirport }}
-            </strong>
-          </div>
-
-          <div class="detail-item">
-            <span class="detail-label"><i class="bi bi-calendar3 me-1"></i>Fecha de salida</span>
-            <strong class="detail-value">{{ formatDate(purchase.departureDate) }}</strong>
-          </div>
-
-          <div class="detail-item">
             <span class="detail-label"><i class="bi bi-person me-1"></i>Titular</span>
             <strong class="detail-value">{{ purchase.fullName }}</strong>
           </div>
 
           <div class="detail-item">
-            <span class="detail-label"><i class="bi bi-airplane me-1"></i>Vuelo</span>
-            <strong class="detail-value">#{{ purchase.flightNumber }}</strong>
+            <span class="detail-label"><i class="bi bi-airplane me-1"></i>Aeronave</span>
+            <strong class="detail-value">{{ purchase.aircraftType }}</strong>
           </div>
 
+        </div>
+
+        <!-- Leg 1 -->
+        <div class="flight-leg-block">
+          <div class="flight-leg-title">
+            <i class="bi bi-airplane-fill me-2"></i>
+            {{ purchase.flightNumber2 ? 'Vuelo 1' : 'Vuelo' }} #{{ purchase.flightNumber }}
+          </div>
+          <div class="details-grid">
+            <div class="detail-item">
+              <span class="detail-label"><i class="bi bi-geo-alt me-1"></i>Ruta</span>
+              <strong class="detail-value">{{ purchase.originAirport }} → {{ purchase.destinationAirport }}</strong>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label"><i class="bi bi-calendar3 me-1"></i>Fecha de salida</span>
+              <strong class="detail-value">{{ formatDate(purchase.departureDate) }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Leg 2 (stopover only) -->
+        <div class="flight-leg-block flight-leg-block--stopover" v-if="purchase.flightNumber2">
+          <div class="flight-leg-title">
+            <i class="bi bi-airplane-fill me-2"></i>
+            Vuelo 2 #{{ purchase.flightNumber2 }}
+          </div>
+          <div class="details-grid">
+            <div class="detail-item">
+              <span class="detail-label"><i class="bi bi-geo-alt me-1"></i>Ruta</span>
+              <strong class="detail-value">{{ purchase.originAirport2 }} → {{ purchase.destinationAirport2 }}</strong>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label"><i class="bi bi-calendar3 me-1"></i>Fecha de salida</span>
+              <strong class="detail-value">{{ formatDate(purchase.departureDate2) }}</strong>
+            </div>
+          </div>
         </div>
 
         <div class="breakdown-section" v-if="purchase.details && purchase.details.length">
@@ -392,6 +416,29 @@ export default {
   font-size: 1rem;
   color: #1a1a1a;
   font-weight: 700;
+}
+
+.flight-leg-block {
+  border-top: 1.5px solid #f0f0f0;
+  padding-top: 18px;
+  margin-bottom: 4px;
+}
+
+.flight-leg-block--stopover {
+  border-top-color: #fcd9a4;
+}
+
+.flight-leg-title {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 14px;
+}
+
+.flight-leg-block--stopover .flight-leg-title {
+  color: #e67e22;
 }
 
 .breakdown-section {

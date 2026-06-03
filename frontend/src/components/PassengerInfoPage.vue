@@ -395,23 +395,33 @@ export default {
     async continueToPayment() {
       if (!this.validateAllPassengers()) return;
 
+      const flight2 = this.purchaseState.flight2;
+
       // Flight-level duplicate check — same passenger already booked on this flight?
-      const { hasDuplicates, duplicates } = await checkPassengerDuplicates(
+      const checksLeg1 = checkPassengerDuplicates(
         this.flight.code,
         this.flight.flightDate,
         this.passengers
       );
-      if (hasDuplicates) {
-        this.validationError = `Ya existe una reserva en este vuelo para: ${duplicates.join(', ')}. Un pasajero no puede tener más de un boleto en el mismo vuelo.`;
+      const checksLeg2 = flight2
+        ? checkPassengerDuplicates(flight2.code, flight2.flightDate, this.passengers)
+        : Promise.resolve({ hasDuplicates: false, duplicates: [] });
+
+      const [result1, result2] = await Promise.all([checksLeg1, checksLeg2]);
+      if (result1.hasDuplicates || result2.hasDuplicates) {
+        const allDups = [...new Set([...result1.duplicates, ...result2.duplicates])];
+        this.validationError = `Ya existe una reserva en este vuelo para: ${allDups.join(', ')}. Un pasajero no puede tener más de un boleto en el mismo vuelo.`;
         return;
       }
 
-      const available = await checkAvailability(
-        this.flight.code,
-        this.flight.flightDate,
-        this.purchaseState.seats.length
-      );
-      if (!available) {
+      const seatCount = this.purchaseState.seats.length;
+      const availLeg1 = checkAvailability(this.flight.code, this.flight.flightDate, seatCount);
+      const availLeg2 = flight2
+        ? checkAvailability(flight2.code, flight2.flightDate, seatCount)
+        : Promise.resolve(true);
+
+      const [avail1, avail2] = await Promise.all([availLeg1, availLeg2]);
+      if (!avail1 || !avail2) {
         this.validationError = "Lo sentimos, este vuelo ya no tiene asientos disponibles. Por favor regrese y seleccione otro vuelo.";
         return;
       }

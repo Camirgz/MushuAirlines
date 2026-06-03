@@ -33,10 +33,10 @@ public class PurchaseService : IPurchaseService
     {
         ValidatePassengers(request.Passengers);
 
-        RouteCreationModel route;
+        RouteCreationModel route1;
         try
         {
-            route = _routeCreationService.GetRouteByCode(request.Flight.RouteCode);
+            route1 = _routeCreationService.GetRouteByCode(request.Flight.RouteCode);
         }
         catch
         {
@@ -46,23 +46,63 @@ public class PurchaseService : IPurchaseService
                 "la ruta no existe o no está disponible");
         }
 
-        int scheduledFlightId = _routeCreationService.GetOrCreateScheduledFlight(
+        int scheduledFlightId1 = _routeCreationService.GetOrCreateScheduledFlight(
             request.Flight.RouteCode,
             request.Flight.FlightDate.ToDateTime(TimeOnly.MinValue));
 
-        bool hasSeats = await _purchaseRepo.HasAvailableSeatsAsync(
-            scheduledFlightId, request.SeatSelections.Count);
+        bool isStopover          = request.Flight2 != null;
+        RouteCreationModel? route2      = null;
+        int                scheduledFlightId2 = 0;
 
-        if (!hasSeats)
-            throw new SeatUnavailableException(scheduledFlightId);
+        if (isStopover)
+        {
+            try
+            {
+                route2 = _routeCreationService.GetRouteByCode(request.Flight2!.RouteCode);
+            }
+            catch
+            {
+                throw new InvalidFlightDateException(
+                    request.Flight2!.FlightDate,
+                    request.Flight2.RouteCode,
+                    "la ruta del segundo tramo no existe o no está disponible");
+            }
 
-        var assignedSeatNumbers = await _purchaseRepo.GetNextAvailableSeatNumbersAsync(
-            scheduledFlightId, request.SeatSelections.Count);
+            scheduledFlightId2 = _routeCreationService.GetOrCreateScheduledFlight(
+                request.Flight2.RouteCode,
+                request.Flight2.FlightDate.ToDateTime(TimeOnly.MinValue));
+        }
+
+        bool hasSeats1 = await _purchaseRepo.HasAvailableSeatsAsync(
+            scheduledFlightId1, request.SeatSelections.Count);
+        if (!hasSeats1)
+            throw new SeatUnavailableException(scheduledFlightId1);
+
+        if (isStopover)
+        {
+            bool hasSeats2 = await _purchaseRepo.HasAvailableSeatsAsync(
+                scheduledFlightId2, request.SeatSelections.Count);
+            if (!hasSeats2)
+                throw new SeatUnavailableException(scheduledFlightId2);
+        }
+
+        var assignedSeatNumbers1 = await _purchaseRepo.GetNextAvailableSeatNumbersAsync(
+            scheduledFlightId1, request.SeatSelections.Count);
+
+        List<int>? assignedSeatNumbers2 = null;
+        if (isStopover)
+        {
+            assignedSeatNumbers2 = await _purchaseRepo.GetNextAvailableSeatNumbersAsync(
+                scheduledFlightId2, request.SeatSelections.Count);
+        }
+
+        decimal economyPrice    = route1.PriceEconomy    + (isStopover ? route2!.PriceEconomy    : 0);
+        decimal firstClassPrice = route1.PriceFirstClass + (isStopover ? route2!.PriceFirstClass : 0);
 
         var totals = _pricingCalculator.Calculate(
             request.SeatSelections,
-            route.PriceEconomy,
-            route.PriceFirstClass);
+            economyPrice,
+            firstClassPrice);
 
         string reservationCode;
         do
@@ -102,11 +142,11 @@ public class PurchaseService : IPurchaseService
         var tickets = new List<TicketSummary>(request.SeatSelections.Count);
         for (int seatIdx = 0; seatIdx < request.SeatSelections.Count; seatIdx++)
         {
-            var seat         = request.SeatSelections[seatIdx];
-            int passengerId  = passengerIdMap[seat.PassengerIndex];
-            int seatNumber   = assignedSeatNumbers[seatIdx];
+            var seat        = request.SeatSelections[seatIdx];
+            int passengerId = passengerIdMap[seat.PassengerIndex];
+            int seatNumber  = assignedSeatNumbers1[seatIdx];
 
-            await _purchaseRepo.CreateTicketAsync(scheduledFlightId, passengerId, seatNumber);
+            await _purchaseRepo.CreateTicketAsync(scheduledFlightId1, passengerId, seatNumber);
 
             var passenger = request.Passengers[seat.PassengerIndex];
             tickets.Add(new TicketSummary
@@ -117,7 +157,21 @@ public class PurchaseService : IPurchaseService
             });
         }
 
-        await _purchaseRepo.LinkItineraryToScheduledFlightAsync(bookingCode, scheduledFlightId);
+        await _purchaseRepo.LinkItineraryToScheduledFlightAsync(bookingCode, scheduledFlightId1);
+
+        if (isStopover)
+        {
+            for (int seatIdx = 0; seatIdx < request.SeatSelections.Count; seatIdx++)
+            {
+                var seat        = request.SeatSelections[seatIdx];
+                int passengerId = passengerIdMap[seat.PassengerIndex];
+                int seatNumber  = assignedSeatNumbers2![seatIdx];
+
+                await _purchaseRepo.CreateTicketAsync(scheduledFlightId2, passengerId, seatNumber);
+            }
+
+            await _purchaseRepo.LinkItineraryToScheduledFlightAsync(bookingCode, scheduledFlightId2);
+        }
 
         return new PurchaseResponseModel
         {

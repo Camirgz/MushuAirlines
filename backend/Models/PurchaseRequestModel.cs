@@ -3,6 +3,7 @@ namespace backend.Model;
 public class PurchaseRequestModel
 {
     public FlightSelection       Flight         { get; set; } = new();
+    public FlightSelection?      Flight2        { get; set; }
     public List<PassengerInfo>   Passengers     { get; set; } = [];
     public List<SeatSelection>   SeatSelections { get; set; } = [];
     public BaggageInfo           Baggage        { get; set; } = new();

@@ -5,6 +5,7 @@ const STORAGE_KEY = 'mushu_purchase_flow'
 function defaultState() {
   return {
     flight:     null,
+    flight2:    null,
     seats:      [],
     passengers: [],
     baggage: {
@@ -50,10 +51,12 @@ function persist() {
  */
 export function usePurchaseFlow() {
 
-  /** Save flight + seat selections after the user confirms from FlightResultCard. */
-  function setFlight(flight, seats) {
-    _state.flight = flight
-    _state.seats  = seats
+  /** Save flight + seat selections after the user confirms from FlightResultCard.
+   *  For stopovers pass flight2 = { code, flightDate } for the second leg. */
+  function setFlight(flight, seats, flight2 = null) {
+    _state.flight  = flight
+    _state.flight2 = flight2
+    _state.seats   = seats
     persist()
   }
 
@@ -86,6 +89,10 @@ export function usePurchaseFlow() {
         routeCode:  _state.flight?.code ?? '',
         flightDate: _state.flight?.flightDate ?? '',
       },
+      flight2: _state.flight2 ? {
+        routeCode:  _state.flight2.code,
+        flightDate: _state.flight2.flightDate,
+      } : null,
       passengers: _state.passengers.map(p => ({
         firstName:       p.firstName,
         lastName:        p.lastName,
