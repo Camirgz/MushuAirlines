@@ -1,4 +1,5 @@
 USE MushuAirlines;
+GO;
 
 CREATE OR ALTER TRIGGER trg_PreventOverbooking
 ON Ticket
