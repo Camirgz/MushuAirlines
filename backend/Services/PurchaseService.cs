@@ -128,8 +128,7 @@ public class PurchaseService : IPurchaseService
 
     private async Task<int> ResolvePassengerAsync(PassengerInfo passenger)
     {
-        int? existing = await _passengerRepo.FindPassengerByDocumentAsync(
-            passenger.DocumentType, passenger.DocumentNumber);
+        int? existing = await _passengerRepo.FindPassengerByDocumentAsync(passenger.PassportNumber);
 
         return existing ?? await _passengerRepo.CreatePassengerAsync(passenger);
     }
@@ -142,16 +141,22 @@ public class PurchaseService : IPurchaseService
         foreach (var p in passengers)
         {
             if (string.IsNullOrWhiteSpace(p.FirstName))
-                throw new PassengerDataException("FirstName",      "el nombre no puede estar vacío");
+                throw new PassengerDataException("FirstName",       "el nombre no puede estar vacío");
 
             if (string.IsNullOrWhiteSpace(p.LastName))
-                throw new PassengerDataException("LastName",       "el apellido no puede estar vacío");
+                throw new PassengerDataException("LastName",        "el apellido no puede estar vacío");
 
-            if (string.IsNullOrWhiteSpace(p.DocumentNumber))
-                throw new PassengerDataException("DocumentNumber", "el número de documento no puede estar vacío");
+            if (string.IsNullOrWhiteSpace(p.PassportNumber))
+                throw new PassengerDataException("PassportNumber",  "el número de pasaporte no puede estar vacío");
+
+            if (string.IsNullOrWhiteSpace(p.PassportCountry))
+                throw new PassengerDataException("PassportCountry", "el país del pasaporte no puede estar vacío");
+
+            if (string.IsNullOrWhiteSpace(p.Gender))
+                throw new PassengerDataException("Gender",          "el género no puede estar vacío");
 
             if (p.BirthDate >= DateOnly.FromDateTime(DateTime.UtcNow))
-                throw new PassengerDataException("BirthDate",      "la fecha de nacimiento debe ser anterior a hoy");
+                throw new PassengerDataException("BirthDate",       "la fecha de nacimiento debe ser anterior a hoy");
         }
     }
 }

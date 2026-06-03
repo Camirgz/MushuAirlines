@@ -15,7 +15,7 @@ public class PassengerRepository : IPassengerRepository
         _connectionString = builder.Configuration.GetConnectionString("LoginContext")!;
     }
 
-    public async Task<int?> FindPassengerByDocumentAsync(string documentType, string documentNumber)
+    public async Task<int?> FindPassengerByDocumentAsync(string passportNumber)
     {
         using var connection = new SqlConnection(_connectionString);
 
@@ -23,9 +23,9 @@ public class PassengerRepository : IPassengerRepository
             SELECT p.Id
             FROM   Passenger p
             INNER JOIN Person per ON per.Id = p.Id
-            WHERE  per.Ssn = @DocumentNumber";
+            WHERE  per.Ssn = @PassportNumber";
 
-        return await connection.QueryFirstOrDefaultAsync<int?>(query, new { DocumentNumber = documentNumber });
+        return await connection.QueryFirstOrDefaultAsync<int?>(query, new { PassportNumber = passportNumber });
     }
 
     public async Task<int> CreatePassengerAsync(PassengerInfo data)
@@ -52,7 +52,7 @@ public class PassengerRepository : IPassengerRepository
                 Id          = userId,
                 data.FirstName,
                 data.LastName,
-                Ssn         = data.DocumentNumber,
+                Ssn         = data.PassportNumber,
                 Nationality = string.Empty
             }, transaction);
 
