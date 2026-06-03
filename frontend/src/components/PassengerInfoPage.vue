@@ -78,9 +78,10 @@
               <label class="field-label">Nombre <span class="required">*</span></label>
               <input
                 type="text"
-                class="field-input"
+                :class="['field-input', { 'field-input--error': fieldErrors[`${index}_firstName`] }]"
                 v-model="passenger.firstName"
                 placeholder="Ingrese nombre"
+                @input="clearFieldError(index, 'firstName')"
               />
             </div>
 
@@ -88,15 +89,20 @@
               <label class="field-label">Apellidos <span class="required">*</span></label>
               <input
                 type="text"
-                class="field-input"
+                :class="['field-input', { 'field-input--error': fieldErrors[`${index}_lastName`] }]"
                 v-model="passenger.lastName"
                 placeholder="Ingrese apellidos"
+                @input="clearFieldError(index, 'lastName')"
               />
             </div>
 
             <div class="form-group">
               <label class="field-label">Género <span class="required">*</span></label>
-              <select class="field-input field-select" v-model="passenger.gender">
+              <select
+                :class="['field-input field-select', { 'field-input--error': fieldErrors[`${index}_gender`] }]"
+                v-model="passenger.gender"
+                @change="clearFieldError(index, 'gender')"
+              >
                 <option value="" disabled>Seleccione género</option>
                 <option value="Hombre">Hombre</option>
                 <option value="Mujer">Mujer</option>
@@ -108,9 +114,10 @@
               <label class="field-label">País del Pasaporte <span class="required">*</span></label>
               <input
                 type="text"
-                class="field-input"
+                :class="['field-input', { 'field-input--error': fieldErrors[`${index}_passportCountry`] }]"
                 v-model="passenger.passportCountry"
                 placeholder="Ej: Costa Rica"
+                @input="clearFieldError(index, 'passportCountry')"
               />
             </div>
 
@@ -118,9 +125,10 @@
               <label class="field-label">Número de Pasaporte <span class="required">*</span></label>
               <input
                 type="text"
-                class="field-input"
+                :class="['field-input', { 'field-input--error': fieldErrors[`${index}_passportNumber`] }]"
                 v-model="passenger.passportNumber"
                 placeholder="Ingrese número de pasaporte"
+                @input="clearFieldError(index, 'passportNumber')"
               />
             </div>
 
@@ -128,8 +136,10 @@
               <label class="field-label">Fecha de Nacimiento <span class="required">*</span></label>
               <input
                 type="date"
-                class="field-input"
+                :class="['field-input', { 'field-input--error': fieldErrors[`${index}_birthDate`] }]"
                 v-model="passenger.birthDate"
+                :max="todayDate"
+                @change="clearFieldError(index, 'birthDate')"
               />
             </div>
 
@@ -139,9 +149,10 @@
                 <label class="field-label">Correo Electrónico <span class="required">*</span></label>
                 <input
                   type="email"
-                  class="field-input"
+                  :class="['field-input', { 'field-input--error': fieldErrors[`${index}_email`] }]"
                   v-model="passenger.email"
                   placeholder="ejemplo@correo.com"
+                  @input="clearFieldError(index, 'email')"
                 />
               </div>
 
@@ -149,9 +160,10 @@
                 <label class="field-label">Teléfono <span class="required">*</span></label>
                 <input
                   type="tel"
-                  class="field-input"
+                  :class="['field-input', { 'field-input--error': fieldErrors[`${index}_phone`] }]"
                   v-model="passenger.phone"
                   placeholder="+506 00000000"
+                  @input="clearFieldError(index, 'phone')"
                 />
               </div>
             </template>
@@ -159,9 +171,18 @@
           </div>
         </div>
 
-        <button class="btn-add-passenger" type="button" @click="addPassenger">
+        <button
+          v-if="passengers.length < maxPassengers"
+          class="btn-add-passenger"
+          type="button"
+          @click="addPassenger"
+        >
           <i class="bi bi-plus-lg"></i> Agregar Pasajero
         </button>
+        <div v-else class="max-passengers-note">
+          <i class="bi bi-info-circle me-1"></i>
+          Ya alcanzaste el máximo de {{ maxPassengers }} pasajero(s) para esta compra.
+        </div>
 
         <!-- ── Baggage section ── -->
         <div class="baggage-separator">
@@ -178,7 +199,10 @@
                 <i class="bi bi-briefcase-fill"></i>
                 <span>Equipaje de Mano</span>
               </div>
-              <div class="baggage-fields">
+              <div class="baggage-weight-info" v-if="flight && flight.handBagWeight">
+                Máx. {{ flight.handBagWeight }} kg por pieza · ₡{{ (flight.handBagPrice || 0).toLocaleString() }} c/u
+              </div>
+              <div class="baggage-fields baggage-fields--single">
                 <div class="form-group">
                   <label class="field-label">Cantidad</label>
                   <input
@@ -186,17 +210,6 @@
                     class="field-input"
                     v-model.number="baggage.handCount"
                     min="0"
-                    placeholder="0"
-                  />
-                </div>
-                <div class="form-group">
-                  <label class="field-label">Peso por pieza (kg)</label>
-                  <input
-                    type="number"
-                    class="field-input"
-                    v-model.number="baggage.handWeight"
-                    min="0"
-                    step="0.5"
                     placeholder="0"
                   />
                 </div>
@@ -208,7 +221,10 @@
                 <i class="bi bi-archive-fill"></i>
                 <span>Equipaje Documentado</span>
               </div>
-              <div class="baggage-fields">
+              <div class="baggage-weight-info" v-if="flight && flight.bagWeight">
+                Máx. {{ flight.bagWeight }} kg por pieza · ₡{{ (flight.bagPrice || 0).toLocaleString() }} c/u
+              </div>
+              <div class="baggage-fields baggage-fields--single">
                 <div class="form-group">
                   <label class="field-label">Cantidad</label>
                   <input
@@ -219,20 +235,40 @@
                     placeholder="0"
                   />
                 </div>
-                <div class="form-group">
-                  <label class="field-label">Peso por pieza (kg)</label>
-                  <input
-                    type="number"
-                    class="field-input"
-                    v-model.number="baggage.checkedWeight"
-                    min="0"
-                    step="0.5"
-                    placeholder="0"
-                  />
-                </div>
               </div>
             </div>
 
+          </div>
+        </div>
+
+        <!-- ── Price summary ── -->
+        <div class="baggage-separator" v-if="priceSummary">
+          <hr />
+        </div>
+
+        <div class="price-summary" v-if="priceSummary">
+          <h3 class="passenger-title" style="margin-bottom: 16px;">Resumen de Precio</h3>
+
+          <div class="price-line" v-if="priceSummary.fcCount > 0">
+            <span>{{ priceSummary.fcCount }} × Primera Clase</span>
+            <span>₡{{ priceSummary.fcTotal.toLocaleString() }}</span>
+          </div>
+          <div class="price-line" v-if="priceSummary.ecCount > 0">
+            <span>{{ priceSummary.ecCount }} × Turista</span>
+            <span>₡{{ priceSummary.ecTotal.toLocaleString() }}</span>
+          </div>
+          <div class="price-line" v-if="baggage.handCount > 0">
+            <span>{{ baggage.handCount }} × Equipaje de Mano</span>
+            <span>₡{{ priceSummary.handBagTotal.toLocaleString() }}</span>
+          </div>
+          <div class="price-line" v-if="baggage.checkedCount > 0">
+            <span>{{ baggage.checkedCount }} × Equipaje Documentado</span>
+            <span>₡{{ priceSummary.checkedBagTotal.toLocaleString() }}</span>
+          </div>
+
+          <div class="price-total-row">
+            <span>Total estimado</span>
+            <span class="price-total-amount">₡{{ priceSummary.total.toLocaleString() }}</span>
           </div>
         </div>
 
@@ -275,14 +311,10 @@ export default {
 
   data() {
     return {
-      passengers: [this.emptyPassenger()],
-      baggage: {
-        handCount:     0,
-        handWeight:    0,
-        checkedCount:  0,
-        checkedWeight: 0,
-      },
+      passengers:     [this.emptyPassenger()],
+      baggage:        { handCount: 0, checkedCount: 0 },
       validationError: null,
+      fieldErrors:    {},
     };
   },
 
@@ -291,15 +323,39 @@ export default {
       this.$router.push("/");
       return;
     }
-    const seatCount = this.purchaseState.seats.length;
-    if (seatCount > 1) {
-      this.passengers = Array.from({ length: seatCount }, () => this.emptyPassenger());
+
+    // Restore passenger data if user navigated back from PaymentForm
+    const savedPassengers = this.purchaseState.passengers;
+    if (savedPassengers.length > 0) {
+      this.passengers = savedPassengers.map(p => ({ ...p }));
+    } else {
+      const count = Math.max(1, this.purchaseState.seats.length);
+      this.passengers = Array.from({ length: count }, () => this.emptyPassenger());
+    }
+
+    // Restore baggage from state (if user navigated back) or pre-fill from flight modal
+    const savedBaggage = this.purchaseState.baggage;
+    const f            = this.purchaseState.flight;
+    if (savedBaggage.handCount > 0 || savedBaggage.checkedCount > 0) {
+      this.baggage.handCount    = savedBaggage.handCount;
+      this.baggage.checkedCount = savedBaggage.checkedCount;
+    } else if (f) {
+      this.baggage.handCount    = f.handBagsCount    ?? 0;
+      this.baggage.checkedCount = f.checkedBagsCount ?? 0;
     }
   },
 
   computed: {
     flight() {
       return this.purchaseState.flight;
+    },
+
+    maxPassengers() {
+      return this.purchaseState.flight?.passengerCount ?? 9;
+    },
+
+    todayDate() {
+      return new Date().toISOString().split("T")[0];
     },
 
     flightClassSummary() {
@@ -310,6 +366,21 @@ export default {
       if (fc > 0) parts.push(`${fc} Primera Clase`);
       if (ec > 0) parts.push(`${ec} Turista`);
       return parts.join(" · ");
+    },
+
+    priceSummary() {
+      const f     = this.flight;
+      const seats = this.purchaseState.seats;
+      if (!f) return null;
+
+      const fcCount  = seats.filter(s => s.seatClass === "FirstClass").length;
+      const ecCount  = seats.filter(s => s.seatClass === "Economy").length;
+      const fcTotal  = fcCount * (f.priceFirstClass || 0);
+      const ecTotal  = ecCount * (f.priceEconomy    || 0);
+      const handBagTotal    = this.baggage.handCount    * (f.handBagPrice || 0);
+      const checkedBagTotal = this.baggage.checkedCount * (f.bagPrice     || 0) * (f.bagMultiplier || 1);
+      const total = fcTotal + ecTotal + handBagTotal + checkedBagTotal;
+      return { fcCount, ecCount, fcTotal, ecTotal, handBagTotal, checkedBagTotal, total };
     },
   },
 
@@ -340,37 +411,39 @@ export default {
     },
 
     validateAllPassengers() {
+      const errors = {};
+
       for (let i = 0; i < this.passengers.length; i++) {
-        const p     = this.passengers[i];
-        const label = `Pasajero ${i + 1}`;
-
-        if (!p.firstName.trim())
-          return this.setError(`${label}: el nombre es requerido.`);
-        if (!p.lastName.trim())
-          return this.setError(`${label}: el apellido es requerido.`);
-        if (!p.gender)
-          return this.setError(`${label}: el género es requerido.`);
-        if (!p.passportCountry.trim())
-          return this.setError(`${label}: el país del pasaporte es requerido.`);
-        if (!p.passportNumber.trim())
-          return this.setError(`${label}: el número de pasaporte es requerido.`);
-        if (!p.birthDate)
-          return this.setError(`${label}: la fecha de nacimiento es requerida.`);
-
+        const p = this.passengers[i];
+        if (!p.firstName.trim())       errors[`${i}_firstName`]       = true;
+        if (!p.lastName.trim())        errors[`${i}_lastName`]        = true;
+        if (!p.gender)                 errors[`${i}_gender`]          = true;
+        if (!p.passportCountry.trim()) errors[`${i}_passportCountry`] = true;
+        if (!p.passportNumber.trim())  errors[`${i}_passportNumber`]  = true;
+        if (!p.birthDate)              errors[`${i}_birthDate`]       = true;
         if (i === 0) {
-          if (!p.email.trim())
-            return this.setError(`${label}: el correo electrónico es requerido.`);
-          if (!p.phone.trim())
-            return this.setError(`${label}: el teléfono es requerido.`);
+          if (!p.email.trim())  errors[`${i}_email`]  = true;
+          if (!p.phone.trim())  errors[`${i}_phone`]  = true;
         }
+      }
+
+      this.fieldErrors = errors;
+
+      if (Object.keys(errors).length > 0) {
+        this.validationError = "Por favor complete todos los campos requeridos marcados en rojo.";
+        return false;
       }
       this.validationError = null;
       return true;
     },
 
-    setError(msg) {
-      this.validationError = msg;
-      return false;
+    clearFieldError(index, field) {
+      const key = `${index}_${field}`;
+      if (this.fieldErrors[key]) {
+        const updated = { ...this.fieldErrors };
+        delete updated[key];
+        this.fieldErrors = updated;
+      }
     },
 
     continueToPayment() {
@@ -591,6 +664,11 @@ export default {
   box-shadow: 0 0 0 3px rgba(255, 90, 0, 0.1);
 }
 
+.field-input--error {
+  border-color: #e74c3c !important;
+  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.12) !important;
+}
+
 .field-select {
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
@@ -623,6 +701,20 @@ export default {
   background: #fff5f5;
 }
 
+/* ── Max passengers note ── */
+.max-passengers-note {
+  width: 100%;
+  padding: 11px 16px;
+  border: 1.5px solid #fed7aa;
+  border-radius: 10px;
+  background: #fff7ed;
+  color: #92400e;
+  font-size: 0.88rem;
+  font-weight: 600;
+  margin-top: 4px;
+  box-sizing: border-box;
+}
+
 /* ── Baggage section ── */
 .baggage-separator {
   margin: 28px 0 24px;
@@ -653,6 +745,49 @@ export default {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+}
+
+.baggage-fields--single {
+  grid-template-columns: 1fr;
+}
+
+.baggage-weight-info {
+  font-size: 0.8rem;
+  color: #888;
+  margin-bottom: 10px;
+}
+
+/* ── Price summary ── */
+.price-summary {
+  margin-top: 4px;
+}
+
+.price-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: #374151;
+  padding: 6px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.price-total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 12px 0 4px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #1a1a1a;
+}
+
+.price-total-amount {
+  font-size: 1.35rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, #e74c3c 0%, #f39c12 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 /* ── Validation error ── */

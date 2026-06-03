@@ -255,14 +255,27 @@ namespace backend.Repositories
         {
             using var connection = new SqlConnection(_connectionString);
 
+            // Primary: aircraft of the specific type assigned to the route
             int? aircraftCode = connection.QueryFirstOrDefault<int?>(@"SELECT dbo.GetAircraftCode(@Type)", new
             {
                 Type = aircraftType
             });
 
+            // Fallback: any available aircraft (covers cases where type data
+            // is not yet set up in the dev environment)
             if (aircraftCode == null)
             {
-                throw new Exception("No aircraft available.");
+                aircraftCode = connection.QueryFirstOrDefault<int?>(@"
+                    SELECT TOP 1 Code
+                    FROM   Aircraft
+                    ORDER  BY Code");
+            }
+
+            if (aircraftCode == null)
+            {
+                throw new Exception(
+                    $"No hay aeronaves de tipo '{aircraftType}' disponibles. " +
+                    "Un administrador debe registrar aeronaves antes de que se puedan crear vuelos programados.");
             }
 
             return aircraftCode.Value;

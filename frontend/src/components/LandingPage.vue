@@ -1051,9 +1051,16 @@ export default {
         destinationCity: f.destinationCity ?? '',
         departureTime:   f.departureTime,
         arrivalTime:     f.arrivalTime,
-        priceEconomy:    f.priceEconomy,
-        priceFirstClass: f.priceFirstClass,
-        passengerCount:  this.passengerCount,
+        priceEconomy:     f.priceEconomy,
+        priceFirstClass:  f.priceFirstClass,
+        passengerCount:   this.passengerCount,
+        handBagsCount:    this.handBagsCount,
+        checkedBagsCount: this.checkedBagsCount,
+        handBagPrice:     f.handBagPrice    ?? 0,
+        handBagWeight:    f.handBagWeight   ?? 0,
+        bagPrice:         f.bagPrice        ?? 0,
+        bagWeight:        f.bagWeight       ?? 0,
+        bagMultiplier:    f.bagMultiplier   ?? 1,
       }, seats)
 
       this.closeFlightDetails()
