@@ -1,5 +1,5 @@
+using backend.Interfaces;
 using backend.Model;
-using backend.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace backend.Controllers
@@ -8,11 +8,11 @@ namespace backend.Controllers
     [ApiController]
     public class AircraftTypeController : ControllerBase
     {
-        private readonly AircraftTypeService _aircraftTypeService;
+        private readonly IAircraftTypeService _aircraftTypeService;
 
-        public AircraftTypeController()
+        public AircraftTypeController(IAircraftTypeService aircraftTypeService)
         {
-            _aircraftTypeService = new AircraftTypeService();
+            _aircraftTypeService = aircraftTypeService;
         }
 
         [HttpGet]

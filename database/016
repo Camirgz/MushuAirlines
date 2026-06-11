@@ -1,0 +1,39 @@
+use MushuAirlines;
+go
+CREATE PROCEDURE GetPurchase
+    @PurchaseId INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT 
+        p.Id AS PurchaseId,
+        per.FirstName + ' ' + per.LastName AS FullName,
+        pass.InternationalId AS PassportNumber,
+        p.Email,
+        p.ReservationCode,
+        p.InvoiceNumber,
+        p.PaymentMethod,
+        p.TotalPaid,
+        p.TotalSeats,
+        CAST(sf.Id AS VARCHAR) AS FlightNumber,
+        at.AircraftType,
+        fs.OriginAirport,
+        fs.DestinationAirport,
+        CAST(fs.DepartureDate AS DATETIME) + CAST(fs.DepartureTime AS DATETIME) AS DepartureDate,
+        CAST(fs.ArrivalDate AS DATETIME) + CAST(fs.ArrivalTime AS DATETIME) AS ArrivalDate,
+        i.Layover
+    FROM Purchase p
+    INNER JOIN Passenger pa ON p.PassengerId = pa.Id
+    INNER JOIN Person per ON pa.Id = per.Id
+    LEFT JOIN  Passport pass ON pa.Id = pass.PassengerHas
+    INNER JOIN Itinerary i ON p.BookingCode = i.BookingCode
+    INNER JOIN ItineraryScheduledFlight isf ON i.BookingCode = isf.BookingCode
+    INNER JOIN ScheduledFlight sf ON isf.ScheduledId = sf.Id
+    INNER JOIN Aircraft a ON sf.AircraftCode = a.Code
+    INNER JOIN AircraftType at ON a.Type = at.Id
+    INNER JOIN FlightScheduleHasScheduledFlight fshsf ON sf.Id = fshsf.ScheduledFlightId
+    INNER JOIN FlightSchedule fs ON fshsf.FlightScheduleId = fs.Id
+    WHERE p.Id = @PurchaseId;
+END;
+GO

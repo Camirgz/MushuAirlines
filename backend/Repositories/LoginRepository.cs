@@ -1,5 +1,6 @@
 using backend.Model;
 using System.Data;
+using Dapper;
 using System.Data.SqlClient;
 
 namespace backend.Repositories
@@ -43,6 +44,30 @@ namespace backend.Repositories
                     END";
 
             return connection.ExecuteScalar<string>(query, new { Username = username });
+        }
+
+        public string GetRoleByUsername(string username)
+        {
+            const string query = @"
+                SELECT TOP 1
+                    CASE
+                        WHEN adm.Id IS NOT NULL THEN 'Administrator'
+                        WHEN op.Id IS NOT NULL THEN 'Operator'
+                        ELSE 'Operator'
+                    END AS Role
+                FROM AccountEmployee ae
+                INNER JOIN Employee e ON e.Id = ae.Id
+                LEFT JOIN Administrator adm ON adm.Id = e.Id
+                LEFT JOIN Operator op ON op.Id = e.Id
+                WHERE ae.Username = @Username;
+            ";
+
+            using var connection = new SqlConnection(_connectionString);
+
+            return connection.QueryFirstOrDefault<string>(
+                query,
+                new { Username = username }
+            ) ?? "Operator";
         }
     }
 }

@@ -1,15 +1,15 @@
+using backend.Interfaces;
 using backend.Model;
-using backend.Repositories;
 
 namespace backend.Services
 {
-    public class AircraftTypeService
+    public class AircraftTypeService : IAircraftTypeService
     {
-        private readonly AircraftTypeRepository _aircraftTypeRepository;
+        private readonly IAircraftTypeRepository _aircraftTypeRepository;
 
-        public AircraftTypeService()
+        public AircraftTypeService(IAircraftTypeRepository aircraftTypeRepository)
         {
-            _aircraftTypeRepository = new AircraftTypeRepository();
+            _aircraftTypeRepository = aircraftTypeRepository;
         }
 
         public IEnumerable<AircraftTypeOptionModel> GetAll()

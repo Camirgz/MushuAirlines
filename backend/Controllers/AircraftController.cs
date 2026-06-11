@@ -1,5 +1,5 @@
+using backend.Interfaces;
 using backend.Model;
-using backend.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace backend.Controllers
@@ -8,11 +8,11 @@ namespace backend.Controllers
     [ApiController]
     public class AircraftController : ControllerBase
     {
-        private readonly AircraftService _aircraftService;
+        private readonly IAircraftService _aircraftService;
 
-        public AircraftController()
+        public AircraftController(IAircraftService aircraftService)
         {
-            _aircraftService = new AircraftService();
+            _aircraftService = aircraftService;
         }
 
         [HttpGet]
@@ -29,18 +29,65 @@ namespace backend.Controllers
             }
         }
 
+        [HttpGet("{id}")]
+        public ActionResult<AircraftResponseModel> GetById(int id)
+        {
+            try
+            {
+                var aircraft = _aircraftService.GetById(id);
+
+                if (aircraft == null)
+                {
+                    return NotFound("No se encontró la aeronave solicitada.");
+                }
+
+                return Ok(aircraft);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
         [HttpPost]
         public ActionResult Create(CreateAircraftRequestModel aircraft)
         {
             if (aircraft == null)
-                return BadRequest();
+            {
+                return BadRequest("Los datos de la aeronave son requeridos.");
+            }
 
             var error = _aircraftService.Create(aircraft);
 
             if (string.IsNullOrEmpty(error))
+            {
                 return Ok();
-            else
-                return BadRequest(error);
+            }
+
+            return BadRequest(error);
+        }
+
+        [HttpPut("{id}")]
+        public ActionResult Update(int id, UpdateAircraftRequestModel aircraft)
+        {
+            if (aircraft == null)
+            {
+                return BadRequest("Los datos de la aeronave son requeridos.");
+            }
+
+            var error = _aircraftService.Update(id, aircraft);
+
+            if (string.IsNullOrEmpty(error))
+            {
+                return Ok();
+            }
+
+            if (error == "No se encontró la aeronave solicitada.")
+            {
+                return NotFound(error);
+            }
+
+            return BadRequest(error);
         }
     }
 }

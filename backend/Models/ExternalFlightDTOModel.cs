@@ -12,6 +12,7 @@ public class ExternalFlightDTO
     public decimal PriceFirstClass { get; set; }
     public decimal HandbagPrice { get; set; }
     public decimal BagPrice { get; set; }
+    public string Frequency { get; set; } = string.Empty;
 }
 
 public class AirportDTO

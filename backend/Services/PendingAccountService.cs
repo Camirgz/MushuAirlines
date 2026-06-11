@@ -23,31 +23,43 @@ namespace backend.Services
             try
             {
                 if (string.IsNullOrWhiteSpace(model.FirstName))
-                    return "Nombre requerido";
+                    return "Error: Nombre requerido";
 
                 if (string.IsNullOrWhiteSpace(model.LastName))
-                    return "Apellido requerido";
+                    return "Error: Apellido requerido";
 
                 if (string.IsNullOrWhiteSpace(model.Ssn))
-                    return "Cédula requerida";
+                    return "Error: Cédula requerida";
 
                 if (string.IsNullOrWhiteSpace(model.Nationality))
-                    return "Nacionalidad requerida";
+                    return "Error: Nacionalidad requerida";
 
                 if (string.IsNullOrWhiteSpace(model.Email))
-                    return "Email requerido";
+                    return "Error: Email requerido";
 
+                if (string.IsNullOrWhiteSpace(model.WorkSchedule))
+                    return "Error: Horario requerido";
+        
+                string workScheduleRegexPattern = @"^([a-zA-Z]+-[a-zA-Z]+) (0?[1-9]|1[0-2])(:[0-5][0-9])?(am|AM|PM|pm)\s+a\s+(0?[1-9]|1[0-2])(:[0-5][0-9])?(AM|pm|am|pm)$";
+                var workScheduleRegex = new Regex(workScheduleRegexPattern);
+                if (!workScheduleRegex.IsMatch(model.WorkSchedule))
+                    return "Error: Horario inválido";
+                if (string.IsNullOrWhiteSpace(model.Permissions))
+                    return "Error: Nota de los Permisos requeridos";
+            
                 var emailRegex = new Regex(@"^[^\s@]+@[^\s@]+\.[^\s@]+$");
                 if (!emailRegex.IsMatch(model.Email))
-                    return "Email inválido";
+                    return "Error: Email inválido";
 
+                if (model.Salary == null)
+                    return "Error: Salario requerido";
                 if (model.Salary < 0)
-                    return "Salario inválido";
+                    return "Error: Salario inválido";
 
                 if (pendingAccountRepository.EmailExists(model.Email) ||
                     pendingAccountRepository.PendingEmailExists(model.Email))
                 {
-                    return "El correo ya está en uso o tiene invitación pendiente";
+                    return "Error: El correo ya está en uso o tiene invitación pendiente";
                 }
                 // create user with the data from the pending account
                 newId = pendingAccountRepository.CreateUser();
@@ -87,7 +99,7 @@ namespace backend.Services
                     pendingAccountRepository.DeletePendingByEmployeeId(newId); // opcional
                     pendingAccountRepository.DeleteUserCascade(newId);
                 }
-                result = "ERROR REAL: " + ex.Message;
+                result = "Error: " + ex.Message;
             }
 
             return result;
@@ -108,7 +120,7 @@ namespace backend.Services
                 // regex to validate the password
                 var passwordRegex = new Regex(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*\W).{8,}$");
                 if (!passwordRegex.IsMatch(model.Password))
-                    return "Contraseña débil";
+                    return "Error: Contraseña débil";
                 // we hash the password 
                 string hashedPassword = BCrypt.Net.BCrypt.HashPassword(model.Password);
                 // we create the account for the employee with the email and the hashed password
@@ -124,7 +136,7 @@ namespace backend.Services
             }
             catch (Exception ex)
             {
-                result = "ERROR REAL: " + ex.Message;
+                result = "Error: " + ex.Message;
             }
 
             return result;

@@ -1,5 +1,6 @@
 import { createApp } from 'vue'
 import App from './App.vue'
+import './assets/styles/main.css'
 import {createRouter, createWebHistory} from "vue-router";
 import LandingPage from "./components/LandingPage.vue";
 import LoginForm from './components/LoginForm.vue';
@@ -13,6 +14,12 @@ import RouteCreationForm from './components/admin/RouteCreationForm.vue';
 import AirportsPage from './components/admin/AirportsPage.vue';
 import AirportCreationForm from './components/admin/AirportCreationForm.vue';
 import UsersPage from './components/admin/UsersPage.vue';
+import PassengerInfoPage from './components/PassengerInfoPage.vue';
+import PurchaseConfirmation from './components/PurchaseConfirmation.vue';
+import ProfilePage from './components/admin/ProfilePage.vue';
+import PaymentForm from './components/PaymentForm.vue';
+
+import "@/assets/styles/admin-shared.css";
 
 const router = createRouter({
     history: createWebHistory(),
@@ -22,13 +29,17 @@ const router = createRouter({
         { path: "/admin", name: "Admin", component: LandingPageInter, meta: { requiresAuth: true, allowedRoles: ["Administrator", "Operator"] } },
         { path: "/create-profile", name: "createProfile", component: AdminCreateEmployee, meta: { requiresAuth: true, allowedRoles: ["Administrator"] } },
         { path: "/complete-register", name: "CompleteRegister", component: CompleteRegister },
-        { path: "/admin/aircraft-types", name: "AircraftTypes", component: AircraftTypesPage, meta: { requiresAuth: true, allowedRoles: ["Administrator"] } },
+        { path: "/admin/aircraft-types", name: "AircraftTypes", component: AircraftTypesPage, meta: { requiresAuth: true, allowedRoles: ["Administrator", "Operator"] } },
         { path: "/admin/aircraft-types/create", name: "CreateAircraftType", component: CreateAircraftType, meta: { requiresAuth: true, allowedRoles: ["Administrator"] } },
-        { path: "/admin/routes", name: "Routes", component: RoutesPage, meta: { requiresAuth: true, allowedRoles: ["Administrator"] } },
+        { path: "/admin/routes", name: "Routes", component: RoutesPage, meta: { requiresAuth: true, allowedRoles: ["Administrator", "Operator"] } },
         { path: "/admin/routes/create-route", name: "RouteCreation", component: RouteCreationForm, meta: { requiresAuth: true, allowedRoles: ["Administrator"] } },
-        { path: "/admin/airports", name: "Airports", component: AirportsPage, meta: { requiresAuth: true, allowedRoles: ["Administrator"]} },
+        { path: "/admin/airports", name: "Airports", component: AirportsPage, meta: { requiresAuth: true, allowedRoles: ["Administrator", "Operator"]} },
         { path: "/admin/airports/create-airport", name: "AirportCreation", component: AirportCreationForm, meta: { requiresAuth: true, allowedRoles: ["Administrator"] } },
         { path: "/admin/users", name: "Users", component: UsersPage, meta: { requiresAuth: true, allowedRoles: ["Administrator"] } },
+        { path: "/purchase/passengers", name: "PassengerInfo", component: PassengerInfoPage },
+        { path: "/purchase-confirmation/:id", name: "PurchaseConfirmation", component: PurchaseConfirmation },
+        { path: "/admin/profile", name: "ProfilePage", component: ProfilePage, meta: { requiresAuth: true, allowedRoles: ["Administrator", "Operator"] } },
+        { path: "/payment", name: "Payment", component: PaymentForm }
     ],
 });
 
@@ -37,13 +48,18 @@ function getRoleFromToken() {
     if (!token) return null;
     try {
         const payload = JSON.parse(atob(token.split(".")[1]));
-        console.log("Payload del token:", payload);
-        return (
+        let role =
             payload["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] ||
             payload.role ||
             payload.Role ||
-            null
-        );
+            null;
+        if (role === "Administrador") {
+            role = "Administrator";
+        }
+        if (role === "Operador") {
+            role = "Operator";
+        }
+        return role;
     } catch (error) {
         console.error("Error leyendo el token:", error);
         return null;

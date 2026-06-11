@@ -1,17 +1,24 @@
 import axios from "axios";
 
-const BaseUrl     = "http://localhost:5103/api/aircraft";
-const TypeBaseUrl = "http://localhost:5103/api/aircraft-type";
+const baseUrl = "http://localhost:5103/api/aircraft";
+const typeBaseUrl = "http://localhost:5103/api/aircraft-type";
 
-export function GetAircraftTypes() {
-  return axios.get(BaseUrl);
+export function getAircraftTypes() {
+  return axios.get(baseUrl);
 }
 
-export function CreateAircraftType(Payload) {
-  return axios.post(BaseUrl, Payload);
+export function getAircraftTypeById(id) {
+  return axios.get(`${baseUrl}/${id}`);
 }
 
-export function GetAircraftTypeOptions() {
-  return axios.get(TypeBaseUrl);
+export function createAircraftType(payload) {
+  return axios.post(baseUrl, payload);
 }
 
+export function updateAircraftType(id, payload) {
+  return axios.put(`${baseUrl}/${id}`, payload);
+}
+
+export function getAircraftTypeOptions() {
+  return axios.get(typeBaseUrl);
+}

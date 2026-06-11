@@ -1,0 +1,24 @@
+.admin-page {
+  min-height: 100vh;
+  background: #f8f9fa;
+  color: #1a1a1a;
+}
+
+.admin-main {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 34px 24px 80px;
+}
+
+.admin-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+}
+
+.section-line {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 26px 0;
+}
