@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Net.Http.Json;
 using System.Text.Json;
 using ExternalAPI.Models;
@@ -20,14 +20,11 @@ public class Client : IClient
     {
         var searchStart = targetEarliest.AddDays(-1).ToString("yyyy-MM-dd");
         var searchEnd = targetLatest.AddDays(1).ToString("yyyy-MM-dd");
-
         var url = $"/api/InternalFlights?destination={destination}&earliest={searchStart}&latest={searchEnd}&passengers={passengers}&apiKey={apiKey}";
 
         var response = await _httpClient.GetAsync(url);
-
         if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             throw new BackendException(401, "Unauthorized access to internal core.");
-
         if (!response.IsSuccessStatusCode)
         {
             var errorContent = await response.Content.ReadAsStringAsync();
@@ -43,47 +40,66 @@ public class Client : IClient
         if (backendResult?.Flights == null)
             return new List<object>();
 
-        var cultureEs = new System.Globalization.CultureInfo("es-ES");
-        return backendResult.Flights
-            .Where(f =>
+        var cultureEs = new CultureInfo("es-ES");
+        var results = new List<object>();
+
+        for (var day = targetEarliest.Date; day <= targetLatest.Date; day = day.AddDays(1))
+        {
+            string dayOfWeekEs = day.ToString("dddd", cultureEs).ToLower().Trim();
+
+            foreach (var f in backendResult.Flights)
             {
-                string searchDayEs = targetLatest.ToString("dddd", cultureEs).ToLower().Trim();
+                if (string.IsNullOrWhiteSpace(f.Frequency))
+                    continue;
 
-                if (!string.IsNullOrWhiteSpace(f.Frequency))
-                {
-                    var frequencyDays = f.Frequency.ToLower()
-                                                    .Split(',')
-                                                    .Select(d => d.Trim())
-                                                    .ToList();
+                var frequencyDays = f.Frequency.ToLower()
+                                               .Split(',')
+                                               .Select(d => d.Trim())
+                                               .ToList();
 
-                    return frequencyDays.Contains(searchDayEs);
-                }
+                if (!frequencyDays.Contains(dayOfWeekEs))
+                    continue;
 
-                return false;
-            })
-            .Select(f => (object)new
-            {
-                flightGUID = f.FlightGUID,
-                departureTime = targetEarliest.ToString("yyyy-MM-dd") + "T" + f.DepartureTime,
-                arrivalTime = targetLatest.ToString("yyyy-MM-dd") + "T" + f.ArrivalTime,
-                duration = f.Duration,
-                departureAirport = new
+                if (!TimeSpan.TryParse(f.DepartureTime, out var depSpan))
+                    depSpan = TimeSpan.Zero;
+                if (!TimeSpan.TryParse(f.ArrivalTime, out var arrSpan))
+                    arrSpan = TimeSpan.Zero;
+
+                var departureDateTime = day + depSpan;
+
+                var arrivalDate = arrSpan < depSpan ? day.AddDays(1) : day;
+                var arrivalDateTime = arrivalDate + arrSpan;
+
+                if (departureDateTime < targetEarliest || departureDateTime > targetLatest)
+                    continue;
+
+                results.Add(new
                 {
-                    code = f.OriginAirport?.Code,
-                    name = f.OriginAirport?.AirportName,
-                    city = f.OriginAirport?.City
-                },
-                arrivalAirport = new
-                {
-                    code = f.ArrivalAirport?.Code,
-                    name = f.ArrivalAirport?.AirportName,
-                    city = f.ArrivalAirport?.City
-                },
-                touristPrice = f.PriceEconomyClass,
-                firstClassPrice = f.PriceFirstClass,
-                carryOnPrice = f.HandbagPrice,
-                checkedPrice = f.BagPrice
-            }).ToList();
+                    flightGUID = f.FlightGUID,
+                    departureTime = departureDateTime.ToString("yyyy-MM-ddTHH:mm"),
+                    arrivalTime = arrivalDateTime.ToString("yyyy-MM-ddTHH:mm"),
+                    duration = f.Duration,
+                    departureAirport = new
+                    {
+                        code = f.OriginAirport?.Code,
+                        name = f.OriginAirport?.AirportName,
+                        city = f.OriginAirport?.City
+                    },
+                    arrivalAirport = new
+                    {
+                        code = f.ArrivalAirport?.Code,
+                        name = f.ArrivalAirport?.AirportName,
+                        city = f.ArrivalAirport?.City
+                    },
+                    touristPrice = f.PriceEconomyClass,
+                    firstClassPrice = f.PriceFirstClass,
+                    carryOnPrice = f.HandbagPrice,
+                    checkedPrice = f.BagPrice
+                });
+            }
+        }
+
+        return results;
     }
 
     public async Task<object?> RegisterConsumerAsync(RegisterRequest request)
