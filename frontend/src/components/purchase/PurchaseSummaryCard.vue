@@ -45,14 +45,14 @@
         <div class="divider"></div>
         <div class="info-group">
           <div class="group-label">Equipaje</div>
-          <div class="info-sub" v-if="baggage.handCount > 0">
+          <div class="info-sub" v-if="totalHandCount > 0">
             <i class="bi bi-briefcase-fill sub-icon"></i>
-            <span>{{ baggage.handCount }} × Mano</span>
+            <span>{{ totalHandCount }} × Mano</span>
             <span v-if="flight.handBagWeight" class="detail-hint">máx. {{ flight.handBagWeight }} kg</span>
           </div>
-          <div class="info-sub" v-if="baggage.checkedCount > 0">
+          <div class="info-sub" v-if="totalCheckedCount > 0">
             <i class="bi bi-archive-fill sub-icon"></i>
-            <span>{{ baggage.checkedCount }} × Documentado</span>
+            <span>{{ totalCheckedCount }} × Documentado</span>
             <span v-if="flight.bagWeight" class="detail-hint">máx. {{ flight.bagWeight }} kg</span>
           </div>
         </div>
@@ -70,12 +70,12 @@
           <span>{{ ecCount }} × Turista</span>
           <span class="price-val">₡{{ ecTotal.toLocaleString() }}</span>
         </div>
-        <div class="price-item" v-if="baggage.handCount > 0">
-          <span>{{ baggage.handCount }} × Mano</span>
+        <div class="price-item" v-if="totalHandCount > 0">
+          <span>{{ totalHandCount }} × Mano</span>
           <span class="price-val">₡{{ handBagTotal.toLocaleString() }}</span>
         </div>
-        <div class="price-item" v-if="baggage.checkedCount > 0">
-          <span>{{ baggage.checkedCount }} × Documentado</span>
+        <div class="price-item" v-if="totalCheckedCount > 0">
+          <span>{{ totalCheckedCount }} × Documentado</span>
           <span class="price-val">₡{{ checkedBagTotal.toLocaleString() }}</span>
         </div>
       </div>
@@ -98,9 +98,9 @@ export default {
   name: 'PurchaseSummaryCard',
 
   props: {
-    flight:  { type: Object, required: true },
-    seats:   { type: Array,  default: () => [] },
-    baggage: { type: Object, default: () => ({ handCount: 0, checkedCount: 0 }) },
+    flight:     { type: Object, required: true },
+    seats:      { type: Array,  default: () => [] },
+    passengers: { type: Array,  default: () => [] },
   },
 
   computed: {
@@ -110,8 +110,14 @@ export default {
     ecCount() {
       return this.seats.filter(s => s.seatClass === 'Economy').length;
     },
+    totalHandCount() {
+      return this.passengers.reduce((sum, p) => sum + (p.handBagCount || 0), 0);
+    },
+    totalCheckedCount() {
+      return this.passengers.reduce((sum, p) => sum + (p.checkedBagCount || 0), 0);
+    },
     hasBaggage() {
-      return (this.baggage.handCount || 0) > 0 || (this.baggage.checkedCount || 0) > 0;
+      return this.totalHandCount > 0 || this.totalCheckedCount > 0;
     },
     fcTotal() {
       return this.fcCount * (this.flight.priceFirstClass || 0);
@@ -120,13 +126,22 @@ export default {
       return this.ecCount * (this.flight.priceEconomy || 0);
     },
     handBagTotal() {
-      return (this.baggage.handCount || 0) * (this.flight.handBagPrice || 0);
+      const price      = this.flight.handBagPrice  || 0;
+      const multiplier = this.flight.bagMultiplier || 1;
+      return this.passengers.reduce((sum, p) => sum + this.bagSubtotal(p.handBagCount || 0, price, multiplier), 0);
     },
     checkedBagTotal() {
-      return (this.baggage.checkedCount || 0) * (this.flight.bagPrice || 0) * (this.flight.bagMultiplier || 1);
+      const price      = this.flight.bagPrice      || 0;
+      const multiplier = this.flight.bagMultiplier || 1;
+      return this.passengers.reduce((sum, p) => sum + this.bagSubtotal(p.checkedBagCount || 0, price, multiplier), 0);
     },
     total() {
       return this.fcTotal + this.ecTotal + this.handBagTotal + this.checkedBagTotal;
+    },
+    bagSubtotal(count, unitPrice, multiplier) {
+      if (count === 0) return 0;
+      if (count === 1) return unitPrice;
+      return unitPrice + (count - 1) * unitPrice * multiplier;
     },
     formattedDate() {
       if (!this.flight?.flightDate) return '';

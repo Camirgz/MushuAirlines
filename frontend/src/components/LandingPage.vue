@@ -482,35 +482,6 @@
             </p>
           </div>
 
-          <!-- Luggage -->
-          <div class="modal-section-block">
-            <div class="modal-section-title">Equipaje</div>
-            <div class="modal-class-row">
-              <div class="modal-class-info">
-                <span class="modal-class-name">Equipaje de mano</span>
-                <span class="modal-class-price">₡{{ selectedFlight.handBagPrice.toLocaleString() }} · máx {{ selectedFlight.handBagWeight }}kg c/u</span>
-              </div>
-              <div class="modal-qty-ctrl">
-                <button class="modal-qty-btn" @click="handBagsCount = Math.max(0, handBagsCount - 1)">−</button>
-                <span class="modal-qty-val">{{ handBagsCount }}</span>
-                <button class="modal-qty-btn" @click="handBagsCount++">+</button>
-              </div>
-            </div>
-            <div class="modal-class-row">
-              <div class="modal-class-info">
-                <span class="modal-class-name">Equipaje documentado</span>
-                <span class="modal-class-price">₡{{ selectedFlight.bagPrice.toLocaleString() }} · máx {{ selectedFlight.bagWeight }}kg c/u
-                  <span v-if="selectedFlight.bagMultiplier !== 1"> (×{{ selectedFlight.bagMultiplier }})</span>
-                </span>
-              </div>
-              <div class="modal-qty-ctrl">
-                <button class="modal-qty-btn" @click="checkedBagsCount = Math.max(0, checkedBagsCount - 1)">−</button>
-                <span class="modal-qty-val">{{ checkedBagsCount }}</span>
-                <button class="modal-qty-btn" @click="checkedBagsCount++">+</button>
-              </div>
-            </div>
-          </div>
-
           <!-- Purchase summary -->
           <div class="modal-receipt">
             <div class="modal-section-title">Resumen</div>
@@ -523,17 +494,6 @@
               <span>{{ economyCount }} × Clase Turista</span>
               <span>₡{{ (economyCount * selectedFlight.priceEconomy).toLocaleString() }}</span>
             </div>
-            <div class="receipt-line" v-if="handBagsCount > 0">
-              <span>{{ handBagsCount }} × Equipaje de mano</span>
-              <span>₡{{ (handBagsCount * selectedFlight.handBagPrice).toLocaleString() }}</span>
-            </div>
-            <div class="receipt-line" v-if="checkedBagsCount > 0">
-              <span>{{ checkedBagsCount }} × Equipaje documentado
-                <span v-if="selectedFlight.bagMultiplier !== 1">(×{{ selectedFlight.bagMultiplier }})</span>
-              </span>
-              <span>₡{{ (checkedBagsCount * selectedFlight.bagPrice * selectedFlight.bagMultiplier).toLocaleString() }}</span>
-            </div>
-
             <div class="receipt-total">
               <span>Total</span>
               <span>₡{{ modalTotal.toLocaleString() }}</span>
@@ -680,33 +640,6 @@
             </p>
           </div>
 
-          <!-- Luggage -->
-          <div class="modal-section-block">
-            <div class="modal-section-title">Equipaje</div>
-            <div class="modal-class-row">
-              <div class="modal-class-info">
-                <span class="modal-class-name">Equipaje de mano</span>
-                <span class="modal-class-price">₡{{ ((selectedStopover.leg1.handBagPrice ?? 0) + (selectedStopover.leg2.handBagPrice ?? 0)).toLocaleString() }} / unidad</span>
-              </div>
-              <div class="modal-qty-ctrl">
-                <button class="modal-qty-btn" @click="stopoverHandBagsCount = Math.max(0, stopoverHandBagsCount - 1)">−</button>
-                <span class="modal-qty-val">{{ stopoverHandBagsCount }}</span>
-                <button class="modal-qty-btn" @click="stopoverHandBagsCount++">+</button>
-              </div>
-            </div>
-            <div class="modal-class-row">
-              <div class="modal-class-info">
-                <span class="modal-class-name">Equipaje documentado</span>
-                <span class="modal-class-price">₡{{ ((selectedStopover.leg1.bagPrice ?? 0) * (selectedStopover.leg1.bagMultiplier ?? 1) + (selectedStopover.leg2.bagPrice ?? 0) * (selectedStopover.leg2.bagMultiplier ?? 1)).toLocaleString() }} / unidad</span>
-              </div>
-              <div class="modal-qty-ctrl">
-                <button class="modal-qty-btn" @click="stopoverCheckedBagsCount = Math.max(0, stopoverCheckedBagsCount - 1)">−</button>
-                <span class="modal-qty-val">{{ stopoverCheckedBagsCount }}</span>
-                <button class="modal-qty-btn" @click="stopoverCheckedBagsCount++">+</button>
-              </div>
-            </div>
-          </div>
-
           <!-- Purchase summary -->
           <div class="modal-receipt">
             <div class="modal-section-title">Resumen</div>
@@ -717,14 +650,6 @@
             <div class="receipt-line" v-if="stopoverEconomyCount > 0">
               <span>{{ stopoverEconomyCount }} × Clase Turista</span>
               <span>₡{{ (stopoverEconomyCount * (selectedStopover.leg1.priceEconomy + selectedStopover.leg2.priceEconomy)).toLocaleString() }}</span>
-            </div>
-            <div class="receipt-line" v-if="stopoverHandBagsCount > 0">
-              <span>{{ stopoverHandBagsCount }} × Equipaje de mano</span>
-              <span>₡{{ (stopoverHandBagsCount * ((selectedStopover.leg1.handBagPrice ?? 0) + (selectedStopover.leg2.handBagPrice ?? 0))).toLocaleString() }}</span>
-            </div>
-            <div class="receipt-line" v-if="stopoverCheckedBagsCount > 0">
-              <span>{{ stopoverCheckedBagsCount }} × Equipaje documentado</span>
-              <span>₡{{ (stopoverCheckedBagsCount * ((selectedStopover.leg1.bagPrice ?? 0) * (selectedStopover.leg1.bagMultiplier ?? 1) + (selectedStopover.leg2.bagPrice ?? 0) * (selectedStopover.leg2.bagMultiplier ?? 1))).toLocaleString() }}</span>
             </div>
             <div class="receipt-total">
               <span>Total</span>
@@ -865,14 +790,10 @@ export default {
       errorMsg: '',
       selectedFlight: null,
       firstClassCount: 0,
-      handBagsCount: 0,
-      checkedBagsCount: 0,
       seatAvailabilityError: null,
 
       selectedStopover: null,
       stopoverFirstClassCount: 0,
-      stopoverHandBagsCount: 0,
-      stopoverCheckedBagsCount: 0,
       stopoverSeatAvailabilityError: null,
     }
   },
@@ -974,10 +895,7 @@ export default {
     modalTotal() {
       if (!this.selectedFlight) return 0
       const f = this.selectedFlight
-      const tickets = (this.firstClassCount * f.priceFirstClass) + (this.economyCount * f.priceEconomy)
-      const handBags = this.handBagsCount * f.handBagPrice
-      const checkedBags = this.checkedBagsCount * f.bagPrice * f.bagMultiplier
-      return tickets + handBags + checkedBags
+      return (this.firstClassCount * f.priceFirstClass) + (this.economyCount * f.priceEconomy)
     },
 
     stopoverEconomyCount() {
@@ -988,11 +906,8 @@ export default {
       if (!this.selectedStopover) return 0
       const l1 = this.selectedStopover.leg1
       const l2 = this.selectedStopover.leg2
-      const tickets     = this.stopoverFirstClassCount  * (l1.priceFirstClass + l2.priceFirstClass)
-                        + this.stopoverEconomyCount     * (l1.priceEconomy    + l2.priceEconomy)
-      const handBags    = this.stopoverHandBagsCount    * ((l1.handBagPrice ?? 0) + (l2.handBagPrice ?? 0))
-      const checkedBags = this.stopoverCheckedBagsCount * ((l1.bagPrice ?? 0) * (l1.bagMultiplier ?? 1) + (l2.bagPrice ?? 0) * (l2.bagMultiplier ?? 1))
-      return tickets + handBags + checkedBags
+      return this.stopoverFirstClassCount * (l1.priceFirstClass + l2.priceFirstClass)
+           + this.stopoverEconomyCount    * (l1.priceEconomy    + l2.priceEconomy)
     },
 
     priceTrackStyle() {
@@ -1228,8 +1143,6 @@ export default {
     openFlightDetails(flight) {
       this.selectedFlight = flight
       this.firstClassCount = 0
-      this.handBagsCount = 0
-      this.checkedBagsCount = 0
       this.seatAvailabilityError = null
       document.body.style.overflow = 'hidden'
     },
@@ -1242,8 +1155,6 @@ export default {
     handleStopoverSelect(connection) {
       this.selectedStopover              = connection
       this.stopoverFirstClassCount       = 0
-      this.stopoverHandBagsCount         = 0
-      this.stopoverCheckedBagsCount      = 0
       this.stopoverSeatAvailabilityError = null
       document.body.style.overflow = 'hidden'
     },
@@ -1297,8 +1208,6 @@ export default {
           priceEconomy:     leg1.priceEconomy    + leg2.priceEconomy,
           priceFirstClass:  leg1.priceFirstClass + leg2.priceFirstClass,
           passengerCount:   this.passengerCount,
-          handBagsCount:    this.stopoverHandBagsCount,
-          checkedBagsCount: this.stopoverCheckedBagsCount,
           handBagPrice:    (leg1.handBagPrice ?? 0) + (leg2.handBagPrice ?? 0),
           handBagWeight:    Math.min(leg1.handBagWeight ?? 0, leg2.handBagWeight ?? 0),
           bagPrice:        (leg1.bagPrice ?? 0) * (leg1.bagMultiplier ?? 1)
@@ -1357,8 +1266,6 @@ export default {
         priceEconomy:     f.priceEconomy,
         priceFirstClass:  f.priceFirstClass,
         passengerCount:   this.passengerCount,
-        handBagsCount:    this.handBagsCount,
-        checkedBagsCount: this.checkedBagsCount,
         handBagPrice:     f.handBagPrice    ?? 0,
         handBagWeight:    f.handBagWeight   ?? 0,
         bagPrice:         f.bagPrice        ?? 0,
