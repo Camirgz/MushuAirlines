@@ -33,9 +33,18 @@ namespace backend.Model
 
         // Baggage details
         public List<BaggageSubtotal> BaggageDetails { get; set; } = new();
+        public List<PassengerBaggageDetail> PassengerBaggageDetails { get; set; } = new();
         public int HandBaggageCount { get; set; }
         public decimal HandBaggageSubtotal { get; set; }
         public int CheckedBaggageCount { get; set; }
         public decimal CheckedBaggageSubtotal { get; set; }
+    }
+
+    public class PassengerBaggageDetail
+    {
+        public string PassengerFullName { get; set; } = string.Empty;
+        public int HandBagCount { get; set; }
+        public int CheckedBagCount { get; set; }
+        public decimal BaggageSubtotal { get; set; }
     }
 }

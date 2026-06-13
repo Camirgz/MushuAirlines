@@ -8,7 +8,7 @@
           v-if="flight"
           :flight="flight"
           :seats="purchaseState.seats"
-          :baggage="purchaseState.baggage"
+          :passengers="purchaseState.passengers"
         />
       </aside>
 

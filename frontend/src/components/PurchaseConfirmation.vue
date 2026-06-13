@@ -110,28 +110,37 @@
           </div>
         </div>
 
-        <div class="breakdown-section" v-if="purchase.baggageDetails && purchase.baggageDetails.length">
-          <div class="breakdown-title">Desglose de equipaje</div>
-          <div class="breakdown-row breakdown-row--header">
-            <span>Tipo</span>
-            <span>Cantidad</span>
-            <span>Subtotal</span>
-          </div>
-          <div
-            class="breakdown-row"
-            v-for="baggage in purchase.baggageDetails"
-            :key="baggage.type"
-          >
-            <span>{{ translateBaggageType(baggage.type) }}</span>
-            <span>{{ baggage.quantity }}</span>
-            <span>₡{{ baggage.subtotal.toLocaleString() }}</span>
+        <div class="breakdown-section" v-if="purchase.passengerBaggageDetails && purchase.passengerBaggageDetails.length">
+          <div class="breakdown-title">Equipaje por pasajero</div>
+          <div class="bpp-table">
+            <div class="bpp-row bpp-row--header">
+              <span class="bpp-col-name">Pasajero</span>
+              <span class="bpp-col-num">Mano</span>
+              <span class="bpp-col-num">Documentado</span>
+              <span class="bpp-col-amount">Subtotal</span>
+            </div>
+            <div
+              class="bpp-row"
+              v-for="pb in purchase.passengerBaggageDetails"
+              :key="pb.passengerFullName"
+            >
+              <span class="bpp-col-name">{{ pb.passengerFullName }}</span>
+              <span class="bpp-col-num">{{ pb.handBagCount }}</span>
+              <span class="bpp-col-num">{{ pb.checkedBagCount }}</span>
+              <span class="bpp-col-amount">₡{{ pb.baggageSubtotal.toLocaleString() }}</span>
+            </div>
+            <div class="bpp-row bpp-row--total">
+              <span class="bpp-col-name">Total equipaje</span>
+              <span class="bpp-col-num">{{ totalHandBags }}</span>
+              <span class="bpp-col-num">{{ totalCheckedBags }}</span>
+              <span class="bpp-col-amount">₡{{ totalBaggageSubtotal.toLocaleString() }}</span>
+            </div>
           </div>
         </div>
 
         <div class="breakdown-section">
           <div class="breakdown-row breakdown-row--total">
-            <span>Total</span>
-            <span>{{ totalItems }} artículos</span>
+            <span>Total pagado</span>
             <span class="total-amount">₡{{ purchase.totalPaid.toLocaleString() }}</span>
           </div>
         </div>
@@ -204,11 +213,17 @@ export default {
   },
 
   computed: {
-    totalItems() {
-      if (!this.purchase) return 0;
-      const seatCount = this.purchase.totalSeats || 0;
-      const baggageCount = (this.purchase.baggageDetails || []).reduce((sum, b) => sum + (b.quantity || 0), 0);
-      return seatCount + baggageCount;
+    totalHandBags() {
+      return (this.purchase?.passengerBaggageDetails || [])
+        .reduce((sum, p) => sum + (p.handBagCount || 0), 0);
+    },
+    totalCheckedBags() {
+      return (this.purchase?.passengerBaggageDetails || [])
+        .reduce((sum, p) => sum + (p.checkedBagCount || 0), 0);
+    },
+    totalBaggageSubtotal() {
+      return (this.purchase?.passengerBaggageDetails || [])
+        .reduce((sum, p) => sum + (p.baggageSubtotal || 0), 0);
     },
   },
 
@@ -514,7 +529,45 @@ export default {
   text-align: right;
 }
 
+/* ── Per-passenger baggage table ── */
+.bpp-table {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.9rem;
+}
+
+.bpp-row {
+  display: grid;
+  grid-template-columns: 1fr 56px 120px 110px;
+  gap: 8px;
+  padding: 8px 0;
+  color: #333;
+  border-bottom: 1px solid #f8f8f8;
+  align-items: center;
+}
+
+.bpp-row--header {
+  font-size: 0.75rem;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding-bottom: 6px;
+}
+
+.bpp-row--total {
+  font-weight: 700;
+  color: #1a1a1a;
+  border-bottom: none;
+  border-top: 1px solid #e8e8e8;
+  margin-top: 2px;
+}
+
+.bpp-col-name  { text-align: left; }
+.bpp-col-num   { text-align: right; }
+.bpp-col-amount { text-align: right; }
+
 .breakdown-row--total {
+  grid-template-columns: 1fr auto;
   border-bottom: none;
   border-top: 1.5px solid #e0e0e0;
   margin-top: 4px;

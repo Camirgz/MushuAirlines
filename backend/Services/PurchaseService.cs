@@ -160,7 +160,7 @@ public class PurchaseService : IPurchaseService
 
             await _purchaseRepo.CreateTicketAsync(scheduledFlightId1, passengerId, seatNumber);
             await _purchaseRepo.CreateTicketBaggageAsync(
-                scheduledFlightId1, passengerId,
+                scheduledFlightId1, passengerId, bookingCode,
                 passengerBag.HandBagCount, passengerBag.CheckedBagCount, passengerBag.Subtotal);
 
             var passenger = request.Passengers[seat.PassengerIndex];
@@ -185,7 +185,7 @@ public class PurchaseService : IPurchaseService
 
                 await _purchaseRepo.CreateTicketAsync(scheduledFlightId2, passengerId, seatNumber);
                 await _purchaseRepo.CreateTicketBaggageAsync(
-                    scheduledFlightId2, passengerId,
+                    scheduledFlightId2, passengerId, bookingCode,
                     passengerBag.HandBagCount, passengerBag.CheckedBagCount, passengerBag.Subtotal);
             }
 
