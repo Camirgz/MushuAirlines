@@ -12,6 +12,7 @@ public interface IPurchaseRepository
     Task CreatePurchaseDetailAsync(int purchaseId, string seatClass, int count, decimal subtotal);
     Task CreatePurchaseBaggageDetailAsync(int purchaseId, string baggageType, int quantity, decimal unitPrice, decimal subtotal);
     Task CreateTicketAsync(int scheduledFlightId, int passengerHas, int seatNumber);
+    Task CreateTicketBaggageAsync(int scheduledFlightId, int passengerId, int handBagCount, int checkedBagCount, decimal subtotal);
     Task LinkItineraryToScheduledFlightAsync(int bookingCode, int scheduledFlightId);
     Task<List<PassengerIdentityRecord>> GetPassengerIdentitiesOnFlightAsync(int scheduledFlightId);
     Task UpdateFlightBookingAsync(int scheduledFlightId, int firstPassengerId, int seatCount);

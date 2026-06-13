@@ -6,9 +6,9 @@ public interface IPricingCalculator
 {
     PurchaseTotals Calculate(
         IEnumerable<SeatSelection> seats,
+        IEnumerable<PassengerInfo> passengers,
         decimal economyPrice,
         decimal firstClassPrice,
-        BaggageInfo baggage,
         decimal handBagPrice,
         decimal bagPrice,
         decimal bagMultiplier);
