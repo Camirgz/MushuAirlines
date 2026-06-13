@@ -95,7 +95,7 @@
             <div class="form-group">
               <label class="field-label">Género <span class="required">*</span></label>
               <select
-                :class="['field-input field-select', { 'field-input--error': fieldErrors[`${index}_gender`] }]"
+                :class="['field-input field-select', { 'field-input--error': fieldErrors[`${index}_gender`], 'field-select--placeholder': !passenger.gender }]"
                 v-model="passenger.gender"
                 @change="clearFieldError(index, 'gender')"
               >
@@ -121,7 +121,7 @@
               <label class="field-label">Fecha de Nacimiento <span class="required">*</span></label>
               <input
                 type="date"
-                :class="['field-input', { 'field-input--error': fieldErrors[`${index}_birthDate`] }]"
+                :class="['field-input', { 'field-input--error': fieldErrors[`${index}_birthDate`], 'field-input--placeholder': !passenger.birthDate }]"
                 v-model="passenger.birthDate"
                 :max="yesterdayDate"
                 @change="clearFieldError(index, 'birthDate')"
@@ -601,6 +601,14 @@ export default {
   box-sizing: border-box;
 }
 
+.field-input::placeholder {
+  color: #bbb;
+}
+
+.field-input--placeholder {
+  color: #bbb;
+}
+
 .field-input:focus {
   border-color: #ff5a00;
   box-shadow: 0 0 0 3px rgba(255, 90, 0, 0.1);
@@ -618,6 +626,14 @@ export default {
   background-position: right 14px center;
   padding-right: 36px;
   cursor: pointer;
+}
+
+.field-select--placeholder {
+  color: #bbb;
+}
+
+.field-select option {
+  color: #1a1a1a;
 }
 
 /* ── Add passenger button ── */
