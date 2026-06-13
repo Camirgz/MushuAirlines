@@ -138,17 +138,20 @@ export default {
     total() {
       return this.fcTotal + this.ecTotal + this.handBagTotal + this.checkedBagTotal;
     },
-    bagSubtotal(count, unitPrice, multiplier) {
-      if (count === 0) return 0;
-      if (count === 1) return unitPrice;
-      return unitPrice + (count - 1) * unitPrice * multiplier;
-    },
     formattedDate() {
       if (!this.flight?.flightDate) return '';
       const parts = this.flight.flightDate.split('-');
       if (parts.length !== 3) return this.flight.flightDate;
       const [year, month, day] = parts;
       return `${parseInt(day)} ${MONTHS[parseInt(month) - 1]} ${year}`;
+    },
+  },
+
+  methods: {
+    bagSubtotal(count, unitPrice, multiplier) {
+      if (count === 0) return 0;
+      if (count === 1) return unitPrice;
+      return unitPrice + (count - 1) * unitPrice * multiplier;
     },
   },
 };

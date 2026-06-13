@@ -159,7 +159,10 @@
                 <i class="bi bi-briefcase-fill me-1" style="color:#e74c3c"></i>
                 Equipaje de Mano
                 <span v-if="flight && flight.handBagPrice" class="baggage-price-hint">
-                  ₡{{ (flight.handBagPrice || 0).toLocaleString() }} c/u
+                  ₡{{ (flight.handBagPrice || 0).toLocaleString() }} la 1ª
+                  <template v-if="flight.bagMultiplier && flight.bagMultiplier !== 1">
+                    · ₡{{ Math.round(flight.handBagPrice * flight.bagMultiplier).toLocaleString() }} desde la 2ª
+                  </template>
                 </span>
               </label>
               <input
@@ -176,7 +179,10 @@
                 <i class="bi bi-archive-fill me-1" style="color:#e74c3c"></i>
                 Equipaje Documentado
                 <span v-if="flight && flight.bagPrice" class="baggage-price-hint">
-                  ₡{{ (flight.bagPrice || 0).toLocaleString() }} c/u
+                  ₡{{ (flight.bagPrice || 0).toLocaleString() }} la 1ª
+                  <template v-if="flight.bagMultiplier && flight.bagMultiplier !== 1">
+                    · ₡{{ Math.round(flight.bagPrice * flight.bagMultiplier).toLocaleString() }} desde la 2ª
+                  </template>
                 </span>
               </label>
               <input
