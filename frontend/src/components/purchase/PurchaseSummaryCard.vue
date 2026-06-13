@@ -64,22 +64,22 @@
         <div class="group-label">Desglose</div>
         <div class="price-item" v-if="fcCount > 0">
           <span>{{ fcCount }} × Primera Clase</span>
-          <span class="price-val">₡{{ fcTotal.toLocaleString() }}</span>
+          <span class="price-val">${{ fcTotal.toLocaleString() }}</span>
         </div>
         <div class="price-item" v-if="ecCount > 0">
           <span>{{ ecCount }} × Turista</span>
-          <span class="price-val">₡{{ ecTotal.toLocaleString() }}</span>
+          <span class="price-val">${{ ecTotal.toLocaleString() }}</span>
         </div>
 
         <!-- Direct flight baggage -->
         <template v-if="!flight.isStopover">
           <div class="price-item" v-if="totalHandCount > 0">
             <span>{{ totalHandCount }} × Mano</span>
-            <span class="price-val">₡{{ handBagTotal.toLocaleString() }}</span>
+            <span class="price-val">${{ handBagTotal.toLocaleString() }}</span>
           </div>
           <div class="price-item" v-if="totalCheckedCount > 0">
             <span>{{ totalCheckedCount }} × Documentado</span>
-            <span class="price-val">₡{{ checkedBagTotal.toLocaleString() }}</span>
+            <span class="price-val">${{ checkedBagTotal.toLocaleString() }}</span>
           </div>
         </template>
 
@@ -88,20 +88,20 @@
           <div class="price-section-label">Vuelo 1</div>
           <div class="price-item" v-if="totalHandCount > 0">
             <span class="price-item--indented">{{ totalHandCount }} × Mano</span>
-            <span class="price-val">₡{{ leg1HandBagTotal.toLocaleString() }}</span>
+            <span class="price-val">${{ leg1HandBagTotal.toLocaleString() }}</span>
           </div>
           <div class="price-item" v-if="totalCheckedCount > 0">
             <span class="price-item--indented">{{ totalCheckedCount }} × Documentado</span>
-            <span class="price-val">₡{{ leg1CheckedBagTotal.toLocaleString() }}</span>
+            <span class="price-val">${{ leg1CheckedBagTotal.toLocaleString() }}</span>
           </div>
           <div class="price-section-label">Vuelo 2</div>
           <div class="price-item" v-if="totalHandCount > 0">
             <span class="price-item--indented">{{ totalHandCount }} × Mano</span>
-            <span class="price-val">₡{{ leg2HandBagTotal.toLocaleString() }}</span>
+            <span class="price-val">${{ leg2HandBagTotal.toLocaleString() }}</span>
           </div>
           <div class="price-item" v-if="totalCheckedCount > 0">
             <span class="price-item--indented">{{ totalCheckedCount }} × Documentado</span>
-            <span class="price-val">₡{{ leg2CheckedBagTotal.toLocaleString() }}</span>
+            <span class="price-val">${{ leg2CheckedBagTotal.toLocaleString() }}</span>
           </div>
         </template>
       </div>
@@ -110,7 +110,7 @@
 
     <div class="card-footer">
       <span class="total-label">Total estimado</span>
-      <span class="total-amount">₡{{ total.toLocaleString() }}</span>
+      <span class="total-amount">${{ total.toLocaleString() }}</span>
     </div>
 
   </div>

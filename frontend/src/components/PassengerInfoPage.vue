@@ -162,23 +162,23 @@
               </label>
               <template v-if="flight && !flight.isStopover">
                 <span v-if="flight.handBagPrice" class="baggage-price-hint">
-                  ₡{{ (flight.handBagPrice || 0).toLocaleString() }} la 1ª
+                  ${{ (flight.handBagPrice || 0).toLocaleString() }} la 1ª
                   <template v-if="flight.bagMultiplier && flight.bagMultiplier !== 1">
-                    · ₡{{ Math.round(flight.handBagPrice * flight.bagMultiplier).toLocaleString() }} desde la 2ª
+                    · ${{ Math.round(flight.handBagPrice * flight.bagMultiplier).toLocaleString() }} desde la 2ª
                   </template>
                 </span>
               </template>
               <template v-else-if="flight && flight.isStopover">
                 <span v-if="flight.leg1HandBagPrice" class="baggage-price-hint baggage-price-hint--leg">
-                  Vuelo 1 · ₡{{ flight.leg1HandBagPrice.toLocaleString() }} la 1ª
+                  Vuelo 1 · ${{ flight.leg1HandBagPrice.toLocaleString() }} la 1ª
                   <template v-if="flight.leg1BagMultiplier && flight.leg1BagMultiplier !== 1">
-                    · ₡{{ Math.round(flight.leg1HandBagPrice * flight.leg1BagMultiplier).toLocaleString() }} desde la 2ª
+                    · ${{ Math.round(flight.leg1HandBagPrice * flight.leg1BagMultiplier).toLocaleString() }} desde la 2ª
                   </template>
                 </span>
                 <span v-if="flight2 && flight2.handBagPrice" class="baggage-price-hint baggage-price-hint--leg">
-                  Vuelo 2 · ₡{{ flight2.handBagPrice.toLocaleString() }} la 1ª
+                  Vuelo 2 · ${{ flight2.handBagPrice.toLocaleString() }} la 1ª
                   <template v-if="flight2.bagMultiplier && flight2.bagMultiplier !== 1">
-                    · ₡{{ Math.round(flight2.handBagPrice * flight2.bagMultiplier).toLocaleString() }} desde la 2ª
+                    · ${{ Math.round(flight2.handBagPrice * flight2.bagMultiplier).toLocaleString() }} desde la 2ª
                   </template>
                 </span>
               </template>
@@ -198,23 +198,23 @@
               </label>
               <template v-if="flight && !flight.isStopover">
                 <span v-if="flight.bagPrice" class="baggage-price-hint">
-                  ₡{{ (flight.bagPrice || 0).toLocaleString() }} la 1ª
+                  ${{ (flight.bagPrice || 0).toLocaleString() }} la 1ª
                   <template v-if="flight.bagMultiplier && flight.bagMultiplier !== 1">
-                    · ₡{{ Math.round(flight.bagPrice * flight.bagMultiplier).toLocaleString() }} desde la 2ª
+                    · ${{ Math.round(flight.bagPrice * flight.bagMultiplier).toLocaleString() }} desde la 2ª
                   </template>
                 </span>
               </template>
               <template v-else-if="flight && flight.isStopover">
                 <span v-if="flight.leg1BagPrice" class="baggage-price-hint baggage-price-hint--leg">
-                  Vuelo 1 · ₡{{ flight.leg1BagPrice.toLocaleString() }} la 1ª
+                  Vuelo 1 · ${{ flight.leg1BagPrice.toLocaleString() }} la 1ª
                   <template v-if="flight.leg1BagMultiplier && flight.leg1BagMultiplier !== 1">
-                    · ₡{{ Math.round(flight.leg1BagPrice * flight.leg1BagMultiplier).toLocaleString() }} desde la 2ª
+                    · ${{ Math.round(flight.leg1BagPrice * flight.leg1BagMultiplier).toLocaleString() }} desde la 2ª
                   </template>
                 </span>
                 <span v-if="flight2 && flight2.bagPrice" class="baggage-price-hint baggage-price-hint--leg">
-                  Vuelo 2 · ₡{{ flight2.bagPrice.toLocaleString() }} la 1ª
+                  Vuelo 2 · ${{ flight2.bagPrice.toLocaleString() }} la 1ª
                   <template v-if="flight2.bagMultiplier && flight2.bagMultiplier !== 1">
-                    · ₡{{ Math.round(flight2.bagPrice * flight2.bagMultiplier).toLocaleString() }} desde la 2ª
+                    · ${{ Math.round(flight2.bagPrice * flight2.bagMultiplier).toLocaleString() }} desde la 2ª
                   </template>
                 </span>
               </template>

@@ -283,12 +283,12 @@
             </div>
             <div class="range-inputs">
               <div class="range-input-group">
-                <span>₡</span>
+                <span>$</span>
                 <input type="number" v-model.number="filterPriceMin" :min="0" :max="filterPriceMax" step="100" />
               </div>
               <span class="range-separator">–</span>
               <div class="range-input-group">
-                <span>₡</span>
+                <span>$</span>
                 <input type="number" v-model.number="filterPriceMax" :min="filterPriceMin" :max="priceSliderRange" step="100" />
               </div>
             </div>
@@ -460,7 +460,7 @@
             <div class="modal-class-row">
               <div class="modal-class-info">
                 <span class="modal-class-name">Primera Clase</span>
-                <span class="modal-class-price">₡{{ selectedFlight.priceFirstClass.toLocaleString() }} / persona</span>
+                <span class="modal-class-price">${{ selectedFlight.priceFirstClass.toLocaleString() }} / persona</span>
               </div>
               <div class="modal-qty-ctrl">
                 <button class="modal-qty-btn" @click="firstClassCount = Math.max(0, firstClassCount - 1)">−</button>
@@ -471,7 +471,7 @@
             <div class="modal-class-row">
               <div class="modal-class-info">
                 <span class="modal-class-name">Clase Turista</span>
-                <span class="modal-class-price">₡{{ selectedFlight.priceEconomy.toLocaleString() }} / persona</span>
+                <span class="modal-class-price">${{ selectedFlight.priceEconomy.toLocaleString() }} / persona</span>
               </div>
               <div class="modal-qty-ctrl">
                 <span class="modal-qty-val readonly">{{ economyCount }}</span>
@@ -488,15 +488,15 @@
 
             <div class="receipt-line" v-if="firstClassCount > 0">
               <span>{{ firstClassCount }} × Primera Clase</span>
-              <span>₡{{ (firstClassCount * selectedFlight.priceFirstClass).toLocaleString() }}</span>
+              <span>${{ (firstClassCount * selectedFlight.priceFirstClass).toLocaleString() }}</span>
             </div>
             <div class="receipt-line" v-if="economyCount > 0">
               <span>{{ economyCount }} × Clase Turista</span>
-              <span>₡{{ (economyCount * selectedFlight.priceEconomy).toLocaleString() }}</span>
+              <span>${{ (economyCount * selectedFlight.priceEconomy).toLocaleString() }}</span>
             </div>
             <div class="receipt-total">
               <span>Total</span>
-              <span>₡{{ modalTotal.toLocaleString() }}</span>
+              <span>${{ modalTotal.toLocaleString() }}</span>
             </div>
           </div>
 
@@ -618,7 +618,7 @@
             <div class="modal-class-row">
               <div class="modal-class-info">
                 <span class="modal-class-name">Primera Clase</span>
-                <span class="modal-class-price">₡{{ (selectedStopover.leg1.priceFirstClass + selectedStopover.leg2.priceFirstClass).toLocaleString() }} / persona</span>
+                <span class="modal-class-price">${{ (selectedStopover.leg1.priceFirstClass + selectedStopover.leg2.priceFirstClass).toLocaleString() }} / persona</span>
               </div>
               <div class="modal-qty-ctrl">
                 <button class="modal-qty-btn" @click="stopoverFirstClassCount = Math.max(0, stopoverFirstClassCount - 1)">−</button>
@@ -629,7 +629,7 @@
             <div class="modal-class-row">
               <div class="modal-class-info">
                 <span class="modal-class-name">Clase Turista</span>
-                <span class="modal-class-price">₡{{ (selectedStopover.leg1.priceEconomy + selectedStopover.leg2.priceEconomy).toLocaleString() }} / persona</span>
+                <span class="modal-class-price">${{ (selectedStopover.leg1.priceEconomy + selectedStopover.leg2.priceEconomy).toLocaleString() }} / persona</span>
               </div>
               <div class="modal-qty-ctrl">
                 <span class="modal-qty-val readonly">{{ stopoverEconomyCount }}</span>
@@ -645,15 +645,15 @@
             <div class="modal-section-title">Resumen</div>
             <div class="receipt-line" v-if="stopoverFirstClassCount > 0">
               <span>{{ stopoverFirstClassCount }} × Primera Clase</span>
-              <span>₡{{ (stopoverFirstClassCount * (selectedStopover.leg1.priceFirstClass + selectedStopover.leg2.priceFirstClass)).toLocaleString() }}</span>
+              <span>${{ (stopoverFirstClassCount * (selectedStopover.leg1.priceFirstClass + selectedStopover.leg2.priceFirstClass)).toLocaleString() }}</span>
             </div>
             <div class="receipt-line" v-if="stopoverEconomyCount > 0">
               <span>{{ stopoverEconomyCount }} × Clase Turista</span>
-              <span>₡{{ (stopoverEconomyCount * (selectedStopover.leg1.priceEconomy + selectedStopover.leg2.priceEconomy)).toLocaleString() }}</span>
+              <span>${{ (stopoverEconomyCount * (selectedStopover.leg1.priceEconomy + selectedStopover.leg2.priceEconomy)).toLocaleString() }}</span>
             </div>
             <div class="receipt-total">
               <span>Total</span>
-              <span>₡{{ stopoverModalTotal.toLocaleString() }}</span>
+              <span>${{ stopoverModalTotal.toLocaleString() }}</span>
             </div>
           </div>
 

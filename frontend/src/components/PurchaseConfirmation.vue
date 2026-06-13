@@ -117,7 +117,7 @@
           >
             <span>{{ translateClass(detail.seatClass) }}</span>
             <span>{{ detail.seatCount }}</span>
-            <span>₡{{ detail.subtotal.toLocaleString() }}</span>
+            <span>${{ detail.subtotal.toLocaleString() }}</span>
           </div>
         </div>
 
@@ -138,13 +138,13 @@
               <span class="bpp-col-name">{{ pb.passengerFullName }}</span>
               <span class="bpp-col-num">{{ pb.handBagCount }}</span>
               <span class="bpp-col-num">{{ pb.checkedBagCount }}</span>
-              <span class="bpp-col-amount">₡{{ pb.baggageSubtotal.toLocaleString() }}</span>
+              <span class="bpp-col-amount">${{ pb.baggageSubtotal.toLocaleString() }}</span>
             </div>
             <div class="bpp-row bpp-row--total">
               <span class="bpp-col-name">Total equipaje</span>
               <span class="bpp-col-num">{{ totalHandBags }}</span>
               <span class="bpp-col-num">{{ totalCheckedBags }}</span>
-              <span class="bpp-col-amount">₡{{ totalBaggageSubtotal.toLocaleString() }}</span>
+              <span class="bpp-col-amount">${{ totalBaggageSubtotal.toLocaleString() }}</span>
             </div>
           </div>
         </div>
@@ -152,7 +152,7 @@
         <div class="breakdown-section">
           <div class="breakdown-row breakdown-row--total">
             <span>Total pagado</span>
-            <span class="total-amount">₡{{ purchase.totalPaid.toLocaleString() }}</span>
+            <span class="total-amount">${{ purchase.totalPaid.toLocaleString() }}</span>
           </div>
         </div>
 
