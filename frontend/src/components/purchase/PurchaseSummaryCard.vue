@@ -70,14 +70,40 @@
           <span>{{ ecCount }} × Turista</span>
           <span class="price-val">₡{{ ecTotal.toLocaleString() }}</span>
         </div>
-        <div class="price-item" v-if="totalHandCount > 0">
-          <span>{{ totalHandCount }} × Mano</span>
-          <span class="price-val">₡{{ handBagTotal.toLocaleString() }}</span>
-        </div>
-        <div class="price-item" v-if="totalCheckedCount > 0">
-          <span>{{ totalCheckedCount }} × Documentado</span>
-          <span class="price-val">₡{{ checkedBagTotal.toLocaleString() }}</span>
-        </div>
+
+        <!-- Direct flight baggage -->
+        <template v-if="!flight.isStopover">
+          <div class="price-item" v-if="totalHandCount > 0">
+            <span>{{ totalHandCount }} × Mano</span>
+            <span class="price-val">₡{{ handBagTotal.toLocaleString() }}</span>
+          </div>
+          <div class="price-item" v-if="totalCheckedCount > 0">
+            <span>{{ totalCheckedCount }} × Documentado</span>
+            <span class="price-val">₡{{ checkedBagTotal.toLocaleString() }}</span>
+          </div>
+        </template>
+
+        <!-- Stopover baggage per leg -->
+        <template v-if="flight.isStopover && hasBaggage">
+          <div class="price-section-label">Vuelo 1</div>
+          <div class="price-item" v-if="totalHandCount > 0">
+            <span class="price-item--indented">{{ totalHandCount }} × Mano</span>
+            <span class="price-val">₡{{ leg1HandBagTotal.toLocaleString() }}</span>
+          </div>
+          <div class="price-item" v-if="totalCheckedCount > 0">
+            <span class="price-item--indented">{{ totalCheckedCount }} × Documentado</span>
+            <span class="price-val">₡{{ leg1CheckedBagTotal.toLocaleString() }}</span>
+          </div>
+          <div class="price-section-label">Vuelo 2</div>
+          <div class="price-item" v-if="totalHandCount > 0">
+            <span class="price-item--indented">{{ totalHandCount }} × Mano</span>
+            <span class="price-val">₡{{ leg2HandBagTotal.toLocaleString() }}</span>
+          </div>
+          <div class="price-item" v-if="totalCheckedCount > 0">
+            <span class="price-item--indented">{{ totalCheckedCount }} × Documentado</span>
+            <span class="price-val">₡{{ leg2CheckedBagTotal.toLocaleString() }}</span>
+          </div>
+        </template>
       </div>
 
     </div>
@@ -98,9 +124,10 @@ export default {
   name: 'PurchaseSummaryCard',
 
   props: {
-    flight:     { type: Object, required: true },
-    seats:      { type: Array,  default: () => [] },
-    passengers: { type: Array,  default: () => [] },
+    flight:     { type: Object,  required: true },
+    flight2:    { type: Object,  default: null },
+    seats:      { type: Array,   default: () => [] },
+    passengers: { type: Array,   default: () => [] },
   },
 
   computed: {
@@ -125,6 +152,7 @@ export default {
     ecTotal() {
       return this.ecCount * (this.flight.priceEconomy || 0);
     },
+    // Direct flight totals
     handBagTotal() {
       const price      = this.flight.handBagPrice  || 0;
       const multiplier = this.flight.bagMultiplier || 1;
@@ -135,7 +163,34 @@ export default {
       const multiplier = this.flight.bagMultiplier || 1;
       return this.passengers.reduce((sum, p) => sum + this.bagSubtotal(p.checkedBagCount || 0, price, multiplier), 0);
     },
+    // Stopover leg 1 totals
+    leg1HandBagTotal() {
+      const price      = this.flight.leg1HandBagPrice  || 0;
+      const multiplier = this.flight.leg1BagMultiplier || 1;
+      return this.passengers.reduce((sum, p) => sum + this.bagSubtotal(p.handBagCount || 0, price, multiplier), 0);
+    },
+    leg1CheckedBagTotal() {
+      const price      = this.flight.leg1BagPrice      || 0;
+      const multiplier = this.flight.leg1BagMultiplier || 1;
+      return this.passengers.reduce((sum, p) => sum + this.bagSubtotal(p.checkedBagCount || 0, price, multiplier), 0);
+    },
+    // Stopover leg 2 totals
+    leg2HandBagTotal() {
+      const price      = this.flight2?.handBagPrice  || 0;
+      const multiplier = this.flight2?.bagMultiplier || 1;
+      return this.passengers.reduce((sum, p) => sum + this.bagSubtotal(p.handBagCount || 0, price, multiplier), 0);
+    },
+    leg2CheckedBagTotal() {
+      const price      = this.flight2?.bagPrice      || 0;
+      const multiplier = this.flight2?.bagMultiplier || 1;
+      return this.passengers.reduce((sum, p) => sum + this.bagSubtotal(p.checkedBagCount || 0, price, multiplier), 0);
+    },
     total() {
+      if (this.flight.isStopover) {
+        return this.fcTotal + this.ecTotal
+          + this.leg1HandBagTotal + this.leg1CheckedBagTotal
+          + this.leg2HandBagTotal + this.leg2CheckedBagTotal;
+      }
       return this.fcTotal + this.ecTotal + this.handBagTotal + this.checkedBagTotal;
     },
     formattedDate() {
@@ -287,6 +342,20 @@ export default {
   font-weight: 700;
   color: #374151;
   white-space: nowrap;
+}
+
+.price-section-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #e74c3c;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-top: 6px;
+  padding-left: 4px;
+}
+
+.price-item--indented {
+  padding-left: 8px;
 }
 
 /* ── Footer / Total ── */

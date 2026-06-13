@@ -1217,11 +1217,19 @@ export default {
           isStopover:       true,
           connectionCity:   conn.connectionCity,
           layoverMinutes:   conn.layoverMinutes,
+          leg1HandBagPrice:  leg1.handBagPrice  ?? 0,
+          leg1BagPrice:      leg1.bagPrice      ?? 0,
+          leg1BagMultiplier: leg1.bagMultiplier ?? 1,
         },
         seats,
         {
-          code:       leg2.id,
-          flightDate: leg2.date,
+          code:          leg2.id,
+          flightDate:    leg2.date,
+          origin:        leg2.origin,
+          destination:   leg2.destination,
+          handBagPrice:  leg2.handBagPrice  ?? 0,
+          bagPrice:      leg2.bagPrice      ?? 0,
+          bagMultiplier: leg2.bagMultiplier ?? 1,
         }
       )
 

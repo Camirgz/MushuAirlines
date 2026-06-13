@@ -49,18 +49,13 @@
             <strong class="detail-value">{{ purchase.fullName }}</strong>
           </div>
 
-          <div class="detail-item">
-            <span class="detail-label"><i class="bi bi-airplane me-1"></i>Aeronave</span>
-            <strong class="detail-value">{{ purchase.aircraftType }}</strong>
-          </div>
-
         </div>
 
         <!-- Leg 1 -->
         <div class="flight-leg-block">
           <div class="flight-leg-title">
             <i class="bi bi-airplane-fill me-2"></i>
-            {{ purchase.flightNumber2 ? 'Vuelo 1' : 'Vuelo' }} #{{ purchase.flightNumber }}
+            {{ purchase.flightNumber2 ? 'Vuelo 1' : 'Vuelo' }}
           </div>
           <div class="details-grid">
             <div class="detail-item">
@@ -71,6 +66,14 @@
               <span class="detail-label"><i class="bi bi-calendar3 me-1"></i>Fecha de salida</span>
               <strong class="detail-value">{{ formatDate(purchase.departureDate) }}</strong>
             </div>
+            <div class="detail-item">
+              <span class="detail-label"><i class="bi bi-airplane me-1"></i>Aeronave</span>
+              <strong class="detail-value">{{ purchase.aircraftType }}</strong>
+            </div>
+            <div class="detail-item" v-if="purchase.aircraftModel">
+              <span class="detail-label"><i class="bi bi-tools me-1"></i>Modelo</span>
+              <strong class="detail-value">{{ purchase.aircraftModel }}</strong>
+            </div>
           </div>
         </div>
 
@@ -78,7 +81,7 @@
         <div class="flight-leg-block flight-leg-block--stopover" v-if="purchase.flightNumber2">
           <div class="flight-leg-title">
             <i class="bi bi-airplane-fill me-2"></i>
-            Vuelo 2 #{{ purchase.flightNumber2 }}
+            Vuelo 2
           </div>
           <div class="details-grid">
             <div class="detail-item">
@@ -88,6 +91,14 @@
             <div class="detail-item">
               <span class="detail-label"><i class="bi bi-calendar3 me-1"></i>Fecha de salida</span>
               <strong class="detail-value">{{ formatDate(purchase.departureDate2) }}</strong>
+            </div>
+            <div class="detail-item" v-if="purchase.aircraftType2">
+              <span class="detail-label"><i class="bi bi-airplane me-1"></i>Aeronave</span>
+              <strong class="detail-value">{{ purchase.aircraftType2 }}</strong>
+            </div>
+            <div class="detail-item" v-if="purchase.aircraftModel2">
+              <span class="detail-label"><i class="bi bi-tools me-1"></i>Modelo</span>
+              <strong class="detail-value">{{ purchase.aircraftModel2 }}</strong>
             </div>
           </div>
         </div>
@@ -470,7 +481,7 @@ export default {
 }
 
 .flight-leg-block {
-  border-top: 1.5px solid #f0f0f0;
+  border-top: 1.5px solid #fcd9a4;
   padding-top: 18px;
   margin-bottom: 4px;
 }
@@ -482,7 +493,7 @@ export default {
 .flight-leg-title {
   font-size: 0.82rem;
   font-weight: 800;
-  color: #555;
+  color: #e67e22;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   margin-bottom: 14px;
