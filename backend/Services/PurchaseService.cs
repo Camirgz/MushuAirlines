@@ -148,7 +148,7 @@ public class PurchaseService : IPurchaseService
 
         foreach (var detail in totals.DetailByClass)
             await _purchaseRepo.CreatePurchaseDetailAsync(
-                purchaseId, detail.SeatClass, detail.SeatCount, detail.Subtotal);
+                purchaseId, detail.SeatClass.ToString(), detail.SeatCount, detail.Subtotal);
 
         foreach (var baggageDetail in totals.BaggageDetails)
             await _purchaseRepo.CreatePurchaseBaggageDetailAsync(

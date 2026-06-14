@@ -21,16 +21,14 @@ public class PurchasePricingCalculator : IPricingCalculator
             .GroupBy(s => s.SeatClass)
             .Select(group =>
             {
-                decimal unitPrice = group.Key switch
+                var unitPrice = group.Key switch
                 {
-                    "Economy"    => economyPrice,
-                    "FirstClass" => firstClassPrice,
-                    _ => throw new ArgumentException(
-                             $"Clase de asiento desconocida: '{group.Key}'. " +
-                             "Valores válidos: 'Economy', 'FirstClass'.")
+                    SeatClass.Economy    => economyPrice,
+                    SeatClass.FirstClass => firstClassPrice,
+                    _ => throw new ArgumentException($"Clase de asiento desconocida: '{group.Key}'.")
                 };
 
-                int seatcount = group.Count();
+                var seatcount = group.Count();
 
                 return new SeatClassSubtotal
                 {

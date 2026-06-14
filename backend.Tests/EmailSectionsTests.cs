@@ -29,7 +29,7 @@ public class EmailSectionsTests
             [
                 new SeatClassSubtotal
                 {
-                    SeatClass = "Economy",
+                    SeatClass = SeatClass.Economy,
                     SeatCount = 2,
                     Subtotal = 500
                 }

@@ -14,7 +14,7 @@ public class PurchaseResponseModel
 
 public class TicketSummary
 {
-    public string PassengerFullName { get; set; } = string.Empty;
-    public string SeatNumber { get; set; } = string.Empty;
-    public string SeatClass { get; set; } = string.Empty;
+    public string    PassengerFullName { get; set; } = string.Empty;
+    public string    SeatNumber        { get; set; } = string.Empty;
+    public SeatClass SeatClass         { get; set; }
 }
