@@ -45,7 +45,6 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
-// DEPENDENCY INJECTION
 
 builder.Services.AddScoped<
     IPurchaseConfirmationRepository,
@@ -70,18 +69,18 @@ builder.Services.AddScoped<
 builder.Services.AddScoped<
     PurchaseConfirmationService>();
 
-// Add services to the container.
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
-        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase);
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
 builder.Services.AddScoped<IExternalApiRepository, ExternalApiRepository>();
 builder.Services.AddScoped<ExternalApiService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 
-// Purchase repositories
 builder.Services.AddScoped<backend.Interfaces.IPassengerRepository,  backend.Repositories.PassengerRepository>();
 builder.Services.AddScoped<backend.Interfaces.IItineraryRepository,  backend.Repositories.ItineraryRepository>();
 builder.Services.AddScoped<backend.Interfaces.IPurchaseRepository,   backend.Repositories.PurchaseRepository>();
@@ -113,7 +112,6 @@ builder.Services.AddScoped<backend.Interfaces.IPurchaseService,      backend.Ser
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
