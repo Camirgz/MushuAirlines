@@ -116,7 +116,18 @@ public class PurchaseRepository : IPurchaseRepository
                  @PaymentMethod, @Email, @TotalPaid, @TotalSeats, @PurchaseDate);
             SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
-        return await connection.ExecuteScalarAsync<int>(query, record);
+        return await connection.ExecuteScalarAsync<int>(query, new
+        {
+            record.PassengerId,
+            record.BookingCode,
+            record.ReservationCode,
+            record.InvoiceNumber,
+            PaymentMethod = record.PaymentMethod.ToString(),
+            record.Email,
+            record.TotalPaid,
+            record.TotalSeats,
+            record.PurchaseDate
+        });
     }
 
     public async Task CreatePurchaseDetailAsync(

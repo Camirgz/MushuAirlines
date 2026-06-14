@@ -17,7 +17,7 @@ public class FlightSelection
 
 public class PaymentInfo
 {
-    public string Method       { get; set; } = string.Empty;
+    public PaymentMethod Method       { get; set; }
     public string ContactEmail { get; set; } = string.Empty;
 }
 

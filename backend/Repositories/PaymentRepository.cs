@@ -56,10 +56,18 @@ namespace backend.Repositories
             SELECT CAST(SCOPE_IDENTITY() AS INT);
             ";
 
-            return connection.QuerySingle<int>(
-                query,
-                purchase
-            );
+            return connection.QuerySingle<int>(query, new
+            {
+                purchase.PassengerId,
+                purchase.BookingCode,
+                purchase.ReservationCode,
+                purchase.InvoiceNumber,
+                PaymentMethod = purchase.PaymentMethod.ToString(),
+                purchase.Email,
+                purchase.TotalPaid,
+                purchase.TotalSeats,
+                purchase.PurchaseDate
+            });
         }
 
         public void CreatePurchaseDetail(
@@ -86,16 +94,13 @@ namespace backend.Repositories
             );
             ";
 
-            connection.Execute(
-                query,
-                new
-                {
-                    PurchaseId = purchaseId,
-                    detail.SeatClass,
-                    detail.SeatCount,
-                    detail.Subtotal
-                }
-            );
+            connection.Execute(query, new
+            {
+                PurchaseId = purchaseId,
+                SeatClass  = detail.SeatClass.ToString(),
+                detail.SeatCount,
+                detail.Subtotal
+            });
         }
     }
 }
