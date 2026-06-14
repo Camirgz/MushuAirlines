@@ -61,7 +61,7 @@ public class PurchasePricingCalculator : IPricingCalculator
         if (totalHandCount > 0)
             baggageDetails.Add(new BaggageSubtotal
             {
-                Type      = "HandBaggage",
+                Type      = BaggageType.HandBaggage,
                 Quantity  = totalHandCount,
                 UnitPrice = handBagPrice,
                 Subtotal  = handBaggageSubtotal
@@ -70,7 +70,7 @@ public class PurchasePricingCalculator : IPricingCalculator
         if (totalCheckedCount > 0)
             baggageDetails.Add(new BaggageSubtotal
             {
-                Type      = "CheckedBaggage",
+                Type      = BaggageType.CheckedBaggage,
                 Quantity  = totalCheckedCount,
                 UnitPrice = bagPrice,
                 Subtotal  = checkedBaggageSubtotal

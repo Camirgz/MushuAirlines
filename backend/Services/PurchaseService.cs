@@ -152,7 +152,7 @@ public class PurchaseService : IPurchaseService
 
         foreach (var baggageDetail in totals.BaggageDetails)
             await _purchaseRepo.CreatePurchaseBaggageDetailAsync(
-                purchaseId, baggageDetail.Type, baggageDetail.Quantity, baggageDetail.UnitPrice, baggageDetail.Subtotal);
+                purchaseId, baggageDetail.Type.ToString(), baggageDetail.Quantity, baggageDetail.UnitPrice, baggageDetail.Subtotal);
 
         var tickets = new List<TicketSummary>(request.SeatSelections.Count);
         for (int seatIdx = 0; seatIdx < request.SeatSelections.Count; seatIdx++)
