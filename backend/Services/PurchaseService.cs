@@ -115,13 +115,10 @@ public class PurchaseService : IPurchaseService
         var reservationCode = uniqueCodes[0];
         var invoiceNumber   = uniqueCodes[1];
 
-        var passengerIdMap = new Dictionary<int, int>(request.Passengers.Count);
-        for (int i = 0; i < request.Passengers.Count; i++)
-        {
-            passengerIdMap[i] = await ResolvePassengerAsync(request.Passengers[i]);
-        }
+        var passengerIds = await Task.WhenAll(
+            request.Passengers.Select(p => _passengerRepo.CreatePassengerAsync(p)));
 
-        int firstPassengerId = passengerIdMap[0];
+        var firstPassengerId = passengerIds[0];
         int bookingCode      = await _itineraryRepo.CreateItineraryAsync(firstPassengerId);
 
         var purchaseDate = DateTime.UtcNow;
@@ -150,7 +147,7 @@ public class PurchaseService : IPurchaseService
         for (int seatIdx = 0; seatIdx < request.SeatSelections.Count; seatIdx++)
         {
             var seat            = request.SeatSelections[seatIdx];
-            int passengerId     = passengerIdMap[seat.PassengerIndex];
+            int passengerId     = passengerIds[seat.PassengerIndex];
             int seatNumber      = assignedSeatNumbers1[seatIdx];
             var passengerBag    = totals.PassengerBaggageDetails[seat.PassengerIndex];
 
@@ -175,7 +172,7 @@ public class PurchaseService : IPurchaseService
             for (int seatIdx = 0; seatIdx < request.SeatSelections.Count; seatIdx++)
             {
                 var seat         = request.SeatSelections[seatIdx];
-                int passengerId  = passengerIdMap[seat.PassengerIndex];
+                int passengerId  = passengerIds[seat.PassengerIndex];
                 int seatNumber   = assignedSeatNumbers2![seatIdx];
                 var passengerBag = totals.PassengerBaggageDetails[seat.PassengerIndex];
 
@@ -259,9 +256,6 @@ public class PurchaseService : IPurchaseService
         while (await _purchaseRepo.InvoiceNumberExistsAsync(number));
         return number;
     }
-
-    private async Task<int> ResolvePassengerAsync(PassengerInfo passenger)
-        => await _passengerRepo.CreatePassengerAsync(passenger);
 
     private static void ValidatePassengers(List<PassengerInfo> passengers)
     {
