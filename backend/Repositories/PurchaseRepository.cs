@@ -90,6 +90,19 @@ public class PurchaseRepository : IPurchaseRepository
         return count > 0;
     }
 
+    public async Task<bool> InvoiceNumberExistsAsync(string invoiceNumber)
+    {
+        using var connection = new SqlConnection(_connectionString);
+
+        const string query = @"
+            SELECT COUNT(*)
+            FROM   Purchase
+            WHERE  InvoiceNumber = @InvoiceNumber";
+
+        int count = await connection.ExecuteScalarAsync<int>(query, new { InvoiceNumber = invoiceNumber });
+        return count > 0;
+    }
+
     public async Task<int> CreatePurchaseAsync(PurchaseRecord record)
     {
         using var connection = new SqlConnection(_connectionString);

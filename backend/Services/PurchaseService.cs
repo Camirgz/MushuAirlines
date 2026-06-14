@@ -117,7 +117,11 @@ public class PurchaseService : IPurchaseService
             reservationCode = _codeGenerator.GenerateReservationCode();
         } while (await _purchaseRepo.ReservationCodeExistsAsync(reservationCode));
 
-        string invoiceNumber = _codeGenerator.GenerateInvoiceNumber();
+        string invoiceNumber;
+        do
+        {
+            invoiceNumber = _codeGenerator.GenerateInvoiceNumber();
+        } while (await _purchaseRepo.InvoiceNumberExistsAsync(invoiceNumber));
 
         var passengerIdMap = new Dictionary<int, int>(request.Passengers.Count);
         for (int i = 0; i < request.Passengers.Count; i++)
