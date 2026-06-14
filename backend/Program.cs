@@ -82,7 +82,6 @@ builder.Services.AddSwaggerGen();
 
 
 builder.Services.AddScoped<backend.Interfaces.IPassengerRepository,  backend.Repositories.PassengerRepository>();
-builder.Services.AddScoped<backend.Interfaces.IItineraryRepository,  backend.Repositories.ItineraryRepository>();
 builder.Services.AddScoped<backend.Interfaces.IPurchaseRepository,   backend.Repositories.PurchaseRepository>();
 
 
@@ -104,7 +103,6 @@ builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<IFlightRepository, RouteCreationRepository>();
 builder.Services.AddScoped<FlightAggregatorService>();
 
-// Purchase services
 builder.Services.AddSingleton<backend.Interfaces.ICodeGenerator,     backend.Services.CodeGenerator>();
 builder.Services.AddSingleton<backend.Interfaces.IPricingCalculator, backend.Services.PurchasePricingCalculator>();
 builder.Services.AddScoped<backend.Interfaces.IRouteCreationService, backend.Services.RouteCreationService>();
