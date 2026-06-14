@@ -100,6 +100,132 @@ public class PurchaseRepository : IPurchaseRepository
         return count > 0;
     }
 
+    public async Task<int> ExecutePurchaseTransactionAsync(PurchaseTransactionData data)
+    {
+        using var connection = new SqlConnection(_connectionString);
+        await connection.OpenAsync();
+        using var transaction = connection.BeginTransaction();
+
+        try
+        {
+            const string insertPurchase = @"
+                INSERT INTO Purchase
+                    (PassengerId, BookingCode, ReservationCode, InvoiceNumber,
+                     PaymentMethod, Email, TotalPaid, TotalSeats, PurchaseDate)
+                VALUES
+                    (@PassengerId, @BookingCode, @ReservationCode, @InvoiceNumber,
+                     @PaymentMethod, @Email, @TotalPaid, @TotalSeats, @PurchaseDate);
+                SELECT CAST(SCOPE_IDENTITY() AS INT);";
+
+            var purchaseId = await connection.ExecuteScalarAsync<int>(insertPurchase, new
+            {
+                data.Record.PassengerId,
+                data.Record.BookingCode,
+                data.Record.ReservationCode,
+                data.Record.InvoiceNumber,
+                PaymentMethod = data.Record.PaymentMethod.ToString(),
+                data.Record.Email,
+                data.Record.TotalPaid,
+                data.Record.TotalSeats,
+                data.Record.PurchaseDate
+            }, transaction);
+
+            const string insertDetail = @"
+                INSERT INTO PurchaseDetail (PurchaseId, SeatClass, SeatCount, Subtotal)
+                VALUES (@PurchaseId, @SeatClass, @SeatCount, @Subtotal)";
+
+            await connection.ExecuteAsync(insertDetail, data.Details.Select(d => new
+            {
+                PurchaseId = purchaseId,
+                SeatClass  = d.SeatClass.ToString(),
+                SeatCount  = d.SeatCount,
+                Subtotal   = d.Subtotal
+            }), transaction);
+
+            const string insertBaggageDetail = @"
+                INSERT INTO PurchaseBaggageDetail (PurchaseId, BaggageType, Quantity, UnitPrice, Subtotal)
+                VALUES (@PurchaseId, @BaggageType, @Quantity, @UnitPrice, @Subtotal)";
+
+            await connection.ExecuteAsync(insertBaggageDetail, data.BaggageDetails.Select(b => new
+            {
+                PurchaseId  = purchaseId,
+                BaggageType = b.Type.ToString(),
+                Quantity    = b.Quantity,
+                UnitPrice   = b.UnitPrice,
+                Subtotal    = b.Subtotal
+            }), transaction);
+
+            const string insertTicket = @"
+                INSERT INTO Ticket (ScheduledId, PassengerHas, SeatNumber)
+                VALUES (@ScheduledId, @PassengerHas, @SeatNumber)";
+
+            await connection.ExecuteAsync(insertTicket, data.Tickets1.Select(t => new
+            {
+                ScheduledId  = t.ScheduledFlightId,
+                PassengerHas = t.PassengerId,
+                SeatNumber   = t.SeatNumber
+            }), transaction);
+
+            const string insertTicketBaggage = @"
+                INSERT INTO TicketBaggage (ScheduledFlightId, PassengerId, BookingCode, HandBagCount, CheckedBagCount, BaggageSubtotal)
+                VALUES (@ScheduledFlightId, @PassengerId, @BookingCode, @HandBagCount, @CheckedBagCount, @BaggageSubtotal)";
+
+            await connection.ExecuteAsync(insertTicketBaggage, data.TicketBaggage1.Select(tb => new
+            {
+                tb.ScheduledFlightId,
+                tb.PassengerId,
+                tb.BookingCode,
+                tb.HandBagCount,
+                tb.CheckedBagCount,
+                BaggageSubtotal = tb.Subtotal
+            }), transaction);
+
+            const string insertItinerary = @"
+                INSERT INTO ItineraryScheduledFlight (ScheduledId, BookingCode)
+                VALUES (@ScheduledId, @BookingCode)";
+
+            await connection.ExecuteAsync(insertItinerary, new
+            {
+                ScheduledId = data.ScheduledId1,
+                BookingCode = data.Record.BookingCode
+            }, transaction);
+
+            if (data.Tickets2 != null)
+            {
+                await connection.ExecuteAsync(insertTicket, data.Tickets2.Select(t => new
+                {
+                    ScheduledId  = t.ScheduledFlightId,
+                    PassengerHas = t.PassengerId,
+                    SeatNumber   = t.SeatNumber
+                }), transaction);
+
+                await connection.ExecuteAsync(insertTicketBaggage, data.TicketBaggage2!.Select(tb => new
+                {
+                    tb.ScheduledFlightId,
+                    tb.PassengerId,
+                    tb.BookingCode,
+                    tb.HandBagCount,
+                    tb.CheckedBagCount,
+                    BaggageSubtotal = tb.Subtotal
+                }), transaction);
+
+                await connection.ExecuteAsync(insertItinerary, new
+                {
+                    ScheduledId = data.ScheduledId2!.Value,
+                    BookingCode = data.Record.BookingCode
+                }, transaction);
+            }
+
+            transaction.Commit();
+            return purchaseId;
+        }
+        catch
+        {
+            transaction.Rollback();
+            throw;
+        }
+    }
+
     public async Task<int> CreatePurchaseAsync(PurchaseRecord record)
     {
         using var connection = new SqlConnection(_connectionString);

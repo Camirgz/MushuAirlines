@@ -9,6 +9,7 @@ public interface IPurchaseRepository
     Task<List<int>> GetNextAvailableSeatNumbersAsync(int scheduledFlightId, int count);
     Task<bool> ReservationCodeExistsAsync(string code);
     Task<bool> InvoiceNumberExistsAsync(string invoiceNumber);
+    Task<int> ExecutePurchaseTransactionAsync(PurchaseTransactionData data);
     Task<int> CreatePurchaseAsync(PurchaseRecord record);
     Task CreatePurchaseDetailAsync(int purchaseId, string seatClass, int count, decimal subtotal);
     Task CreatePurchaseBaggageDetailAsync(int purchaseId, string baggageType, int quantity, decimal unitPrice, decimal subtotal);
