@@ -38,28 +38,25 @@ public class PurchaseRepository : IPurchaseRepository
     {
         using var connection = new SqlConnection(_connectionString);
 
-        const string bookedQuery = @"
-            SELECT COUNT(SeatNumber)
-            FROM   Ticket
-            WHERE  ScheduledId = @ScheduledFlightId";
+        const string query = @"
+            SELECT CASE
+                WHEN (r.EconomyClassCapacity + r.FirstClassCapacity) = 0 THEN 1
+                WHEN (r.EconomyClassCapacity + r.FirstClassCapacity) - COUNT(t.SeatNumber) >= @RequestedCount THEN 1
+                ELSE 0
+            END
+            FROM      ScheduledFlight sf
+            JOIN      Route  r ON sf.RouteCode = r.Code
+            LEFT JOIN Ticket t ON t.ScheduledId = sf.Id
+            WHERE     sf.Id = @ScheduledFlightId
+            GROUP BY  r.EconomyClassCapacity, r.FirstClassCapacity";
 
-        int booked = await connection.ExecuteScalarAsync<int>(bookedQuery,
-            new { ScheduledFlightId = scheduledFlightId });
+        var result = await connection.QueryFirstOrDefaultAsync<int?>(query, new
+        {
+            ScheduledFlightId = scheduledFlightId,
+            RequestedCount    = requestedCount
+        });
 
-
-        const string capacityQuery = @"
-            SELECT r.EconomyClassCapacity + r.FirstClassCapacity
-            FROM   ScheduledFlight sf
-            JOIN   Route           r  ON sf.RouteCode = r.Code
-            WHERE  sf.Id = @ScheduledFlightId";
-
-        int? capacity = await connection.QueryFirstOrDefaultAsync<int?>(capacityQuery,
-            new { ScheduledFlightId = scheduledFlightId });
-
-        if (capacity == null || capacity == 0)
-            return true;
-
-        return (capacity.Value - booked) >= requestedCount;
+        return result is null or 1;
     }
 
     public async Task<List<int>> GetNextAvailableSeatNumbersAsync(int scheduledFlightId, int count)
