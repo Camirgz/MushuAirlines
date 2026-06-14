@@ -108,17 +108,12 @@ public class PurchaseService : IPurchaseService
             bagPrice,
             bagMultiplier);
 
-        string reservationCode;
-        do
-        {
-            reservationCode = _codeGenerator.GenerateReservationCode();
-        } while (await _purchaseRepo.ReservationCodeExistsAsync(reservationCode));
+        var uniqueCodes = await Task.WhenAll(
+            GenerateUniqueReservationCodeAsync(),
+            GenerateUniqueInvoiceNumberAsync());
 
-        string invoiceNumber;
-        do
-        {
-            invoiceNumber = _codeGenerator.GenerateInvoiceNumber();
-        } while (await _purchaseRepo.InvoiceNumberExistsAsync(invoiceNumber));
+        var reservationCode = uniqueCodes[0];
+        var invoiceNumber   = uniqueCodes[1];
 
         var passengerIdMap = new Dictionary<int, int>(request.Passengers.Count);
         for (int i = 0; i < request.Passengers.Count; i++)
@@ -247,6 +242,22 @@ public class PurchaseService : IPurchaseService
                 string.Equals(e.PassportCountry.Trim(), p.PassportCountry.Trim(), StringComparison.OrdinalIgnoreCase)))
             .Select(p => $"{p.FirstName} {p.LastName}")
             .ToList();
+    }
+
+    private async Task<string> GenerateUniqueReservationCodeAsync()
+    {
+        string code;
+        do { code = _codeGenerator.GenerateReservationCode(); }
+        while (await _purchaseRepo.ReservationCodeExistsAsync(code));
+        return code;
+    }
+
+    private async Task<string> GenerateUniqueInvoiceNumberAsync()
+    {
+        string number;
+        do { number = _codeGenerator.GenerateInvoiceNumber(); }
+        while (await _purchaseRepo.InvoiceNumberExistsAsync(number));
+        return number;
     }
 
     private async Task<int> ResolvePassengerAsync(PassengerInfo passenger)
