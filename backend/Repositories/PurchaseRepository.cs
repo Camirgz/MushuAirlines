@@ -108,6 +108,23 @@ public class PurchaseRepository : IPurchaseRepository
 
         try
         {
+            const string getNextBookingCode = @"
+                SELECT ISNULL(MAX(BookingCode), 0) + 1
+                FROM   Itinerary WITH (UPDLOCK, HOLDLOCK)";
+
+            var bookingCode = await connection.ExecuteScalarAsync<int>(
+                getNextBookingCode, transaction: transaction);
+
+            const string insertItinerary = @"
+                INSERT INTO Itinerary (BookingCode, PassengerBooks)
+                VALUES (@BookingCode, @PassengerId)";
+
+            await connection.ExecuteAsync(insertItinerary, new
+            {
+                BookingCode = bookingCode,
+                PassengerId = data.Record.PassengerId
+            }, transaction);
+
             const string insertPurchase = @"
                 INSERT INTO Purchase
                     (PassengerId, BookingCode, ReservationCode, InvoiceNumber,
@@ -120,10 +137,10 @@ public class PurchaseRepository : IPurchaseRepository
             var purchaseId = await connection.ExecuteScalarAsync<int>(insertPurchase, new
             {
                 data.Record.PassengerId,
-                data.Record.BookingCode,
+                BookingCode     = bookingCode,
                 data.Record.ReservationCode,
                 data.Record.InvoiceNumber,
-                PaymentMethod = data.Record.PaymentMethod.ToString(),
+                PaymentMethod   = data.Record.PaymentMethod.ToString(),
                 data.Record.Email,
                 data.Record.TotalPaid,
                 data.Record.TotalSeats,
@@ -174,20 +191,20 @@ public class PurchaseRepository : IPurchaseRepository
             {
                 tb.ScheduledFlightId,
                 tb.PassengerId,
-                tb.BookingCode,
+                BookingCode     = bookingCode,
                 tb.HandBagCount,
                 tb.CheckedBagCount,
                 BaggageSubtotal = tb.Subtotal
             }), transaction);
 
-            const string insertItinerary = @"
+            const string insertItineraryFlight = @"
                 INSERT INTO ItineraryScheduledFlight (ScheduledId, BookingCode)
                 VALUES (@ScheduledId, @BookingCode)";
 
-            await connection.ExecuteAsync(insertItinerary, new
+            await connection.ExecuteAsync(insertItineraryFlight, new
             {
                 ScheduledId = data.ScheduledId1,
-                BookingCode = data.Record.BookingCode
+                BookingCode = bookingCode
             }, transaction);
 
             if (data.Tickets2 != null)
@@ -203,16 +220,16 @@ public class PurchaseRepository : IPurchaseRepository
                 {
                     tb.ScheduledFlightId,
                     tb.PassengerId,
-                    tb.BookingCode,
+                    BookingCode     = bookingCode,
                     tb.HandBagCount,
                     tb.CheckedBagCount,
                     BaggageSubtotal = tb.Subtotal
                 }), transaction);
 
-                await connection.ExecuteAsync(insertItinerary, new
+                await connection.ExecuteAsync(insertItineraryFlight, new
                 {
                     ScheduledId = data.ScheduledId2!.Value,
-                    BookingCode = data.Record.BookingCode
+                    BookingCode = bookingCode
                 }, transaction);
             }
 

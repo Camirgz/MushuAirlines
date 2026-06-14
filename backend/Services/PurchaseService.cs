@@ -6,23 +6,20 @@ namespace backend.Services;
 
 public class PurchaseService : IPurchaseService
 {
-    private readonly IPassengerRepository _passengerRepo;
-    private readonly IItineraryRepository _itineraryRepo;
-    private readonly IPurchaseRepository  _purchaseRepo;
-    private readonly ICodeGenerator       _codeGenerator;
-    private readonly IPricingCalculator   _pricingCalculator;
+    private readonly IPassengerRepository  _passengerRepo;
+    private readonly IPurchaseRepository   _purchaseRepo;
+    private readonly ICodeGenerator        _codeGenerator;
+    private readonly IPricingCalculator    _pricingCalculator;
     private readonly IRouteCreationService _routeCreationService;
 
     public PurchaseService(
         IPassengerRepository  passengerRepo,
-        IItineraryRepository  itineraryRepo,
         IPurchaseRepository   purchaseRepo,
         ICodeGenerator        codeGenerator,
         IPricingCalculator    pricingCalculator,
         IRouteCreationService routeCreationService)
     {
         _passengerRepo        = passengerRepo;
-        _itineraryRepo        = itineraryRepo;
         _purchaseRepo         = purchaseRepo;
         _codeGenerator        = codeGenerator;
         _pricingCalculator    = pricingCalculator;
@@ -119,71 +116,97 @@ public class PurchaseService : IPurchaseService
             request.Passengers.Select(p => _passengerRepo.CreatePassengerAsync(p)));
 
         var firstPassengerId = passengerIds[0];
-        int bookingCode      = await _itineraryRepo.CreateItineraryAsync(firstPassengerId);
+        var purchaseDate     = DateTime.UtcNow;
 
-        var purchaseDate = DateTime.UtcNow;
-        int purchaseId   = await _purchaseRepo.CreatePurchaseAsync(new PurchaseRecord
-        {
-            PassengerId     = firstPassengerId,
-            BookingCode     = bookingCode,
-            ReservationCode = reservationCode,
-            InvoiceNumber   = invoiceNumber,
-            PaymentMethod   = request.Payment.Method,
-            Email           = request.Payment.ContactEmail,
-            TotalPaid       = totals.TotalPaid,
-            TotalSeats      = totals.TotalSeats,
-            PurchaseDate    = purchaseDate
-        });
-
-        foreach (var detail in totals.DetailByClass)
-            await _purchaseRepo.CreatePurchaseDetailAsync(
-                purchaseId, detail.SeatClass.ToString(), detail.SeatCount, detail.Subtotal);
-
-        foreach (var baggageDetail in totals.BaggageDetails)
-            await _purchaseRepo.CreatePurchaseBaggageDetailAsync(
-                purchaseId, baggageDetail.Type.ToString(), baggageDetail.Quantity, baggageDetail.UnitPrice, baggageDetail.Subtotal);
-
-        var tickets = new List<TicketSummary>(request.SeatSelections.Count);
-        for (int seatIdx = 0; seatIdx < request.SeatSelections.Count; seatIdx++)
-        {
-            var seat            = request.SeatSelections[seatIdx];
-            int passengerId     = passengerIds[seat.PassengerIndex];
-            int seatNumber      = assignedSeatNumbers1[seatIdx];
-            var passengerBag    = totals.PassengerBaggageDetails[seat.PassengerIndex];
-
-            await _purchaseRepo.CreateTicketAsync(scheduledFlightId1, passengerId, seatNumber);
-            await _purchaseRepo.CreateTicketBaggageAsync(
-                scheduledFlightId1, passengerId, bookingCode,
-                passengerBag.HandBagCount, passengerBag.CheckedBagCount, passengerBag.Subtotal);
-
-            var passenger = request.Passengers[seat.PassengerIndex];
-            tickets.Add(new TicketSummary
+        var tickets1 = request.SeatSelections
+            .Select((seat, i) => new TicketInsertData
             {
-                PassengerFullName = $"{passenger.FirstName} {passenger.LastName}",
-                SeatNumber        = seatNumber.ToString(),
-                SeatClass         = seat.SeatClass
-            });
-        }
+                ScheduledFlightId = scheduledFlightId1,
+                PassengerId       = passengerIds[seat.PassengerIndex],
+                SeatNumber        = assignedSeatNumbers1[i]
+            })
+            .ToList();
 
-        await _purchaseRepo.LinkItineraryToScheduledFlightAsync(bookingCode, scheduledFlightId1);
+        var ticketBaggage1 = request.SeatSelections
+            .Select(seat =>
+            {
+                var bag = totals.PassengerBaggageDetails[seat.PassengerIndex];
+                return new TicketBaggageInsertData
+                {
+                    ScheduledFlightId = scheduledFlightId1,
+                    PassengerId       = passengerIds[seat.PassengerIndex],
+                    HandBagCount      = bag.HandBagCount,
+                    CheckedBagCount   = bag.CheckedBagCount,
+                    Subtotal          = bag.Subtotal
+                };
+            })
+            .ToList();
+
+        List<TicketInsertData>?        tickets2       = null;
+        List<TicketBaggageInsertData>? ticketBaggage2 = null;
 
         if (isStopover)
         {
-            for (int seatIdx = 0; seatIdx < request.SeatSelections.Count; seatIdx++)
-            {
-                var seat         = request.SeatSelections[seatIdx];
-                int passengerId  = passengerIds[seat.PassengerIndex];
-                int seatNumber   = assignedSeatNumbers2![seatIdx];
-                var passengerBag = totals.PassengerBaggageDetails[seat.PassengerIndex];
+            tickets2 = request.SeatSelections
+                .Select((seat, i) => new TicketInsertData
+                {
+                    ScheduledFlightId = scheduledFlightId2,
+                    PassengerId       = passengerIds[seat.PassengerIndex],
+                    SeatNumber        = assignedSeatNumbers2![i]
+                })
+                .ToList();
 
-                await _purchaseRepo.CreateTicketAsync(scheduledFlightId2, passengerId, seatNumber);
-                await _purchaseRepo.CreateTicketBaggageAsync(
-                    scheduledFlightId2, passengerId, bookingCode,
-                    passengerBag.HandBagCount, passengerBag.CheckedBagCount, passengerBag.Subtotal);
-            }
-
-            await _purchaseRepo.LinkItineraryToScheduledFlightAsync(bookingCode, scheduledFlightId2);
+            ticketBaggage2 = request.SeatSelections
+                .Select(seat =>
+                {
+                    var bag = totals.PassengerBaggageDetails[seat.PassengerIndex];
+                    return new TicketBaggageInsertData
+                    {
+                        ScheduledFlightId = scheduledFlightId2,
+                        PassengerId       = passengerIds[seat.PassengerIndex],
+                        HandBagCount      = bag.HandBagCount,
+                        CheckedBagCount   = bag.CheckedBagCount,
+                        Subtotal          = bag.Subtotal
+                    };
+                })
+                .ToList();
         }
+
+        var purchaseId = await _purchaseRepo.ExecutePurchaseTransactionAsync(new PurchaseTransactionData
+        {
+            Record = new PurchaseRecord
+            {
+                PassengerId     = firstPassengerId,
+                ReservationCode = reservationCode,
+                InvoiceNumber   = invoiceNumber,
+                PaymentMethod   = request.Payment.Method,
+                Email           = request.Payment.ContactEmail,
+                TotalPaid       = totals.TotalPaid,
+                TotalSeats      = totals.TotalSeats,
+                PurchaseDate    = purchaseDate
+            },
+            Details        = totals.DetailByClass,
+            BaggageDetails = totals.BaggageDetails,
+            Tickets1       = tickets1,
+            TicketBaggage1 = ticketBaggage1,
+            ScheduledId1   = scheduledFlightId1,
+            Tickets2       = tickets2,
+            TicketBaggage2 = ticketBaggage2,
+            ScheduledId2   = isStopover ? scheduledFlightId2 : null
+        });
+
+        var tickets = request.SeatSelections
+            .Select((seat, i) =>
+            {
+                var passenger = request.Passengers[seat.PassengerIndex];
+                return new TicketSummary
+                {
+                    PassengerFullName = $"{passenger.FirstName} {passenger.LastName}",
+                    SeatNumber        = assignedSeatNumbers1[i].ToString(),
+                    SeatClass         = seat.SeatClass
+                };
+            })
+            .ToList();
 
         return new PurchaseResponseModel
         {
