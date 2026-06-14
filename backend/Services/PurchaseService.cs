@@ -271,9 +271,6 @@ public class PurchaseService : IPurchaseService
             if (string.IsNullOrWhiteSpace(p.PassportCountry))
                 throw new PassengerDataException("PassportCountry", "el país del pasaporte no puede estar vacío");
 
-            if (string.IsNullOrWhiteSpace(p.Gender))
-                throw new PassengerDataException("Gender",          "el género no puede estar vacío");
-
             if (p.BirthDate >= DateOnly.FromDateTime(DateTime.UtcNow))
                 throw new PassengerDataException("BirthDate",       "la fecha de nacimiento debe ser anterior a hoy");
         }
