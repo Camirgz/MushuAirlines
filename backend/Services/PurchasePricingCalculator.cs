@@ -7,16 +7,16 @@ public class PurchasePricingCalculator : IPricingCalculator
 {
     public PurchaseTotals Calculate(
         IEnumerable<SeatSelection> seats,
+        IEnumerable<PassengerInfo> passengers,
         decimal economyPrice,
         decimal firstClassPrice,
-        BaggageInfo baggage,
         decimal handBagPrice,
         decimal bagPrice,
         decimal bagMultiplier)
     {
-        var seatList = seats.ToList();
+        var seatList      = seats.ToList();
+        var passengerList = passengers.ToList();
 
-        // Calculate seat details by class
         var detailByClass = seatList
             .GroupBy(s => s.SeatClass)
             .Select(group =>
@@ -41,48 +41,63 @@ public class PurchasePricingCalculator : IPricingCalculator
             })
             .ToList();
 
-        // Calculate baggage totals
-        decimal handBaggageSubtotal = 0m;
-        decimal checkedBaggageSubtotal = 0m;
+        var passengerBaggageDetails = passengerList
+            .Select((p, idx) => new PassengerBaggageSubtotal
+            {
+                PassengerIndex  = idx,
+                HandBagCount    = p.HandBagCount,
+                CheckedBagCount = p.CheckedBagCount,
+                HandSubtotal    = BagSubtotal(p.HandBagCount,    handBagPrice, bagMultiplier),
+                CheckedSubtotal = BagSubtotal(p.CheckedBagCount, bagPrice,     bagMultiplier)
+            })
+            .ToList();
+
+        int     totalHandCount         = passengerBaggageDetails.Sum(p => p.HandBagCount);
+        int     totalCheckedCount      = passengerBaggageDetails.Sum(p => p.CheckedBagCount);
+        decimal handBaggageSubtotal    = passengerBaggageDetails.Sum(p => p.HandSubtotal);
+        decimal checkedBaggageSubtotal = passengerBaggageDetails.Sum(p => p.CheckedSubtotal);
+
         var baggageDetails = new List<BaggageSubtotal>();
-
-        if (baggage.HandCount > 0)
-        {
-            handBaggageSubtotal = baggage.HandCount * handBagPrice;
+        if (totalHandCount > 0)
             baggageDetails.Add(new BaggageSubtotal
             {
-                Type = "HandBaggage",
-                Quantity = baggage.HandCount,
+                Type      = "HandBaggage",
+                Quantity  = totalHandCount,
                 UnitPrice = handBagPrice,
-                Subtotal = handBaggageSubtotal
+                Subtotal  = handBaggageSubtotal
             });
-        }
 
-        if (baggage.CheckedCount > 0)
-        {
-            checkedBaggageSubtotal = baggage.CheckedCount * bagPrice * bagMultiplier;
+        if (totalCheckedCount > 0)
             baggageDetails.Add(new BaggageSubtotal
             {
-                Type = "CheckedBaggage",
-                Quantity = baggage.CheckedCount,
-                UnitPrice = bagPrice * bagMultiplier,
-                Subtotal = checkedBaggageSubtotal
+                Type      = "CheckedBaggage",
+                Quantity  = totalCheckedCount,
+                UnitPrice = bagPrice,
+                Subtotal  = checkedBaggageSubtotal
             });
-        }
 
         decimal seatsSubtotal = detailByClass.Sum(d => d.Subtotal);
-        decimal totalPaid = seatsSubtotal + handBaggageSubtotal + checkedBaggageSubtotal;
+        decimal totalPaid     = seatsSubtotal + handBaggageSubtotal + checkedBaggageSubtotal;
 
         return new PurchaseTotals
         {
-            TotalPaid             = totalPaid,
-            TotalSeats            = detailByClass.Sum(d => d.SeatCount),
-            DetailByClass         = detailByClass,
-            BaggageDetails        = baggageDetails,
-            HandBaggageCount      = baggage.HandCount,
-            HandBaggageSubtotal   = handBaggageSubtotal,
-            CheckedBaggageCount   = baggage.CheckedCount,
-            CheckedBaggageSubtotal = checkedBaggageSubtotal
+            TotalPaid               = totalPaid,
+            TotalSeats              = detailByClass.Sum(d => d.SeatCount),
+            DetailByClass           = detailByClass,
+            BaggageDetails          = baggageDetails,
+            PassengerBaggageDetails = passengerBaggageDetails,
+            HandBaggageCount        = totalHandCount,
+            HandBaggageSubtotal     = handBaggageSubtotal,
+            CheckedBaggageCount     = totalCheckedCount,
+            CheckedBaggageSubtotal  = checkedBaggageSubtotal
         };
     }
+
+    private static decimal BagSubtotal(int count, decimal unitPrice, decimal multiplier)
+        => count switch
+        {
+            0 => 0m,
+            1 => unitPrice,
+            _ => unitPrice + (count - 1) * unitPrice * multiplier
+        };
 }

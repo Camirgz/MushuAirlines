@@ -160,6 +160,26 @@ public class PurchaseRepository : IPurchaseRepository
         });
     }
 
+    public async Task CreateTicketBaggageAsync(
+        int scheduledFlightId, int passengerId, int bookingCode, int handBagCount, int checkedBagCount, decimal subtotal)
+    {
+        using var connection = new SqlConnection(_connectionString);
+
+        const string query = @"
+            INSERT INTO TicketBaggage (ScheduledFlightId, PassengerId, BookingCode, HandBagCount, CheckedBagCount, BaggageSubtotal)
+            VALUES (@ScheduledFlightId, @PassengerId, @BookingCode, @HandBagCount, @CheckedBagCount, @BaggageSubtotal)";
+
+        await connection.ExecuteAsync(query, new
+        {
+            ScheduledFlightId = scheduledFlightId,
+            PassengerId       = passengerId,
+            BookingCode       = bookingCode,
+            HandBagCount      = handBagCount,
+            CheckedBagCount   = checkedBagCount,
+            BaggageSubtotal   = subtotal
+        });
+    }
+
     public async Task LinkItineraryToScheduledFlightAsync(
         int bookingCode, int scheduledFlightId)
     {

@@ -7,8 +7,9 @@
         <PurchaseSummaryCard
           v-if="flight"
           :flight="flight"
+          :flight2="purchaseState.flight2"
           :seats="purchaseState.seats"
-          :baggage="purchaseState.baggage"
+          :passengers="purchaseState.passengers"
         />
       </aside>
 

@@ -176,16 +176,16 @@
                     <h5 class="mt-4" style="font-weight: bold; font-size: x-large">Tarifas</h5>
                     <div class="row">
                         <div class="col-md-6 form-group">
-                            <label>Primera Clase ₡<span>*</span></label>
+                            <label>Primera Clase $<span>*</span></label>
                             <div class="input-box">
-                                <input type="number" min="0" step="0.01" v-model.number="form.priceFirstClass" placeholder="₡ 0.00" @keypress="onlyNumbers" />
+                                <input type="number" min="0" step="0.01" v-model.number="form.priceFirstClass" placeholder="$ 0.00" @keypress="onlyNumbers" />
                             </div>
                         </div>
 
                         <div class="col-md-6 form-group">
-                            <label>Clase Turista ₡<span>*</span></label>
+                            <label>Clase Turista $<span>*</span></label>
                             <div class="input-box">
-                                <input type="number" min="0" step="0.01" v-model.number="form.priceEconomy" placeholder="₡ 0.00" @keypress="onlyNumbers" />
+                                <input type="number" min="0" step="0.01" v-model.number="form.priceEconomy" placeholder="$ 0.00" @keypress="onlyNumbers" />
                             </div>
                         </div>
                     </div>
@@ -193,9 +193,9 @@
                     <h5 class="mt-4">Políticas de Equipaje</h5>
                     <div class="row">
                         <div class="col-md-3 form-group">
-                            <label>Precio equipaje de mano ₡<span>*</span></label>
+                            <label>Precio equipaje de mano $<span>*</span></label>
                             <div class="input-box">
-                                <input type="number" min="0" step="0.01" v-model.number="form.handBagPrice" placeholder="₡ 0.00" @keypress="onlyNumbers" />
+                                <input type="number" min="0" step="0.01" v-model.number="form.handBagPrice" placeholder="$ 0.00" @keypress="onlyNumbers" />
                             </div>
                         </div>
 
@@ -207,9 +207,9 @@
                         </div>
 
                         <div class="col-md-3 form-group">
-                            <label>Precio equipaje documentado ₡<span>*</span></label>
+                            <label>Precio equipaje documentado $<span>*</span></label>
                             <div class="input-box">
-                                <input type="number" min="0" step="0.01" v-model.number="form.bagPrice" placeholder="₡ 0.00" @keypress="onlyNumbers" />
+                                <input type="number" min="0" step="0.01" v-model.number="form.bagPrice" placeholder="$ 0.00" @keypress="onlyNumbers" />
                             </div>
                         </div>
 
@@ -278,21 +278,21 @@
                         <div class="row mt-2">
                             <div class="col-md-4">
                                 Primera Clase:
-                                ₡{{ (route.priceFirstClass || 0).toLocaleString() }}
+                                ${{ (route.priceFirstClass || 0).toLocaleString() }}
                             </div>
                             <div class="col-md-4">
                                 Clase Turista:
-                                ₡{{ (route.priceEconomy || 0).toLocaleString() }}
+                                ${{ (route.priceEconomy || 0).toLocaleString() }}
                             </div>
                         </div>
                         <div class="row mt-2">
                             <div class="col-md-4">
                                 Equipaje de mano:
-                                ₡{{ route.handBagPrice }} · {{ route.handBagWeight }}kg
+                                ${{ route.handBagPrice }} · {{ route.handBagWeight }}kg
                             </div>
                             <div class="col-md-4">
                                 Equipaje documentado:
-                                ₡{{ route.bagPrice }} · {{ route.bagWeight }}kg
+                                ${{ route.bagPrice }} · {{ route.bagWeight }}kg
                             </div>
                             <div class="col-md-4">
                                 Multiplicador:

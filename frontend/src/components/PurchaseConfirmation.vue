@@ -49,18 +49,13 @@
             <strong class="detail-value">{{ purchase.fullName }}</strong>
           </div>
 
-          <div class="detail-item">
-            <span class="detail-label"><i class="bi bi-airplane me-1"></i>Aeronave</span>
-            <strong class="detail-value">{{ purchase.aircraftType }}</strong>
-          </div>
-
         </div>
 
         <!-- Leg 1 -->
         <div class="flight-leg-block">
           <div class="flight-leg-title">
             <i class="bi bi-airplane-fill me-2"></i>
-            {{ purchase.flightNumber2 ? 'Vuelo 1' : 'Vuelo' }} #{{ purchase.flightNumber }}
+            {{ purchase.flightNumber2 ? 'Vuelo 1' : 'Vuelo' }}
           </div>
           <div class="details-grid">
             <div class="detail-item">
@@ -71,6 +66,14 @@
               <span class="detail-label"><i class="bi bi-calendar3 me-1"></i>Fecha de salida</span>
               <strong class="detail-value">{{ formatDate(purchase.departureDate) }}</strong>
             </div>
+            <div class="detail-item">
+              <span class="detail-label"><i class="bi bi-airplane me-1"></i>Aeronave</span>
+              <strong class="detail-value">{{ purchase.aircraftType }}</strong>
+            </div>
+            <div class="detail-item" v-if="purchase.aircraftModel">
+              <span class="detail-label"><i class="bi bi-tools me-1"></i>Modelo</span>
+              <strong class="detail-value">{{ purchase.aircraftModel }}</strong>
+            </div>
           </div>
         </div>
 
@@ -78,7 +81,7 @@
         <div class="flight-leg-block flight-leg-block--stopover" v-if="purchase.flightNumber2">
           <div class="flight-leg-title">
             <i class="bi bi-airplane-fill me-2"></i>
-            Vuelo 2 #{{ purchase.flightNumber2 }}
+            Vuelo 2
           </div>
           <div class="details-grid">
             <div class="detail-item">
@@ -88,6 +91,14 @@
             <div class="detail-item">
               <span class="detail-label"><i class="bi bi-calendar3 me-1"></i>Fecha de salida</span>
               <strong class="detail-value">{{ formatDate(purchase.departureDate2) }}</strong>
+            </div>
+            <div class="detail-item" v-if="purchase.aircraftType2">
+              <span class="detail-label"><i class="bi bi-airplane me-1"></i>Aeronave</span>
+              <strong class="detail-value">{{ purchase.aircraftType2 }}</strong>
+            </div>
+            <div class="detail-item" v-if="purchase.aircraftModel2">
+              <span class="detail-label"><i class="bi bi-tools me-1"></i>Modelo</span>
+              <strong class="detail-value">{{ purchase.aircraftModel2 }}</strong>
             </div>
           </div>
         </div>
@@ -106,33 +117,42 @@
           >
             <span>{{ translateClass(detail.seatClass) }}</span>
             <span>{{ detail.seatCount }}</span>
-            <span>₡{{ detail.subtotal.toLocaleString() }}</span>
+            <span>${{ detail.subtotal.toLocaleString() }}</span>
           </div>
         </div>
 
-        <div class="breakdown-section" v-if="purchase.baggageDetails && purchase.baggageDetails.length">
-          <div class="breakdown-title">Desglose de equipaje</div>
-          <div class="breakdown-row breakdown-row--header">
-            <span>Tipo</span>
-            <span>Cantidad</span>
-            <span>Subtotal</span>
-          </div>
-          <div
-            class="breakdown-row"
-            v-for="baggage in purchase.baggageDetails"
-            :key="baggage.type"
-          >
-            <span>{{ translateBaggageType(baggage.type) }}</span>
-            <span>{{ baggage.quantity }}</span>
-            <span>₡{{ baggage.subtotal.toLocaleString() }}</span>
+        <div class="breakdown-section" v-if="purchase.passengerBaggageDetails && purchase.passengerBaggageDetails.length">
+          <div class="breakdown-title">Equipaje por pasajero</div>
+          <div class="bpp-table">
+            <div class="bpp-row bpp-row--header">
+              <span class="bpp-col-name">Pasajero</span>
+              <span class="bpp-col-num">Mano</span>
+              <span class="bpp-col-num">Documentado</span>
+              <span class="bpp-col-amount">Subtotal</span>
+            </div>
+            <div
+              class="bpp-row"
+              v-for="pb in purchase.passengerBaggageDetails"
+              :key="pb.passengerFullName"
+            >
+              <span class="bpp-col-name">{{ pb.passengerFullName }}</span>
+              <span class="bpp-col-num">{{ pb.handBagCount }}</span>
+              <span class="bpp-col-num">{{ pb.checkedBagCount }}</span>
+              <span class="bpp-col-amount">${{ pb.baggageSubtotal.toLocaleString() }}</span>
+            </div>
+            <div class="bpp-row bpp-row--total">
+              <span class="bpp-col-name">Total equipaje</span>
+              <span class="bpp-col-num">{{ totalHandBags }}</span>
+              <span class="bpp-col-num">{{ totalCheckedBags }}</span>
+              <span class="bpp-col-amount">${{ totalBaggageSubtotal.toLocaleString() }}</span>
+            </div>
           </div>
         </div>
 
         <div class="breakdown-section">
           <div class="breakdown-row breakdown-row--total">
-            <span>Total</span>
-            <span>{{ totalItems }} artículos</span>
-            <span class="total-amount">₡{{ purchase.totalPaid.toLocaleString() }}</span>
+            <span>Total pagado</span>
+            <span class="total-amount">${{ purchase.totalPaid.toLocaleString() }}</span>
           </div>
         </div>
 
@@ -204,11 +224,17 @@ export default {
   },
 
   computed: {
-    totalItems() {
-      if (!this.purchase) return 0;
-      const seatCount = this.purchase.totalSeats || 0;
-      const baggageCount = (this.purchase.baggageDetails || []).reduce((sum, b) => sum + (b.quantity || 0), 0);
-      return seatCount + baggageCount;
+    totalHandBags() {
+      return (this.purchase?.passengerBaggageDetails || [])
+        .reduce((sum, p) => sum + (p.handBagCount || 0), 0);
+    },
+    totalCheckedBags() {
+      return (this.purchase?.passengerBaggageDetails || [])
+        .reduce((sum, p) => sum + (p.checkedBagCount || 0), 0);
+    },
+    totalBaggageSubtotal() {
+      return (this.purchase?.passengerBaggageDetails || [])
+        .reduce((sum, p) => sum + (p.baggageSubtotal || 0), 0);
     },
   },
 
@@ -455,7 +481,7 @@ export default {
 }
 
 .flight-leg-block {
-  border-top: 1.5px solid #f0f0f0;
+  border-top: 1.5px solid #fcd9a4;
   padding-top: 18px;
   margin-bottom: 4px;
 }
@@ -467,7 +493,7 @@ export default {
 .flight-leg-title {
   font-size: 0.82rem;
   font-weight: 800;
-  color: #555;
+  color: #e67e22;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   margin-bottom: 14px;
@@ -514,7 +540,45 @@ export default {
   text-align: right;
 }
 
+/* ── Per-passenger baggage table ── */
+.bpp-table {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.9rem;
+}
+
+.bpp-row {
+  display: grid;
+  grid-template-columns: 1fr 56px 120px 110px;
+  gap: 8px;
+  padding: 8px 0;
+  color: #333;
+  border-bottom: 1px solid #f8f8f8;
+  align-items: center;
+}
+
+.bpp-row--header {
+  font-size: 0.75rem;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding-bottom: 6px;
+}
+
+.bpp-row--total {
+  font-weight: 700;
+  color: #1a1a1a;
+  border-bottom: none;
+  border-top: 1px solid #e8e8e8;
+  margin-top: 2px;
+}
+
+.bpp-col-name  { text-align: left; }
+.bpp-col-num   { text-align: right; }
+.bpp-col-amount { text-align: right; }
+
 .breakdown-row--total {
+  grid-template-columns: 1fr auto;
   border-bottom: none;
   border-top: 1.5px solid #e0e0e0;
   margin-top: 4px;

@@ -26,6 +26,7 @@ namespace backend.Repositories
                         ) AS LegOrder,
                         CAST(sf.Id AS VARCHAR)                                                      AS FlightNumber,
                         at.AircraftType                                                             AS AircraftType,
+                        a.Model                                                                     AS AircraftModel,
                         fs.OriginAirport,
                         fs.DestinationAirport,
                         CAST(fs.DepartureDate AS DATETIME) + CAST(fs.DepartureTime AS DATETIME)    AS DepartureDate,
@@ -52,12 +53,15 @@ namespace backend.Repositories
                     p.TotalSeats,
                     l1.FlightNumber,
                     l1.AircraftType,
+                    l1.AircraftModel,
                     l1.OriginAirport,
                     l1.DestinationAirport,
                     l1.DepartureDate,
                     l1.ArrivalDate,
                     i.Layover,
                     l2.FlightNumber     AS FlightNumber2,
+                    l2.AircraftType     AS AircraftType2,
+                    l2.AircraftModel    AS AircraftModel2,
                     l2.OriginAirport    AS OriginAirport2,
                     l2.DestinationAirport AS DestinationAirport2,
                     l2.DepartureDate    AS DepartureDate2,
@@ -78,6 +82,7 @@ namespace backend.Repositories
             {
                 purchase.Details = GetPurchaseDetails(purchaseId);
                 purchase.BaggageDetails = GetPurchaseBaggageDetails(purchaseId);
+                purchase.PassengerBaggageDetails = GetPassengerBaggageDetails(purchaseId);
                 
                 // Populate individual baggage counts and subtotals
                 var handBaggage = purchase.BaggageDetails.FirstOrDefault(b => b.Type == "HandBaggage");
@@ -124,6 +129,32 @@ namespace backend.Repositories
                 ORDER BY BaggageType";
 
             return connection.Query<BaggageSubtotal>(query, new { PurchaseId = purchaseId }).ToList();
+        }
+
+        public List<PassengerBaggageDetail> GetPassengerBaggageDetails(int purchaseId)
+        {
+            using var connection = new SqlConnection(connectionString);
+
+            const string query = @"
+                SELECT
+                    per.FirstName + ' ' + per.LastName AS PassengerFullName,
+                    tb.HandBagCount,
+                    tb.CheckedBagCount,
+                    tb.BaggageSubtotal
+                FROM TicketBaggage tb
+                INNER JOIN Passenger pa  ON tb.PassengerId = pa.Id
+                INNER JOIN Person    per ON pa.Id          = per.Id
+                WHERE tb.BookingCode = (SELECT BookingCode FROM Purchase WHERE Id = @PurchaseId)
+                AND tb.ScheduledFlightId = (
+                    SELECT TOP 1 isf.ScheduledId
+                    FROM Purchase p
+                    INNER JOIN ItineraryScheduledFlight isf ON p.BookingCode = isf.BookingCode
+                    WHERE p.Id = @PurchaseId
+                    ORDER BY isf.ScheduledId
+                )
+                ORDER BY per.FirstName, per.LastName";
+
+            return connection.Query<PassengerBaggageDetail>(query, new { PurchaseId = purchaseId }).ToList();
         }
     }
 }

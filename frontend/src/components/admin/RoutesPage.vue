@@ -117,7 +117,7 @@
                                 <th>ORIGEN / DESTINO</th>
                                 <th>FRECUENCIA</th>
                                 <th>HORARIO Y DURACIÓN</th>
-                                <th>TARIFAS (₡)</th>
+                                <th>TARIFAS ($)</th>
                             </tr>
                         </thead>
                         <tbody>
