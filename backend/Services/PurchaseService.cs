@@ -73,28 +73,25 @@ public class PurchaseService : IPurchaseService
                 request.Flight2.FlightDate.ToDateTime(TimeOnly.MinValue));
         }
 
-        bool hasSeats1 = await _purchaseRepo.HasAvailableSeatsAsync(
-            scheduledFlightId1, request.SeatSelections.Count);
-        if (!hasSeats1)
-            throw new SeatUnavailableException(scheduledFlightId1);
+        var seatCount = request.SeatSelections.Count;
 
-        if (isStopover)
-        {
-            bool hasSeats2 = await _purchaseRepo.HasAvailableSeatsAsync(
-                scheduledFlightId2, request.SeatSelections.Count);
-            if (!hasSeats2)
-                throw new SeatUnavailableException(scheduledFlightId2);
-        }
+        var seatCheckResults = await Task.WhenAll(
+            _purchaseRepo.HasAvailableSeatsAsync(scheduledFlightId1, seatCount),
+            isStopover
+                ? _purchaseRepo.HasAvailableSeatsAsync(scheduledFlightId2, seatCount)
+                : Task.FromResult(true));
 
-        var assignedSeatNumbers1 = await _purchaseRepo.GetNextAvailableSeatNumbersAsync(
-            scheduledFlightId1, request.SeatSelections.Count);
+        if (!seatCheckResults[0]) throw new SeatUnavailableException(scheduledFlightId1);
+        if (isStopover && !seatCheckResults[1]) throw new SeatUnavailableException(scheduledFlightId2);
 
-        List<int>? assignedSeatNumbers2 = null;
-        if (isStopover)
-        {
-            assignedSeatNumbers2 = await _purchaseRepo.GetNextAvailableSeatNumbersAsync(
-                scheduledFlightId2, request.SeatSelections.Count);
-        }
+        var seatNumberResults = await Task.WhenAll(
+            _purchaseRepo.GetNextAvailableSeatNumbersAsync(scheduledFlightId1, seatCount),
+            isStopover
+                ? _purchaseRepo.GetNextAvailableSeatNumbersAsync(scheduledFlightId2, seatCount)
+                : Task.FromResult<List<int>>([]));
+
+        var assignedSeatNumbers1  = seatNumberResults[0];
+        List<int>? assignedSeatNumbers2 = isStopover ? seatNumberResults[1] : null;
 
         decimal economyPrice    = route1.PriceEconomy    + (isStopover ? route2!.PriceEconomy    : 0);
         decimal firstClassPrice = route1.PriceFirstClass + (isStopover ? route2!.PriceFirstClass : 0);
