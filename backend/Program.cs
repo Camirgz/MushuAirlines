@@ -16,7 +16,10 @@ builder.Services.AddCors(options =>
     options.AddPolicy(name: MyAllowSpecificOrigins,
                     policy =>
                     {
-                        policy.WithOrigins("http://localhost:8080")
+                        policy.WithOrigins(
+                            "http://localhost:8080",
+                            "https://mushu-airlines.vercel.app"
+                        )
                             .AllowAnyHeader()
                             .AllowAnyMethod();
                     });
@@ -47,27 +50,27 @@ builder.Services.AddAuthorization();
 
 // DEPENDENCY INJECTION
 
-builder.Services.AddScoped<
+builder.Services.AddScoped
     IPurchaseConfirmationRepository,
     PurchaseConfirmationRepository>();
 
-builder.Services.AddScoped<
+builder.Services.AddScoped
     IQrService, 
     QrService>();
 
-builder.Services.AddScoped<
+builder.Services.AddScoped
     IPaymentRepository,
     PaymentRepository>();
     
-builder.Services.AddScoped<
+builder.Services.AddScoped
     IEmailPurchaseService,
     EmailPurchaseService>();
     
-builder.Services.AddScoped<
+builder.Services.AddScoped
     IPaymentService,
     PaymentService>();
 
-builder.Services.AddScoped<
+builder.Services.AddScoped
     PurchaseConfirmationService>();
 
 // Add services to the container.
