@@ -46,6 +46,9 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
+
+builder.Services.AddScoped<IReservationReportService,ReservationReportService>();
+
 builder.Services.AddScoped<IPurchaseConfirmationRepository, PurchaseConfirmationRepository>();
 builder.Services.AddScoped<IQrService, QrService>();
 builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
