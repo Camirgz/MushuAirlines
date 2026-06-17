@@ -9,8 +9,6 @@ using System.Text;
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 var builder = WebApplication.CreateBuilder(args);
 
-var jwtKey = "MushuClaveLeo.ari,Cami,alex;dani";
-
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(name: MyAllowSpecificOrigins,
@@ -39,7 +37,7 @@ builder.Services
             ValidateIssuerSigningKey = true,
 
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(jwtKey)
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])
             ),
 
             ClockSkew = TimeSpan.Zero
@@ -54,6 +52,11 @@ builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 builder.Services.AddScoped<IEmailPurchaseService, EmailPurchaseService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<PurchaseConfirmationService>();
+
+builder.Services.AddScoped<ILoginRepository, LoginRepository>();
+builder.Services.AddScoped<ILoginService, LoginService>();
+builder.Services.AddScoped<IReservationLoginRepository, ReservationLoginRepository>();
+builder.Services.AddScoped<IReservationLoginService, ReservationLoginService>();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>

@@ -2,21 +2,20 @@ using backend.Model;
 using System.Data;
 using Dapper;
 using System.Data.SqlClient;
-
+using backend.Interfaces;
 namespace backend.Repositories
 {
     using backend.Model;
     using Dapper;
     using System.Data.SqlClient;
-    public class LoginRepository
+    public class LoginRepository : ILoginRepository
     {
         private readonly string _connectionString;
 
-        public LoginRepository()
+        public LoginRepository(IConfiguration configuration)
         {
-            var builder = WebApplication.CreateBuilder();
             _connectionString =
-                builder.Configuration.GetConnectionString("LoginContext");
+                configuration.GetConnectionString("LoginContext")!;
         }
 
         public string GetPasswordHash(string username)
