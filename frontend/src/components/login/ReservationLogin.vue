@@ -62,6 +62,8 @@
 
 <script>
 import axios from "axios";
+import API_BASE_URL from "@/config/api";
+const BASE = `${API_BASE_URL}/api`;
 import "@/assets/styles/login.css";
 export default {
     data() {
@@ -77,7 +79,7 @@ export default {
     methods: {
         saveLogin() {
             console.log("Datos enviados:", this.form);
-            axios.post("http://localhost:5103/api/ReservationLogin", {
+            axios.post(`${BASE}/ReservationLogin`, {
                 reservationCode: this.form.reservationCode,
                 firstName: this.form.firstName,
                 lastName: this.form.lastName
