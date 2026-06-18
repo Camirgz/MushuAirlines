@@ -1,3 +1,3 @@
-const API_BASE_URL = process.env.VUE_APP_API_URL || 'http://localhost:5103'
+const API_BASE_URL = process.env.VUE_APP_API_URL || 'https://mushu-airlines.up.railway.app'
 
 export default API_BASE_URL
