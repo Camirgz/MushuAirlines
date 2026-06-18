@@ -11,9 +11,10 @@
       </a>
 
       <div class="nav-actions">
-        <a href="#" class="nav-link-item">
-          <i class="bi bi-briefcase me-1"></i>Mis vuelos
-        </a>
+        <router-link to="/my-reservation" class="nav-link-item">
+            <i class="bi bi-briefcase me-1"></i>
+            Mis vuelos
+        </router-link>
         <a href="#" class="nav-link-item">
           <i class="bi bi-calendar-check me-1"></i>Check-in
         </a>

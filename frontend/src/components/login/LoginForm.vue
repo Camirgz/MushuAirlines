@@ -41,6 +41,7 @@
 
 <script>
 import axios from "axios";
+import "@/assets/styles/login.css";
 import API_BASE_URL from "@/config/api";
 export default {
     data() {
@@ -50,7 +51,6 @@ export default {
     },
     methods: {
         saveLogin() {
-            console.log("Datos a guardar:", this.form);
             axios.post(`${API_BASE_URL}/api/login`, {
                 username: this.form.username,
                 password: this.form.password,
@@ -63,80 +63,10 @@ export default {
                 window.location.href = "/admin";
             })
             .catch(function(error) {
-                console.log("ERROR COMPLETO:", error);
                 const msg = error.response?.data || "Error de conexión con el servidor";
-                console.log("RESPUESTA BACKEND:", msg);
                 alert(msg);
             });
         },
     },
 };
 </script>
-
-<style scoped>
-.login-page{
-  min-height: 100vh;
-  background: linear-gradient(#d63031, #f39c12);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.login-card{
-  background: white;
-  width: 400px;
-  padding: 30px;
-  border-radius: 15px;
-}
-
-.login-icon{
-  text-align: center;
-  margin-bottom: 15px;
-}
-
-.login-title{
-  text-align: center;
-  font-weight: bold;
-}
-
-.login-subtitle{
-  text-align: center;
-  color: gray;
-  margin-bottom: 25px;
-}
-
-.input-group-custom{
-  margin-bottom: 18px;
-}
-
-.input-group-custom label{
-  display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
-}
-
-.input-box{
-  border: 1px solid lightgray;
-  border-radius: 8px;
-  padding: 10px;
-  display: flex;
-  gap: 8px;
-}
-
-.input-box input{
-  border: none;
-  outline: none;
-  width: 100%;
-}
-
-.login-btn{
-  width: 100%;
-  padding: 12px;
-  border: none;
-  border-radius: 8px;
-  background: linear-gradient(to right, #e74c3c, #f39c12);
-  color: white;
-  font-weight: bold;
-}
-
-</style>

@@ -101,6 +101,27 @@ namespace backend.Repositories
 
             return purchase;
         }
+       
+        public int GetPurchaseIdByReservationCode(string reservationCode)
+        {
+            using var connection = new SqlConnection(connectionString);
+
+            const string query = @"
+                SELECT Id
+                FROM Purchase
+                WHERE ReservationCode = @ReservationCode";
+
+            var purchaseId = connection.QueryFirstOrDefault<int?>(
+                query,
+                new { ReservationCode = reservationCode });
+
+            if (purchaseId == null)
+            {
+                throw new Exception("Reserva no encontrada.");
+            }
+
+            return purchaseId.Value;
+        }
 
        public List<SeatClassSubtotal> GetPurchaseDetails(int purchaseId)
         {

@@ -1,19 +1,24 @@
 using backend.Model;
 using backend.Repositories;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using backend.Interfaces;
 
 namespace backend.Services
 {
-    public class LoginService
+    public class LoginService : ILoginService
     {
-        private readonly LoginRepository loginRepository;
-        private readonly string jwtKey = "MushuClaveLeo.ari,Cami,alex;dani";
-        public LoginService()
+        private readonly ILoginRepository loginRepository;
+        private readonly IConfiguration configuration;
+        private readonly string jwtKey;
+        public LoginService(ILoginRepository loginRepository,IConfiguration configuration)
         {
-            loginRepository = new LoginRepository();
+            this.loginRepository = loginRepository;
+
+            jwtKey = configuration["Jwt:Key"]!;
         }
 
         public string Login(LoginModel login)

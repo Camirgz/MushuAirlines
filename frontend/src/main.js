@@ -3,7 +3,7 @@ import App from './App.vue'
 import './assets/styles/main.css'
 import {createRouter, createWebHistory} from "vue-router";
 import LandingPage from "./components/LandingPage.vue";
-import LoginForm from './components/LoginForm.vue';
+import LoginForm from './components/login/LoginForm.vue';
 import LandingPageInter from './components/LandingPageInter.vue';
 import AdminCreateEmployee from './components/CreateProfile.vue';
 import CompleteRegister from './components/CompleteRegister.vue';
@@ -18,6 +18,8 @@ import PassengerInfoPage from './components/PassengerInfoPage.vue';
 import PurchaseConfirmation from './components/PurchaseConfirmation.vue';
 import ProfilePage from './components/admin/ProfilePage.vue';
 import PaymentForm from './components/PaymentForm.vue';
+import ReservationLogin from "./components/login/ReservationLogin.vue";
+import ReservationReport from "./components/reports/ReservationReport.vue";
 
 import "@/assets/styles/admin-shared.css";
 
@@ -39,7 +41,9 @@ const router = createRouter({
         { path: "/purchase/passengers", name: "PassengerInfo", component: PassengerInfoPage },
         { path: "/purchase-confirmation/:id", name: "PurchaseConfirmation", component: PurchaseConfirmation },
         { path: "/admin/profile", name: "ProfilePage", component: ProfilePage, meta: { requiresAuth: true, allowedRoles: ["Administrator", "Operator"] } },
-        { path: "/payment", name: "Payment", component: PaymentForm }
+        { path: "/payment", name: "Payment", component: PaymentForm },
+        { path: "/my-reservation", name: "ReservationLogin",component: ReservationLogin},
+        { path: "/my-reservation/report", name: "ReservationReport",component: ReservationReport, meta:{requiresAuth:true}},
     ],
 });
 
@@ -65,12 +69,22 @@ function getRoleFromToken() {
         return null;
     }
 }
-
 router.beforeEach((to, from, next) => {
+
+    if (to.path.startsWith("/my-reservation")) {
+
+        const reservationToken = localStorage.getItem("reservationToken");
+
+        if (!reservationToken && to.meta.requiresAuth) {
+            return next("/my-reservation");
+        }
+
+        return next();
+    }
+
     const token = localStorage.getItem("token");
 
     const requiresAuth = to.matched.some(route => route.meta.requiresAuth);
-
     const allowedRoles = to.matched.flatMap(route => route.meta.allowedRoles || []);
 
     if (requiresAuth && !token) {
@@ -86,6 +100,7 @@ router.beforeEach((to, from, next) => {
 
     if (allowedRoles.length > 0) {
         if (!role || !allowedRoles.includes(role)) {
+
             sessionStorage.setItem(
                 "authMessage",
                 "Usuario no autorizado."
