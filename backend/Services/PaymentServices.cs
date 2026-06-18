@@ -8,9 +8,6 @@ namespace backend.Services
 
         public void ValidatePayment(PaymentModel model)
         {
-            if (string.IsNullOrWhiteSpace(model.PaymentMethod))
-                throw new Exception("Debe seleccionar un método de pago.");
-
             if (model.CardNumber == InsufficientFundsCard)
                 throw new Exception("Pago rechazado: fondos insuficientes.");
 

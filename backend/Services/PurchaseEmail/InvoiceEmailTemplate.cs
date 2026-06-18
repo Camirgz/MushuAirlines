@@ -13,7 +13,7 @@ namespace backend.Templates
             {
                 foreach (var baggage in model.BaggageDetails)
                 {
-                    string baggageType = baggage.Type == "HandBaggage"
+                    var baggageType = baggage.Type == BaggageType.HandBaggage
                         ? "Equipaje de Mano"
                         : "Equipaje Documentado";
 
