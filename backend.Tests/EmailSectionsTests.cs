@@ -20,7 +20,7 @@ public class EmailSectionsTests
             ReservationCode = "ABC123",
 
             InvoiceNumber = "MA-20250530-ABCDEFGH",
-            PaymentMethod = "Visa",
+            PaymentMethod = PaymentMethod.Visa,
             TotalPaid = 500,
 
             TotalSeats = 2,
@@ -29,7 +29,7 @@ public class EmailSectionsTests
             [
                 new SeatClassSubtotal
                 {
-                    SeatClass = "Economy",
+                    SeatClass = SeatClass.Economy,
                     SeatCount = 2,
                     Subtotal = 500
                 }
@@ -71,7 +71,7 @@ public class EmailSectionsTests
         Assert.Multiple(() =>
         {
             Assert.That(html, Does.Contain(model.InvoiceNumber));
-            Assert.That(html, Does.Contain(model.PaymentMethod));
+            Assert.That(html, Does.Contain(model.PaymentMethod.ToString()));
             Assert.That(html, Does.Contain(model.TotalPaid.ToString("N2")));
         });
     }
