@@ -187,6 +187,7 @@
 
 <script>
     import axios from "axios";
+    import API_BASE_URL from "@/config/api";
 
     export default {
         name: "RoutesAdminPage",
@@ -226,7 +227,7 @@
                 this.errorMessage = "";
                 try {
                     const [routesRes] = await Promise.all([
-                        axios.get("http://localhost:5103/api/routecreation")
+                        axios.get(`${API_BASE_URL}/api/routecreation`)
                     ]);
 
                     this.routes = routesRes.data.map(r => {

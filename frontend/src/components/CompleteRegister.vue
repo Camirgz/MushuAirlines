@@ -66,6 +66,7 @@
 
 <script>
 import axios from "axios";
+import API_BASE_URL from "@/config/api";
 
 export default {
   data() {
@@ -95,7 +96,7 @@ export default {
           return;
         }
         const response = await axios.post(
-          "http://localhost:5103/api/PendingAccount/completeRegister",
+          `${API_BASE_URL}/api/PendingAccount/completeRegister`,
           {
             token: this.token,
             password: this.password

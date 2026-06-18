@@ -1,6 +1,7 @@
 import axios from 'axios'
+import API_BASE_URL from '@/config/api'
 
-const BASE = 'http://localhost:5103/api'
+const BASE = `${API_BASE_URL}/api`
 
 /**
  * Validate card details via the payment simulation endpoint.
