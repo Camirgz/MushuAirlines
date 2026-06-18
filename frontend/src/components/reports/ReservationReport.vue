@@ -285,10 +285,17 @@ export default {
 
     duration(startDateString, endDateString) {
       if (!startDateString || !endDateString) return '';
-
+      console.log('start:', startDateString);
+      console.log('end:', endDateString);
       const startDate = new Date(startDateString);
-      const endDate = new Date(endDateString);
-      const timeDifference = endDate - startDate;
+      let endDate = new Date(endDateString);
+      let timeDifference = endDate - startDate;
+
+      // Si la diferencia es negativa, el vuelo cruza la medianoche (o cambia de día)
+      if (timeDifference < 0) {
+        endDate = new Date(endDate.getTime() + MILLISECONDS_IN_A_DAY);
+        timeDifference = endDate - startDate;
+      }
 
       const hours = Math.floor(timeDifference / MILLISECONDS_IN_AN_HOUR);
       const minutes = Math.floor((timeDifference % MILLISECONDS_IN_AN_HOUR) / MILLISECONDS_IN_A_MINUTE);
