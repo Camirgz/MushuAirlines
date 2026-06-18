@@ -18,21 +18,21 @@ public class ExternalApiController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetFlights(
         [FromQuery] string destination,
-        [FromQuery] string earliestArrival,
-        [FromQuery] string latestArrival,
+        [FromQuery] string earliestDeparture,
+        [FromQuery] string latestDeparture,
         [FromQuery] int quantityOfPassengers,
         [FromQuery] string apiKey = "")
     {
         if (string.IsNullOrWhiteSpace(apiKey)) return Unauthorized();
         if (string.IsNullOrWhiteSpace(destination)) return BadRequest(new { code = "MISSING_AIRPORTS", description = "Destination airport is required" });
 
-        if (!DateTime.TryParse(earliestArrival, out var targetEarliest) || !DateTime.TryParse(latestArrival, out var targetLatest))
+        if (!DateTime.TryParse(earliestDeparture, out var targetEarliest) || !DateTime.TryParse(latestDeparture, out var targetLatest))
             return BadRequest(new { code = "INVALID_DATE_FORMAT", description = "Dates must be in ISO format YYYY-MM-DDThh:mm" });
 
         if (quantityOfPassengers == null) return BadRequest(new { code = "MISSING_PASSENGERS", description = "quantityOfPassengers is required" });
 
         if (quantityOfPassengers < 1 || quantityOfPassengers == null) return BadRequest(new { code = "INVALID_PASSENGERS", description = "quantityOfPassengers is required and it's value must be >= 1" });
-        if (targetEarliest > targetLatest) return BadRequest(new { code = "INVALID_DATE_RANGE", description = "earliestArrival must be before latestArrival" });
+        if (targetEarliest > targetLatest) return BadRequest(new { code = "INVALID_DATE_RANGE", description = "earliestDeparture must be before latestDeparture" });
 
         try
         {

@@ -16,7 +16,10 @@ builder.Services.AddCors(options =>
     options.AddPolicy(name: MyAllowSpecificOrigins,
                     policy =>
                     {
-                        policy.WithOrigins("http://localhost:8080")
+                        policy.WithOrigins(
+                            "http://localhost:8080",
+                            "https://mushu-airlines.vercel.app"
+                        )
                             .AllowAnyHeader()
                             .AllowAnyMethod();
                     });
@@ -44,6 +47,17 @@ builder.Services
     });
 
 builder.Services.AddAuthorization();
+
+builder.Services.AddScoped<IPurchaseConfirmationRepository, PurchaseConfirmationRepository>();
+builder.Services.AddScoped<IQrService, QrService>();
+builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+builder.Services.AddScoped<IEmailPurchaseService, EmailPurchaseService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<PurchaseConfirmationService>();
+
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase);
 
 
 builder.Services.AddScoped<
@@ -83,7 +97,6 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<backend.Interfaces.IPassengerRepository,  backend.Repositories.PassengerRepository>();
 builder.Services.AddScoped<backend.Interfaces.IPurchaseRepository,   backend.Repositories.PurchaseRepository>();
-
 
 builder.Services.AddScoped<IAirportRepository, AirportRepository>();
 builder.Services.AddScoped<IAirportService, AirportService>();
