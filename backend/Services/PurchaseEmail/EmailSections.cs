@@ -5,9 +5,18 @@ namespace backend.Templates
 {
     public static class EmailSections
     {
-        public static string BuildCustomerSection(
-            PurchaseConfirmationModel model)
+        public static string BuildCustomerSection(PurchaseConfirmationModel model)
         {
+            StringBuilder passengersHtml = new();
+
+            if (model.PassengerBaggageDetails != null)
+            {
+                foreach (var passenger in model.PassengerBaggageDetails)
+                {
+                    passengersHtml.Append($@"<li>{passenger.PassengerFullName}</li>");
+                }
+            }
+
             return $@"
                 <div style='{EmailStyles.Section}'>
 
@@ -18,7 +27,7 @@ namespace backend.Templates
                     <div style='{EmailStyles.Card}'>
 
                         <p>
-                            <strong>Nombre completo:</strong>
+                            <strong>Comprador:</strong>
                             {model.FullName}
                         </p>
 
@@ -26,6 +35,14 @@ namespace backend.Templates
                             <strong>Correo electrónico:</strong>
                             {model.Email}
                         </p>
+
+                        <p>
+                            <strong>Pasajeros:</strong>
+                        </p>
+
+                        <ul>
+                            {passengersHtml}
+                        </ul>
 
                     </div>
 
@@ -279,6 +296,96 @@ namespace backend.Templates
                 }
             }
 
+            StringBuilder passengerBaggageHtml = new();
+
+            if (model.PassengerBaggageDetails != null &&
+                model.PassengerBaggageDetails.Count > 0)
+            {
+                passengerBaggageHtml.Append(@"
+                    <div style='margin-top:25px;'>
+
+                        <h4 style='margin-bottom:15px;'>
+                            Equipaje por pasajero
+                        </h4>
+
+                        <table style='
+                            width:100%;
+                            border-collapse:collapse;
+                            background:rgba(255,255,255,0.08);
+                            border-radius:8px;
+                        '>
+
+                            <tr>
+                                <th style='padding:10px;text-align:left;border-bottom:1px solid rgba(255,255,255,0.2);'>
+                                    Pasajero
+                                </th>
+
+                                <th style='padding:10px;border-bottom:1px solid rgba(255,255,255,0.2);'>
+                                    Mano
+                                </th>
+
+                                <th style='padding:10px;border-bottom:1px solid rgba(255,255,255,0.2);'>
+                                    Documentado
+                                </th>
+
+                                <th style='padding:10px;border-bottom:1px solid rgba(255,255,255,0.2);'>
+                                    Subtotal
+                                </th>
+                            </tr>
+                ");
+
+                foreach (var passenger in model.PassengerBaggageDetails)
+                {
+                    passengerBaggageHtml.Append($@"
+                        <tr>
+
+                            <td style='padding:10px;border-bottom:1px solid rgba(255,255,255,0.1);'>
+                                {passenger.PassengerFullName}
+                            </td>
+
+                            <td style='padding:10px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.1);'>
+                                {passenger.HandBagCount}
+                            </td>
+
+                            <td style='padding:10px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.1);'>
+                                {passenger.CheckedBagCount}
+                            </td>
+
+                            <td style='padding:10px;text-align:right;border-bottom:1px solid rgba(255,255,255,0.1);'>
+                                ${passenger.BaggageSubtotal:N2}
+                            </td>
+
+                        </tr>
+                    ");
+                }
+
+                passengerBaggageHtml.Append($@"
+                        <tr style='font-weight:bold;'>
+
+                            <td style='padding:10px;'>
+                                Total equipaje
+                            </td>
+
+                            <td style='padding:10px;text-align:center;'>
+                                {model.PassengerBaggageDetails.Sum(p => p.HandBagCount)}
+                            </td>
+
+                            <td style='padding:10px;text-align:center;'>
+                                {model.PassengerBaggageDetails.Sum(p => p.CheckedBagCount)}
+                            </td>
+
+                            <td style='padding:10px;text-align:right;'>
+                                ${model.PassengerBaggageDetails.Sum(p => p.BaggageSubtotal):N2}
+                            </td>
+
+                        </tr>
+
+                    </table>
+
+                </div>
+                ");
+            }
+
             return $@"
                 <div style='{EmailStyles.Section}'>
 
@@ -321,6 +428,8 @@ namespace backend.Templates
                             </div>
 
                             {baggageHtml}
+
+                            {passengerBaggageHtml}
 
                         </div>
 
