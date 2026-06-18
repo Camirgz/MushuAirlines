@@ -13,42 +13,6 @@ namespace backend.Repositories
         {
             connectionString = configuration.GetConnectionString("LoginContext");
         }
-        private PurchaseConfirmationModel LoadPurchase(
-            SqlConnection connection,
-            string sql,
-            object parameters)
-        {
-            var purchase = connection.QueryFirstOrDefault<PurchaseConfirmationModel>(
-                sql,
-                parameters);
-
-            if (purchase == null)
-                return null;
-
-            purchase.Details = GetPurchaseDetails(purchase.PurchaseId);
-            purchase.BaggageDetails = GetPurchaseBaggageDetails(purchase.PurchaseId);
-            purchase.PassengerBaggageDetails = GetPassengerBaggageDetails(purchase.PurchaseId);
-
-            var handBaggage = purchase.BaggageDetails
-                .FirstOrDefault(b => b.Type == "HandBaggage");
-
-            if (handBaggage != null)
-            {
-                purchase.HandBaggageCount = handBaggage.Quantity;
-                purchase.HandBaggageSubtotal = handBaggage.Subtotal;
-            }
-
-            var checkedBaggage = purchase.BaggageDetails
-                .FirstOrDefault(b => b.Type == "CheckedBaggage");
-
-            if (checkedBaggage != null)
-            {
-                purchase.CheckedBaggageCount = checkedBaggage.Quantity;
-                purchase.CheckedBaggageSubtotal = checkedBaggage.Subtotal;
-            }
-
-            return purchase;
-        }
 
         public PurchaseConfirmationModel GetPurchase(int purchaseId)
         {
@@ -111,10 +75,31 @@ namespace backend.Repositories
                 LEFT  JOIN Legs l2         ON l2.LegOrder   = 2
                 WHERE p.Id = @PurchaseId";
 
-            return LoadPurchase(
-                connection,
-                sql,
-                new { PurchaseId = purchaseId });
+            var purchase = connection.QueryFirstOrDefault<PurchaseConfirmationModel>(
+                sql, new { PurchaseId = purchaseId });
+
+            if (purchase != null)
+            {
+                purchase.Details = GetPurchaseDetails(purchaseId);
+                purchase.BaggageDetails = GetPurchaseBaggageDetails(purchaseId);
+                purchase.PassengerBaggageDetails = GetPassengerBaggageDetails(purchaseId);
+                
+                var handBaggage = purchase.BaggageDetails.FirstOrDefault(b => b.Type == BaggageType.HandBaggage);
+                if (handBaggage != null)
+                {
+                    purchase.HandBaggageCount    = handBaggage.Quantity;
+                    purchase.HandBaggageSubtotal = handBaggage.Subtotal;
+                }
+
+                var checkedBaggage = purchase.BaggageDetails.FirstOrDefault(b => b.Type == BaggageType.CheckedBaggage);
+                if (checkedBaggage != null)
+                {
+                    purchase.CheckedBaggageCount    = checkedBaggage.Quantity;
+                    purchase.CheckedBaggageSubtotal = checkedBaggage.Subtotal;
+                }
+            }
+
+            return purchase;
         }
        
         public int GetPurchaseIdByReservationCode(string reservationCode)

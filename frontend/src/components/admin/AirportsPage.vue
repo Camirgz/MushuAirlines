@@ -240,8 +240,9 @@ import AdminHero from "@/components/admin/ui/AdminHero.vue";
 import AdminCard from "@/components/admin/ui/AdminCard.vue";
 
 import axios from "axios";
+import API_BASE_URL from "@/config/api";
 
-const BaseURL = "http://localhost:5103/api/airport";
+const BaseURL = `${API_BASE_URL}/api/airport`;
 
 export default {
   name: "AirportsPage",

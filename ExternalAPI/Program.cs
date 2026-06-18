@@ -8,7 +8,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddHttpClient<IClient, Client>(client =>
 {
-    client.BaseAddress = new Uri("http://localhost:5103");
+    client.BaseAddress = new Uri("https://mushuairlines-production.up.railway.app/");
 });
 
 var app = builder.Build();

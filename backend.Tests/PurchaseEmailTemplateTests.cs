@@ -18,7 +18,7 @@ public class PurchaseEmailTemplateTests
             PassportNumber = 123456,
             ReservationCode = "ABC123",
             InvoiceNumber = "FAC-001",
-            PaymentMethod = "Visa",
+            PaymentMethod = PaymentMethod.Visa,
             TotalPaid = 250,
             TotalSeats = 2,
             FlightNumber = "FL001",
@@ -91,7 +91,7 @@ public class PurchaseEmailTemplateTests
         string html = PurchaseEmailTemplate.Build(model);
 
         // Assert
-        Assert.That(html, Does.Contain(model.PaymentMethod));
+        Assert.That(html, Does.Contain(model.PaymentMethod.ToString()));
         Assert.That(html, Does.Contain(model.TotalPaid.ToString("N2")));
     }
 }

@@ -27,9 +27,9 @@ public class PurchasePricingCalculatorTests
     {
         var seats = new List<SeatSelection>
         {
-            new() { PassengerIndex = 0, SeatClass = "Economy", SeatNumber = 1 },
-            new() { PassengerIndex = 1, SeatClass = "Economy", SeatNumber = 2 },
-            new() { PassengerIndex = 2, SeatClass = "Economy", SeatNumber = 3 },
+            new() { PassengerIndex = 0, SeatClass = SeatClass.Economy, SeatNumber = 1 },
+            new() { PassengerIndex = 1, SeatClass = SeatClass.Economy, SeatNumber = 2 },
+            new() { PassengerIndex = 2, SeatClass = SeatClass.Economy, SeatNumber = 3 },
         };
 
         var result = _calculator.Calculate(seats, NoBaggage(3), economyPrice: 100m, firstClassPrice: 300m, 0m, 0m, 1m);
@@ -46,8 +46,8 @@ public class PurchasePricingCalculatorTests
     {
         var seats = new List<SeatSelection>
         {
-            new() { PassengerIndex = 0, SeatClass = "FirstClass", SeatNumber = 1 },
-            new() { PassengerIndex = 1, SeatClass = "FirstClass", SeatNumber = 2 },
+            new() { PassengerIndex = 0, SeatClass = SeatClass.FirstClass, SeatNumber = 1 },
+            new() { PassengerIndex = 1, SeatClass = SeatClass.FirstClass, SeatNumber = 2 },
         };
 
         var result = _calculator.Calculate(seats, NoBaggage(2), economyPrice: 100m, firstClassPrice: 400m, 0m, 0m, 1m);
@@ -64,9 +64,9 @@ public class PurchasePricingCalculatorTests
     {
         var seats = new List<SeatSelection>
         {
-            new() { PassengerIndex = 0, SeatClass = "Economy",    SeatNumber = 5 },
-            new() { PassengerIndex = 1, SeatClass = "Economy",    SeatNumber = 6 },
-            new() { PassengerIndex = 2, SeatClass = "FirstClass", SeatNumber = 1 },
+            new() { PassengerIndex = 0, SeatClass = SeatClass.Economy,    SeatNumber = 5 },
+            new() { PassengerIndex = 1, SeatClass = SeatClass.Economy,    SeatNumber = 6 },
+            new() { PassengerIndex = 2, SeatClass = SeatClass.FirstClass, SeatNumber = 1 },
         };
 
         var result = _calculator.Calculate(seats, NoBaggage(3), economyPrice: 150m, firstClassPrice: 500m, 0m, 0m, 1m);
@@ -96,7 +96,7 @@ public class PurchasePricingCalculatorTests
     {
         var seats = new List<SeatSelection>
         {
-            new() { PassengerIndex = 0, SeatClass = "Economy", SeatNumber = 1 }
+            new() { PassengerIndex = 0, SeatClass = SeatClass.Economy, SeatNumber = 1 }
         };
 
         var result = _calculator.Calculate(seats, NoBaggage(1), economyPrice: 99.99m, firstClassPrice: 0m, 0m, 0m, 1m);
@@ -109,26 +109,14 @@ public class PurchasePricingCalculatorTests
     }
 
     [Test]
-    public void Calculate_UnknownSeatClass_ShouldThrowArgumentException()
-    {
-        var seats = new List<SeatSelection>
-        {
-            new() { PassengerIndex = 0, SeatClass = "Business", SeatNumber = 1 }
-        };
-
-        Assert.Throws<ArgumentException>(() =>
-            _calculator.Calculate(seats, NoBaggage(1), economyPrice: 100m, firstClassPrice: 200m, 0m, 0m, 1m));
-    }
-
-    [Test]
     public void Calculate_TotalPaid_ShouldEqualSumOfAllSubtotals()
     {
         var seats = new List<SeatSelection>
         {
-            new() { PassengerIndex = 0, SeatClass = "Economy",    SeatNumber = 5 },
-            new() { PassengerIndex = 1, SeatClass = "Economy",    SeatNumber = 6 },
-            new() { PassengerIndex = 2, SeatClass = "FirstClass", SeatNumber = 1 },
-            new() { PassengerIndex = 3, SeatClass = "FirstClass", SeatNumber = 2 },
+            new() { PassengerIndex = 0, SeatClass = SeatClass.Economy,    SeatNumber = 5 },
+            new() { PassengerIndex = 1, SeatClass = SeatClass.Economy,    SeatNumber = 6 },
+            new() { PassengerIndex = 2, SeatClass = SeatClass.FirstClass, SeatNumber = 1 },
+            new() { PassengerIndex = 3, SeatClass = SeatClass.FirstClass, SeatNumber = 2 },
         };
 
         var result = _calculator.Calculate(seats, NoBaggage(4), economyPrice: 175m, firstClassPrice: 450m, 0m, 0m, 1m);
@@ -137,15 +125,14 @@ public class PurchasePricingCalculatorTests
         Assert.That(result.TotalPaid, Is.EqualTo(expectedTotal));
     }
 
-    // ── DetailByClass ─────────────────────────────────────────────────────────
 
     [Test]
     public void Calculate_MixedClasses_ShouldProduceTwoDetailEntries()
     {
         var seats = new List<SeatSelection>
         {
-            new() { PassengerIndex = 0, SeatClass = "Economy",    SeatNumber = 10 },
-            new() { PassengerIndex = 1, SeatClass = "FirstClass", SeatNumber = 1  },
+            new() { PassengerIndex = 0, SeatClass = SeatClass.Economy,    SeatNumber = 10 },
+            new() { PassengerIndex = 1, SeatClass = SeatClass.FirstClass, SeatNumber = 1  },
         };
 
         var result = _calculator.Calculate(seats, NoBaggage(2), economyPrice: 200m, firstClassPrice: 600m, 0m, 0m, 1m);
@@ -158,13 +145,13 @@ public class PurchasePricingCalculatorTests
     {
         var seats = new List<SeatSelection>
         {
-            new() { PassengerIndex = 0, SeatClass = "Economy", SeatNumber = 3 },
-            new() { PassengerIndex = 1, SeatClass = "Economy", SeatNumber = 4 },
+            new() { PassengerIndex = 0, SeatClass = SeatClass.Economy, SeatNumber = 3 },
+            new() { PassengerIndex = 1, SeatClass = SeatClass.Economy, SeatNumber = 4 },
         };
 
         var result = _calculator.Calculate(seats, NoBaggage(2), economyPrice: 250m, firstClassPrice: 999m, 0m, 0m, 1m);
 
-        var detail = result.DetailByClass.Single(d => d.SeatClass == "Economy");
+        var detail = result.DetailByClass.Single(d => d.SeatClass == SeatClass.Economy);
         Assert.Multiple(() =>
         {
             Assert.That(detail.SeatCount, Is.EqualTo(2));
@@ -177,14 +164,14 @@ public class PurchasePricingCalculatorTests
     {
         var seats = new List<SeatSelection>
         {
-            new() { PassengerIndex = 0, SeatClass = "FirstClass", SeatNumber = 1 },
-            new() { PassengerIndex = 1, SeatClass = "FirstClass", SeatNumber = 2 },
-            new() { PassengerIndex = 2, SeatClass = "FirstClass", SeatNumber = 3 },
+            new() { PassengerIndex = 0, SeatClass = SeatClass.FirstClass, SeatNumber = 1 },
+            new() { PassengerIndex = 1, SeatClass = SeatClass.FirstClass, SeatNumber = 2 },
+            new() { PassengerIndex = 2, SeatClass = SeatClass.FirstClass, SeatNumber = 3 },
         };
 
         var result = _calculator.Calculate(seats, NoBaggage(3), economyPrice: 50m, firstClassPrice: 700m, 0m, 0m, 1m);
 
-        var detail = result.DetailByClass.Single(d => d.SeatClass == "FirstClass");
+        var detail = result.DetailByClass.Single(d => d.SeatClass == SeatClass.FirstClass);
         Assert.Multiple(() =>
         {
             Assert.That(detail.SeatCount, Is.EqualTo(3));
@@ -192,14 +179,13 @@ public class PurchasePricingCalculatorTests
         });
     }
 
-    // ── Baggage pricing: first unit at base price, second+ with multiplier ────
 
     [Test]
     public void Calculate_OneHandBag_ShouldChargeBasePrice()
     {
         var seats = new List<SeatSelection>
         {
-            new() { PassengerIndex = 0, SeatClass = "Economy", SeatNumber = 1 },
+            new() { PassengerIndex = 0, SeatClass = SeatClass.Economy, SeatNumber = 1 },
         };
 
         var result = _calculator.Calculate(seats, WithBags((hand: 1, checkedBag: 0)),
@@ -217,7 +203,7 @@ public class PurchasePricingCalculatorTests
     {
         var seats = new List<SeatSelection>
         {
-            new() { PassengerIndex = 0, SeatClass = "Economy", SeatNumber = 1 },
+            new() { PassengerIndex = 0, SeatClass = SeatClass.Economy, SeatNumber = 1 },
         };
 
         // 1st bag: 30, 2nd bag: 30 × 2 = 60 → total hand = 90
@@ -236,7 +222,7 @@ public class PurchasePricingCalculatorTests
     {
         var seats = new List<SeatSelection>
         {
-            new() { PassengerIndex = 0, SeatClass = "Economy", SeatNumber = 1 },
+            new() { PassengerIndex = 0, SeatClass = SeatClass.Economy, SeatNumber = 1 },
         };
 
         // 1st: 30, 2nd: 30×2=60, 3rd: 30×2=60 → total hand = 150
@@ -251,7 +237,7 @@ public class PurchasePricingCalculatorTests
     {
         var seats = new List<SeatSelection>
         {
-            new() { PassengerIndex = 0, SeatClass = "Economy", SeatNumber = 1 },
+            new() { PassengerIndex = 0, SeatClass = SeatClass.Economy, SeatNumber = 1 },
         };
 
         var result = _calculator.Calculate(seats, WithBags((hand: 0, checkedBag: 1)),
@@ -269,10 +255,9 @@ public class PurchasePricingCalculatorTests
     {
         var seats = new List<SeatSelection>
         {
-            new() { PassengerIndex = 0, SeatClass = "Economy", SeatNumber = 1 },
+            new() { PassengerIndex = 0, SeatClass = SeatClass.Economy, SeatNumber = 1 },
         };
 
-        // 1st: 50, 2nd: 50×1.5=75 → total checked = 125
         var result = _calculator.Calculate(seats, WithBags((hand: 0, checkedBag: 2)),
             economyPrice: 100m, firstClassPrice: 0m, handBagPrice: 0m, bagPrice: 50m, bagMultiplier: 1.5m);
 
@@ -288,11 +273,9 @@ public class PurchasePricingCalculatorTests
     {
         var seats = new List<SeatSelection>
         {
-            new() { PassengerIndex = 0, SeatClass = "Economy", SeatNumber = 1 },
+            new() { PassengerIndex = 0, SeatClass = SeatClass.Economy, SeatNumber = 1 },
         };
 
-        // hand: 1×20=20 (first bag, no multiplier)
-        // checked: 50 + 50×1.0=100 (second bag, multiplier=1.0 so same price)
         var result = _calculator.Calculate(seats, WithBags((hand: 1, checkedBag: 2)),
             economyPrice: 100m, firstClassPrice: 0m, handBagPrice: 20m, bagPrice: 50m, bagMultiplier: 1.0m);
 
@@ -309,13 +292,10 @@ public class PurchasePricingCalculatorTests
     {
         var seats = new List<SeatSelection>
         {
-            new() { PassengerIndex = 0, SeatClass = "Economy", SeatNumber = 1 },
-            new() { PassengerIndex = 1, SeatClass = "Economy", SeatNumber = 2 },
+            new() { PassengerIndex = 0, SeatClass = SeatClass.Economy, SeatNumber = 1 },
+            new() { PassengerIndex = 1, SeatClass = SeatClass.Economy, SeatNumber = 2 },
         };
 
-        // Passenger 0: 2 checked → 50 + 50×2 = 150
-        // Passenger 1: 1 checked → 50 (no multiplier)
-        // Total checked = 200
         var result = _calculator.Calculate(seats,
             WithBags((hand: 0, checkedBag: 2), (hand: 0, checkedBag: 1)),
             economyPrice: 100m, firstClassPrice: 0m, handBagPrice: 0m, bagPrice: 50m, bagMultiplier: 2m);
@@ -333,8 +313,8 @@ public class PurchasePricingCalculatorTests
     {
         var seats = new List<SeatSelection>
         {
-            new() { PassengerIndex = 0, SeatClass = "Economy", SeatNumber = 1 },
-            new() { PassengerIndex = 1, SeatClass = "Economy", SeatNumber = 2 },
+            new() { PassengerIndex = 0, SeatClass = SeatClass.Economy, SeatNumber = 1 },
+            new() { PassengerIndex = 1, SeatClass = SeatClass.Economy, SeatNumber = 2 },
         };
 
         var result = _calculator.Calculate(seats,
@@ -348,10 +328,10 @@ public class PurchasePricingCalculatorTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(p0.HandSubtotal,    Is.EqualTo(20m));   // 1 hand bag, no multiplier
+            Assert.That(p0.HandSubtotal,    Is.EqualTo(20m));
             Assert.That(p0.CheckedSubtotal, Is.EqualTo(0m));
             Assert.That(p1.HandSubtotal,    Is.EqualTo(0m));
-            Assert.That(p1.CheckedSubtotal, Is.EqualTo(125m));  // 50 + 50×1.5
+            Assert.That(p1.CheckedSubtotal, Is.EqualTo(125m));
         });
     }
 }

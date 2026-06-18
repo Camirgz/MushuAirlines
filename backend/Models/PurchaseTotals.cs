@@ -25,10 +25,10 @@ public class PassengerBaggageSubtotal
 
 public class SeatClassSubtotal
 {
-    public string SeatClass { get; set; } = string.Empty;
-    public int SeatCount { get; set; }
-    public decimal Subtotal { get; set; }
-     // derivated
+    public SeatClass SeatClass { get; set; }
+    public int       SeatCount { get; set; }
+    public decimal   Subtotal  { get; set; }
+
     public decimal PricePerSeat
     {
         get

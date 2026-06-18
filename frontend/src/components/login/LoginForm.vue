@@ -42,6 +42,7 @@
 <script>
 import axios from "axios";
 import "@/assets/styles/login.css";
+import API_BASE_URL from "@/config/api";
 export default {
     data() {
         return {
@@ -50,7 +51,7 @@ export default {
     },
     methods: {
         saveLogin() {
-            axios.post("http://localhost:5103/api/login", {
+            axios.post(`${API_BASE_URL}/api/login`, {
                 username: this.form.username,
                 password: this.form.password,
             })
