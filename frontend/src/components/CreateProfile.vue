@@ -97,7 +97,7 @@
               v-model.number="form.salary"
               type="number"
               min="0"
-              placeholder="₡ 0"
+              placeholder="$ 0"
               required
             />
           </div>

@@ -8,12 +8,6 @@ function defaultState() {
     flight2:    null,
     seats:      [],
     passengers: [],
-    baggage: {
-      handCount:     0,
-      handWeight:    0,
-      checkedCount:  0,
-      checkedWeight: 0,
-    },
     payment: {
       method:       '',
       contactEmail: '',
@@ -37,18 +31,7 @@ function persist() {
   sessionStorage.setItem(STORAGE_KEY, JSON.stringify(_state))
 }
 
-/**
- * usePurchaseFlow — shared state for the end-to-end purchase flow.
- *
- * Expected shapes:
- *
- * flight  — FlightDto from GET /api/flights, extended with { flightDate: 'YYYY-MM-DD' }
- * seats   — [{ passengerIndex, seatClass, seatNumber }]
- * passengers — [{ firstName, lastName, gender, passportCountry, passportNumber,
- *                 birthDate, email, phone }]
- * baggage — { handCount, handWeight, checkedCount, checkedWeight }
- * payment — { method, contactEmail }
- */
+
 export function usePurchaseFlow() {
 
   /** Save flight + seat selections after the user confirms from FlightResultCard.
@@ -60,10 +43,9 @@ export function usePurchaseFlow() {
     persist()
   }
 
-  /** Save passenger info and baggage after PassengerInfoPage is submitted. */
-  function setPassengers(passengers, baggage) {
+  /** Save passenger info after PassengerInfoPage is submitted. */
+  function setPassengers(passengers) {
     _state.passengers = passengers
-    _state.baggage    = baggage
     persist()
   }
 
@@ -99,20 +81,16 @@ export function usePurchaseFlow() {
         gender:          p.gender,
         passportCountry: p.passportCountry,
         birthDate:       p.birthDate,
-        email:           p.email  ?? '',
-        phone:           p.phone  ?? '',
+        email:           p.email          ?? '',
+        phone:           p.phone          ?? '',
+        handBagCount:    p.handBagCount   ?? 0,
+        checkedBagCount: p.checkedBagCount ?? 0,
       })),
       seatSelections: _state.seats.map(s => ({
         passengerIndex: s.passengerIndex,
         seatClass:      s.seatClass,
         seatNumber:     s.seatNumber,
       })),
-      baggage: {
-        handCount:     _state.baggage.handCount,
-        handWeight:    _state.baggage.handWeight,
-        checkedCount:  _state.baggage.checkedCount,
-        checkedWeight: _state.baggage.checkedWeight,
-      },
       payment: {
         method:       _state.payment.method,
         contactEmail: _state.payment.contactEmail,

@@ -100,13 +100,13 @@ public class PurchaseService : IPurchaseService
         decimal firstClassPrice = route1.PriceFirstClass + (isStopover ? route2!.PriceFirstClass : 0);
         decimal handBagPrice    = route1.HandBagPrice    + (isStopover ? route2!.HandBagPrice    : 0);
         decimal bagPrice        = route1.BagPrice        + (isStopover ? route2!.BagPrice        : 0);
-        decimal bagMultiplier   = route1.BagMultiplier; // Multiplier is the same for both legs
+        decimal bagMultiplier   = route1.BagMultiplier;
 
         var totals = _pricingCalculator.Calculate(
             request.SeatSelections,
+            request.Passengers,
             economyPrice,
             firstClassPrice,
-            request.Baggage,
             handBagPrice,
             bagPrice,
             bagMultiplier);
@@ -117,7 +117,11 @@ public class PurchaseService : IPurchaseService
             reservationCode = _codeGenerator.GenerateReservationCode();
         } while (await _purchaseRepo.ReservationCodeExistsAsync(reservationCode));
 
-        string invoiceNumber = _codeGenerator.GenerateInvoiceNumber();
+        string invoiceNumber;
+        do
+        {
+            invoiceNumber = _codeGenerator.GenerateInvoiceNumber();
+        } while (await _purchaseRepo.InvoiceNumberExistsAsync(invoiceNumber));
 
         var passengerIdMap = new Dictionary<int, int>(request.Passengers.Count);
         for (int i = 0; i < request.Passengers.Count; i++)
@@ -153,11 +157,15 @@ public class PurchaseService : IPurchaseService
         var tickets = new List<TicketSummary>(request.SeatSelections.Count);
         for (int seatIdx = 0; seatIdx < request.SeatSelections.Count; seatIdx++)
         {
-            var seat        = request.SeatSelections[seatIdx];
-            int passengerId = passengerIdMap[seat.PassengerIndex];
-            int seatNumber  = assignedSeatNumbers1[seatIdx];
+            var seat            = request.SeatSelections[seatIdx];
+            int passengerId     = passengerIdMap[seat.PassengerIndex];
+            int seatNumber      = assignedSeatNumbers1[seatIdx];
+            var passengerBag    = totals.PassengerBaggageDetails[seat.PassengerIndex];
 
             await _purchaseRepo.CreateTicketAsync(scheduledFlightId1, passengerId, seatNumber);
+            await _purchaseRepo.CreateTicketBaggageAsync(
+                scheduledFlightId1, passengerId, bookingCode,
+                passengerBag.HandBagCount, passengerBag.CheckedBagCount, passengerBag.Subtotal);
 
             var passenger = request.Passengers[seat.PassengerIndex];
             tickets.Add(new TicketSummary
@@ -174,11 +182,15 @@ public class PurchaseService : IPurchaseService
         {
             for (int seatIdx = 0; seatIdx < request.SeatSelections.Count; seatIdx++)
             {
-                var seat        = request.SeatSelections[seatIdx];
-                int passengerId = passengerIdMap[seat.PassengerIndex];
-                int seatNumber  = assignedSeatNumbers2![seatIdx];
+                var seat         = request.SeatSelections[seatIdx];
+                int passengerId  = passengerIdMap[seat.PassengerIndex];
+                int seatNumber   = assignedSeatNumbers2![seatIdx];
+                var passengerBag = totals.PassengerBaggageDetails[seat.PassengerIndex];
 
                 await _purchaseRepo.CreateTicketAsync(scheduledFlightId2, passengerId, seatNumber);
+                await _purchaseRepo.CreateTicketBaggageAsync(
+                    scheduledFlightId2, passengerId, bookingCode,
+                    passengerBag.HandBagCount, passengerBag.CheckedBagCount, passengerBag.Subtotal);
             }
 
             await _purchaseRepo.LinkItineraryToScheduledFlightAsync(bookingCode, scheduledFlightId2);

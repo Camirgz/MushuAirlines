@@ -1,0 +1,28 @@
+USE MushuAirlines;
+GO
+
+DELETE FROM TicketBaggage;
+GO
+
+ALTER TABLE TicketBaggage
+ADD BookingCode INT NOT NULL
+    CONSTRAINT DF_TicketBaggage_BookingCode DEFAULT 0;
+GO
+
+ALTER TABLE TicketBaggage
+DROP CONSTRAINT DF_TicketBaggage_BookingCode;
+GO
+
+ALTER TABLE TicketBaggage
+ADD CONSTRAINT FK_TicketBaggage_Itinerary
+    FOREIGN KEY (BookingCode) REFERENCES Itinerary(BookingCode);
+GO
+
+ALTER TABLE TicketBaggage
+DROP CONSTRAINT PK_TicketBaggage;
+GO
+
+ALTER TABLE TicketBaggage
+ADD CONSTRAINT PK_TicketBaggage
+    PRIMARY KEY (ScheduledFlightId, PassengerId, BookingCode);
+GO

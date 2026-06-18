@@ -90,6 +90,19 @@ public class PurchaseRepository : IPurchaseRepository
         return count > 0;
     }
 
+    public async Task<bool> InvoiceNumberExistsAsync(string invoiceNumber)
+    {
+        using var connection = new SqlConnection(_connectionString);
+
+        const string query = @"
+            SELECT COUNT(*)
+            FROM   Purchase
+            WHERE  InvoiceNumber = @InvoiceNumber";
+
+        int count = await connection.ExecuteScalarAsync<int>(query, new { InvoiceNumber = invoiceNumber });
+        return count > 0;
+    }
+
     public async Task<int> CreatePurchaseAsync(PurchaseRecord record)
     {
         using var connection = new SqlConnection(_connectionString);
@@ -157,6 +170,26 @@ public class PurchaseRepository : IPurchaseRepository
             ScheduledId  = scheduledFlightId,
             PassengerHas = passengerHas,
             SeatNumber   = seatNumber
+        });
+    }
+
+    public async Task CreateTicketBaggageAsync(
+        int scheduledFlightId, int passengerId, int bookingCode, int handBagCount, int checkedBagCount, decimal subtotal)
+    {
+        using var connection = new SqlConnection(_connectionString);
+
+        const string query = @"
+            INSERT INTO TicketBaggage (ScheduledFlightId, PassengerId, BookingCode, HandBagCount, CheckedBagCount, BaggageSubtotal)
+            VALUES (@ScheduledFlightId, @PassengerId, @BookingCode, @HandBagCount, @CheckedBagCount, @BaggageSubtotal)";
+
+        await connection.ExecuteAsync(query, new
+        {
+            ScheduledFlightId = scheduledFlightId,
+            PassengerId       = passengerId,
+            BookingCode       = bookingCode,
+            HandBagCount      = handBagCount,
+            CheckedBagCount   = checkedBagCount,
+            BaggageSubtotal   = subtotal
         });
     }
 

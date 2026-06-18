@@ -590,7 +590,7 @@ export default {
         return "-";
       }
 
-      return `₡ ${Number(salary).toLocaleString("es-CR")}`;
+      return `$ ${Number(salary).toLocaleString("es-CR")}`;
     },
   },
 };

@@ -13,17 +13,17 @@
       <div class="price-row">
         <div class="price-item">
           <span class="price-class-label">Turista</span>
-          <span class="price-amount">₡{{ economyPrice.toLocaleString() }}</span>
+          <span class="price-amount">${{ economyPrice.toLocaleString() }}</span>
           <span class="price-total" v-if="passengerCount > 1">
-            {{ passengerCount }} pax · ₡{{ (economyPrice * passengerCount).toLocaleString() }}
+            {{ passengerCount }} pax · ${{ (economyPrice * passengerCount).toLocaleString() }}
           </span>
         </div>
         <span class="price-separator">|</span>
         <div class="price-item">
           <span class="price-class-label">Business</span>
-          <span class="price-amount">₡{{ firstClassPrice.toLocaleString() }}</span>
+          <span class="price-amount">${{ firstClassPrice.toLocaleString() }}</span>
           <span class="price-total" v-if="passengerCount > 1">
-            {{ passengerCount }} pax · ₡{{ (firstClassPrice * passengerCount).toLocaleString() }}
+            {{ passengerCount }} pax · ${{ (firstClassPrice * passengerCount).toLocaleString() }}
           </span>
         </div>
       </div>

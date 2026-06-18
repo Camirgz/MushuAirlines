@@ -1,0 +1,15 @@
+USE MushuAirlines;
+GO
+
+CREATE TABLE TicketBaggage (
+    ScheduledFlightId INT NOT NULL,
+    PassengerId       INT NOT NULL,
+    HandBagCount      INT NOT NULL DEFAULT 0,
+    CheckedBagCount   INT NOT NULL DEFAULT 0,
+    BaggageSubtotal   DECIMAL(10,2) NOT NULL DEFAULT 0,
+    CONSTRAINT PK_TicketBaggage PRIMARY KEY (ScheduledFlightId, PassengerId),
+    CONSTRAINT FK_TicketBaggage_Flight FOREIGN KEY (ScheduledFlightId)
+        REFERENCES ScheduledFlight(Id),
+    CONSTRAINT FK_TicketBaggage_Passenger FOREIGN KEY (PassengerId)
+        REFERENCES Passenger(Id)
+);

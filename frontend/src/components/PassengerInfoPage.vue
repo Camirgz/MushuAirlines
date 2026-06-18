@@ -29,8 +29,9 @@
           <PurchaseSummaryCard
             v-if="flight"
             :flight="flight"
+            :flight2="flight2"
             :seats="purchaseState.seats"
-            :baggage="baggage"
+            :passengers="passengers"
           />
         </aside>
 
@@ -95,7 +96,7 @@
             <div class="form-group">
               <label class="field-label">Género <span class="required">*</span></label>
               <select
-                :class="['field-input field-select', { 'field-input--error': fieldErrors[`${index}_gender`] }]"
+                :class="['field-input field-select', { 'field-input--error': fieldErrors[`${index}_gender`], 'field-select--placeholder': !passenger.gender }]"
                 v-model="passenger.gender"
                 @change="clearFieldError(index, 'gender')"
               >
@@ -121,7 +122,7 @@
               <label class="field-label">Fecha de Nacimiento <span class="required">*</span></label>
               <input
                 type="date"
-                :class="['field-input', { 'field-input--error': fieldErrors[`${index}_birthDate`] }]"
+                :class="['field-input', { 'field-input--error': fieldErrors[`${index}_birthDate`], 'field-input--placeholder': !passenger.birthDate }]"
                 v-model="passenger.birthDate"
                 :max="yesterdayDate"
                 @change="clearFieldError(index, 'birthDate')"
@@ -153,6 +154,79 @@
               </div>
             </template>
 
+            <!-- Baggage per passenger -->
+            <div class="form-group">
+              <label class="field-label">
+                <i class="bi bi-briefcase-fill me-1" style="color:#e74c3c"></i>
+                Equipaje de Mano
+              </label>
+              <template v-if="flight && !flight.isStopover">
+                <span v-if="flight.handBagPrice" class="baggage-price-hint">
+                  ${{ (flight.handBagPrice || 0).toLocaleString() }} la 1ª
+                  <template v-if="flight.bagMultiplier && flight.bagMultiplier !== 1">
+                    · ${{ Math.round(flight.handBagPrice * flight.bagMultiplier).toLocaleString() }} desde la 2ª
+                  </template>
+                </span>
+              </template>
+              <template v-else-if="flight && flight.isStopover">
+                <span v-if="flight.leg1HandBagPrice" class="baggage-price-hint baggage-price-hint--leg">
+                  Vuelo 1 · ${{ flight.leg1HandBagPrice.toLocaleString() }} la 1ª
+                  <template v-if="flight.leg1BagMultiplier && flight.leg1BagMultiplier !== 1">
+                    · ${{ Math.round(flight.leg1HandBagPrice * flight.leg1BagMultiplier).toLocaleString() }} desde la 2ª
+                  </template>
+                </span>
+                <span v-if="flight2 && flight2.handBagPrice" class="baggage-price-hint baggage-price-hint--leg">
+                  Vuelo 2 · ${{ flight2.handBagPrice.toLocaleString() }} la 1ª
+                  <template v-if="flight2.bagMultiplier && flight2.bagMultiplier !== 1">
+                    · ${{ Math.round(flight2.handBagPrice * flight2.bagMultiplier).toLocaleString() }} desde la 2ª
+                  </template>
+                </span>
+              </template>
+              <input
+                type="number"
+                class="field-input"
+                v-model.number="passenger.handBagCount"
+                min="0"
+                placeholder="0"
+              />
+            </div>
+
+            <div class="form-group">
+              <label class="field-label">
+                <i class="bi bi-archive-fill me-1" style="color:#e74c3c"></i>
+                Equipaje Documentado
+              </label>
+              <template v-if="flight && !flight.isStopover">
+                <span v-if="flight.bagPrice" class="baggage-price-hint">
+                  ${{ (flight.bagPrice || 0).toLocaleString() }} la 1ª
+                  <template v-if="flight.bagMultiplier && flight.bagMultiplier !== 1">
+                    · ${{ Math.round(flight.bagPrice * flight.bagMultiplier).toLocaleString() }} desde la 2ª
+                  </template>
+                </span>
+              </template>
+              <template v-else-if="flight && flight.isStopover">
+                <span v-if="flight.leg1BagPrice" class="baggage-price-hint baggage-price-hint--leg">
+                  Vuelo 1 · ${{ flight.leg1BagPrice.toLocaleString() }} la 1ª
+                  <template v-if="flight.leg1BagMultiplier && flight.leg1BagMultiplier !== 1">
+                    · ${{ Math.round(flight.leg1BagPrice * flight.leg1BagMultiplier).toLocaleString() }} desde la 2ª
+                  </template>
+                </span>
+                <span v-if="flight2 && flight2.bagPrice" class="baggage-price-hint baggage-price-hint--leg">
+                  Vuelo 2 · ${{ flight2.bagPrice.toLocaleString() }} la 1ª
+                  <template v-if="flight2.bagMultiplier && flight2.bagMultiplier !== 1">
+                    · ${{ Math.round(flight2.bagPrice * flight2.bagMultiplier).toLocaleString() }} desde la 2ª
+                  </template>
+                </span>
+              </template>
+              <input
+                type="number"
+                class="field-input"
+                v-model.number="passenger.checkedBagCount"
+                min="0"
+                placeholder="0"
+              />
+            </div>
+
           </div>
         </div>
 
@@ -167,63 +241,6 @@
         <div v-else class="max-passengers-note">
           <i class="bi bi-info-circle me-1"></i>
           Ya alcanzaste el máximo de {{ maxPassengers }} pasajero(s) para esta compra.
-        </div>
-
-        <!-- ── Baggage section ── -->
-        <div class="baggage-separator">
-          <hr />
-        </div>
-
-        <div class="baggage-section">
-          <h3 class="passenger-title" style="margin-bottom: 20px;">Equipaje</h3>
-
-          <div class="baggage-grid">
-
-            <div class="baggage-type">
-              <div class="baggage-type-header">
-                <i class="bi bi-briefcase-fill"></i>
-                <span>Equipaje de Mano</span>
-              </div>
-              <div class="baggage-weight-info" v-if="flight && flight.handBagWeight">
-                Máx. {{ flight.handBagWeight }} kg por pieza · ₡{{ (flight.handBagPrice || 0).toLocaleString() }} c/u
-              </div>
-              <div class="baggage-fields baggage-fields--single">
-                <div class="form-group">
-                  <label class="field-label">Cantidad</label>
-                  <input
-                    type="number"
-                    class="field-input"
-                    v-model.number="baggage.handCount"
-                    min="0"
-                    placeholder="0"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div class="baggage-type">
-              <div class="baggage-type-header">
-                <i class="bi bi-archive-fill"></i>
-                <span>Equipaje Documentado</span>
-              </div>
-              <div class="baggage-weight-info" v-if="flight && flight.bagWeight">
-                Máx. {{ flight.bagWeight }} kg por pieza · ₡{{ (flight.bagPrice || 0).toLocaleString() }} c/u
-              </div>
-              <div class="baggage-fields baggage-fields--single">
-                <div class="form-group">
-                  <label class="field-label">Cantidad</label>
-                  <input
-                    type="number"
-                    class="field-input"
-                    v-model.number="baggage.checkedCount"
-                    min="0"
-                    placeholder="0"
-                  />
-                </div>
-              </div>
-            </div>
-
-          </div>
         </div>
 
       </AdminCard>
@@ -270,10 +287,9 @@ export default {
 
   data() {
     return {
-      passengers:     [this.emptyPassenger()],
-      baggage:        { handCount: 0, checkedCount: 0 },
+      passengers:      [this.emptyPassenger()],
       validationError: null,
-      fieldErrors:    {},
+      fieldErrors:     {},
     };
   },
 
@@ -292,21 +308,15 @@ export default {
       this.passengers = Array.from({ length: count }, () => this.emptyPassenger());
     }
 
-    // Restore baggage from state (if user navigated back) or pre-fill from flight modal
-    const savedBaggage = this.purchaseState.baggage;
-    const f            = this.purchaseState.flight;
-    if (savedBaggage.handCount > 0 || savedBaggage.checkedCount > 0) {
-      this.baggage.handCount    = savedBaggage.handCount;
-      this.baggage.checkedCount = savedBaggage.checkedCount;
-    } else if (f) {
-      this.baggage.handCount    = f.handBagsCount    ?? 0;
-      this.baggage.checkedCount = f.checkedBagsCount ?? 0;
-    }
   },
 
   computed: {
     flight() {
       return this.purchaseState.flight;
+    },
+
+    flight2() {
+      return this.purchaseState.flight2;
     },
 
     maxPassengers() {
@@ -331,6 +341,8 @@ export default {
         birthDate:       "",
         email:           "",
         phone:           "",
+        handBagCount:    0,
+        checkedBagCount: 0,
       };
     },
 
@@ -441,7 +453,7 @@ export default {
         return;
       }
 
-      this.setPassengers(this.passengers, this.baggage);
+      this.setPassengers(this.passengers);
       this.$router.push("/payment");
     },
   },
@@ -626,6 +638,14 @@ export default {
   box-sizing: border-box;
 }
 
+.field-input::placeholder {
+  color: #bbb;
+}
+
+.field-input--placeholder {
+  color: #bbb;
+}
+
 .field-input:focus {
   border-color: #ff5a00;
   box-shadow: 0 0 0 3px rgba(255, 90, 0, 0.1);
@@ -643,6 +663,14 @@ export default {
   background-position: right 14px center;
   padding-right: 36px;
   cursor: pointer;
+}
+
+.field-select--placeholder {
+  color: #bbb;
+}
+
+.field-select option {
+  color: #1a1a1a;
 }
 
 /* ── Add passenger button ── */
@@ -682,46 +710,18 @@ export default {
   box-sizing: border-box;
 }
 
-/* ── Baggage section ── */
-.baggage-separator {
-  margin: 28px 0 24px;
-}
-
-.baggage-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-}
-
-.baggage-type-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.93rem;
-  font-weight: 700;
-  color: #374151;
-  margin-bottom: 14px;
-}
-
-.baggage-type-header i {
-  font-size: 1.1rem;
-  color: #e74c3c;
-}
-
-.baggage-fields {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.baggage-fields--single {
-  grid-template-columns: 1fr;
-}
-
-.baggage-weight-info {
-  font-size: 0.8rem;
+/* ── Baggage price hint inside label ── */
+.baggage-price-hint {
+  font-size: 0.75rem;
   color: #888;
-  margin-bottom: 10px;
+  font-weight: 400;
+  margin-left: 6px;
+}
+
+.baggage-price-hint--leg {
+  display: block;
+  margin-left: 0;
+  margin-top: 2px;
 }
 
 /* ── Validation error ── */
