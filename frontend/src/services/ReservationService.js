@@ -3,7 +3,7 @@ import axios from "axios";
 const BASE = "http://localhost:5103/api";
 
 export async function getReservationReport() {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("reservationToken");
 
     try {
         const response = await axios.get(

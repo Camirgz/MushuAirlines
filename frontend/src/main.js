@@ -69,12 +69,22 @@ function getRoleFromToken() {
         return null;
     }
 }
-
 router.beforeEach((to, from, next) => {
+
+    if (to.path.startsWith("/my-reservation")) {
+
+        const reservationToken = localStorage.getItem("reservationToken");
+
+        if (!reservationToken && to.meta.requiresAuth) {
+            return next("/my-reservation");
+        }
+
+        return next();
+    }
+
     const token = localStorage.getItem("token");
 
     const requiresAuth = to.matched.some(route => route.meta.requiresAuth);
-
     const allowedRoles = to.matched.flatMap(route => route.meta.allowedRoles || []);
 
     if (requiresAuth && !token) {
@@ -90,6 +100,7 @@ router.beforeEach((to, from, next) => {
 
     if (allowedRoles.length > 0) {
         if (!role || !allowedRoles.includes(role)) {
+
             sessionStorage.setItem(
                 "authMessage",
                 "Usuario no autorizado."

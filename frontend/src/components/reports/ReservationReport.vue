@@ -1,10 +1,6 @@
 <template>
+  <AdminPageLayout> 
   <div class="page">
-    <nav class="navbar">
-      <RouterLink to="/">
-        <img src="@/assets/logo.png" alt="Logo" class="logo" />
-      </RouterLink>
-    </nav>
     <div v-if="loading" class="state">
       <i class="bi bi-arrow-repeat spin"></i> Cargando...
     </div>
@@ -14,10 +10,10 @@
     <template v-else-if="reservation">
       <div class="page-content">
         <AdminHero
-          back-to="/"
           back-text="Volver"
+          @back="goBack"
           icon="bi bi-airplane-fill"
-          :title="`${reservation.originAirport} → ${reservation.destinationAirport} · ${daysRemaining(reservation.departureDate)} ${daysRemaining(reservation.departureDate) === 1 ? 'día restante' : 'días restantes'}`"
+          :title="`${reservation.originAirport} → ${finalDestination} · ${daysRemaining(reservation.departureDate)} ${daysRemaining(reservation.departureDate) === 1 ? 'día restante' : 'días restantes'}`"
           :subtitle="`Código: ${reservation.reservationCode} · Salida: ${formatDateShort(reservation.departureDate)}`"/>
 
         <div class="layout">
@@ -100,7 +96,7 @@
                 </div>
               </div>
               <div class="aircraft">
-                <i class="bi bi-airplane"></i> Aeronave: <strong>{{ reservation.aircraftType }}</strong>
+                <i class="bi bi-airplane"></i> Aeronave: <strong>{{reservation.aircraftModel }}</strong>
               </div>
             </AdminCard>
 
@@ -130,7 +126,7 @@
                 </div>
               </div>
               <div class="aircraft">
-                <i class="bi bi-airplane"></i> Aeronave: <strong>{{ reservation.aircraftType2 }}</strong>
+                <i class="bi bi-airplane"></i> Aeronave: <strong>{{ reservation.aircraftModel2 }}</strong>
               </div>
             </AdminCard>
 
@@ -196,7 +192,7 @@
               <p class="summary-title">RESUMEN</p>
               <div class="summary-row">
                 <span class="summary-label">Ruta</span>
-                <span class="summary-value">{{ reservation.originAirport }} → {{ reservation.destinationAirport }}</span>
+                <span class="summary-value">{{ reservation.originAirport }} → {{ finalDestination }}</span>
               </div>
               <div class="summary-row">
                 <span class="summary-label">Tramos</span>
@@ -216,13 +212,15 @@
       </div>
     </template>
   </div>
+  </AdminPageLayout>
+
 </template>
 
 <script>
 import { getReservationReport } from '@/services/ReservationService';
 import AdminHero       from '@/components/admin/ui/AdminHero.vue';
 import AdminCard       from '@/components/admin/ui/AdminCard.vue';
-
+import AdminPageLayout from '@/components/layout/AdminPageLayout.vue';
 const MILLISECONDS_IN_A_MINUTE = 1000 * 60;
 const MILLISECONDS_IN_AN_HOUR = MILLISECONDS_IN_A_MINUTE * 60;
 const MILLISECONDS_IN_A_DAY = MILLISECONDS_IN_AN_HOUR * 24;
@@ -233,12 +231,12 @@ const FLIGHT_CLASS_TRANSLATIONS = {
 };
 export default {
   name: 'ReservationReport',
-  components: { AdminCard, AdminHero },
+  components: { AdminCard, AdminHero, AdminPageLayout },
 
   data() {
     return { loading: true, loadError: null, reservation: null };
   },
-
+  emits: ["back"],
   computed: {
     totalHandBags() {
       return this.sumBaggageCount('handBagCount');
@@ -246,6 +244,10 @@ export default {
 
     totalCheckedBags() {
       return this.sumBaggageCount('checkedBagCount');
+    },
+    finalDestination() {
+      return this.reservation?.destinationAirport2 ??
+            this.reservation?.destinationAirport;
     },
   },
 
@@ -260,6 +262,10 @@ export default {
   },
   
   methods: {
+    goBack() {
+      localStorage.removeItem("reservationToken");
+      this.$router.push("/");
+    },
     formatDateShort(dateString) {
       if (!dateString) return '';
       const date = new Date(dateString);
@@ -285,8 +291,6 @@ export default {
 
     duration(startDateString, endDateString) {
       if (!startDateString || !endDateString) return '';
-      console.log('start:', startDateString);
-      console.log('end:', endDateString);
       const startDate = new Date(startDateString);
       let endDate = new Date(endDateString);
       let timeDifference = endDate - startDate;

@@ -83,7 +83,7 @@ export default {
                 lastName: this.form.lastName
             })
             .then(function(response){
-                localStorage.setItem("token", response.data);
+                localStorage.setItem("reservationToken", response.data);
                 alert("Reserva encontrada");
                 window.location.href="/my-reservation/report";
             })

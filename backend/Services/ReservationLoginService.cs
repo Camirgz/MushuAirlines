@@ -22,9 +22,11 @@ namespace backend.Services
 
         public string ReservationLogin(ReservationLoginModel model)
         {
+            var countCharacters = 6;
+            if (model.ReservationCode.Length != countCharacters)
+                return "Error: El código de reserva debe tener 6 caracteres.";
             if (!repository.ReservationExists(model))
-                return "Reserva no encontrada";
-
+                return "Error: Reserva no encontrada";
             var key = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(jwtKey));
 

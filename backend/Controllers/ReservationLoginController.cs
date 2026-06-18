@@ -24,7 +24,7 @@ namespace backend.Controllers
 
             var result = service.ReservationLogin(model);
 
-            if (result=="Reserva no encontrada") {
+            if (result=="Error: Reserva no encontrada" || result=="Error: El código de reserva debe tener 6 caracteres.") {
                 return BadRequest(result);
             }
             return Ok(result);

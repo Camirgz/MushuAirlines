@@ -9,6 +9,15 @@
       {{ backText }}
     </RouterLink>
 
+    <button
+      v-else-if="$attrs.onBack"
+      class="hero-back-link hero-back-button"
+      @click="$emit('back')"
+    >
+      <i class="bi bi-arrow-left"></i>
+      {{ backText }}
+    </button>
+
     <div class="hero-content">
       <i :class="icon" class="hero-icon"></i>
 
@@ -124,7 +133,13 @@ export default {
   color: #ffffff;
   opacity: 0.88;
 }
-
+.hero-back-button{
+  background:none;
+  border:none;
+  padding:0;
+  cursor:pointer;
+  font:inherit;
+}
 @media (max-width: 768px) {
   .admin-hero {
     padding: 30px 26px;
