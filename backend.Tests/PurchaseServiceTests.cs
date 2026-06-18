@@ -1,3 +1,4 @@
+using backend.Exceptions;
 using backend.Interfaces;
 using backend.Model;
 using backend.Services;
@@ -9,7 +10,6 @@ namespace backend.Tests;
 public class PurchaseServiceTests
 {
     private Mock<IPassengerRepository>  _mockPassengerRepo = null!;
-    private Mock<IItineraryRepository>  _mockItineraryRepo = null!;
     private Mock<IPurchaseRepository>   _mockPurchaseRepo  = null!;
     private Mock<ICodeGenerator>        _mockCodeGenerator = null!;
     private Mock<IPricingCalculator>    _mockPricing       = null!;
@@ -22,7 +22,6 @@ public class PurchaseServiceTests
     public void Setup()
     {
         _mockPassengerRepo = new Mock<IPassengerRepository>();
-        _mockItineraryRepo = new Mock<IItineraryRepository>();
         _mockPurchaseRepo  = new Mock<IPurchaseRepository>();
         _mockCodeGenerator = new Mock<ICodeGenerator>();
         _mockPricing       = new Mock<IPricingCalculator>();
@@ -30,7 +29,6 @@ public class PurchaseServiceTests
 
         _service = new PurchaseService(
             _mockPassengerRepo.Object,
-            _mockItineraryRepo.Object,
             _mockPurchaseRepo.Object,
             _mockCodeGenerator.Object,
             _mockPricing.Object,
@@ -40,7 +38,94 @@ public class PurchaseServiceTests
     private static RouteCreationModel Route(int economyCap, int firstClassCap, string type = "B737") =>
         new() { EconomyClassCapacity = economyCap, FirstClassCapacity = firstClassCap, AircraftTypeId = type };
 
-    // ── IsFlightAvailableAsync ─────────────────────────────────────────────────
+    private static RouteCreationModel PricedRoute() => new()
+    {
+        EconomyClassCapacity = 100,
+        FirstClassCapacity   = 20,
+        AircraftTypeId       = "B737",
+        PriceEconomy         = 100m,
+        PriceFirstClass      = 200m,
+        HandBagPrice         = 10m,
+        BagPrice             = 20m,
+        BagMultiplier        = 1m
+    };
+
+    private static PurchaseTotals MinimalTotals(int count) => new()
+    {
+        TotalPaid        = 100m * count,
+        TotalSeats       = count,
+        DetailByClass    = [new SeatClassSubtotal { SeatClass = SeatClass.Economy, SeatCount = count, Subtotal = 100m * count }],
+        BaggageDetails   = [],
+        PassengerBaggageDetails = Enumerable.Range(0, count)
+            .Select(i => new PassengerBaggageSubtotal { PassengerIndex = i })
+            .ToList()
+    };
+
+    private static PurchaseRequestModel BuildRequest(int passengerCount = 2, bool stopover = false)
+    {
+        var passengers = Enumerable.Range(0, passengerCount)
+            .Select(i => new PassengerInfo
+            {
+                FirstName       = $"Pasajero{i}",
+                LastName        = "Test",
+                PassportCountry = "Costa Rica",
+                BirthDate       = new DateOnly(1990, 1, 1),
+                Gender          = Gender.Male
+            })
+            .ToList();
+
+        var seats = Enumerable.Range(0, passengerCount)
+            .Select(i => new SeatSelection { PassengerIndex = i, SeatClass = SeatClass.Economy })
+            .ToList();
+
+        return new PurchaseRequestModel
+        {
+            Passengers     = passengers,
+            SeatSelections = seats,
+            Payment        = new PaymentInfo { Method = PaymentMethod.Visa, ContactEmail = "test@test.com" },
+            Flight         = new FlightSelection { RouteCode = "R1", FlightDate = TestDate },
+            Flight2        = stopover ? new FlightSelection { RouteCode = "R2", FlightDate = TestDate } : null
+        };
+    }
+
+    private void SetupHappyPath(int passengerCount = 2)
+    {
+        _mockRouteService.Setup(s => s.GetRouteByCode("R1")).Returns(PricedRoute());
+        _mockRouteService.Setup(s => s.GetRouteByCode("R2")).Returns(PricedRoute());
+        _mockRouteService
+            .Setup(s => s.GetOrCreateScheduledFlight("R1", It.IsAny<DateTime>()))
+            .Returns(42);
+        _mockRouteService
+            .Setup(s => s.GetOrCreateScheduledFlight("R2", It.IsAny<DateTime>()))
+            .Returns(43);
+        _mockPurchaseRepo
+            .Setup(r => r.HasAvailableSeatsAsync(It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync(true);
+        _mockPurchaseRepo
+            .Setup(r => r.GetNextAvailableSeatNumbersAsync(It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync((int _, int count) => Enumerable.Range(1, count).ToList());
+        _mockPurchaseRepo
+            .Setup(r => r.ReservationCodeExistsAsync(It.IsAny<string>()))
+            .ReturnsAsync(false);
+        _mockPurchaseRepo
+            .Setup(r => r.InvoiceNumberExistsAsync(It.IsAny<string>()))
+            .ReturnsAsync(false);
+        _mockPurchaseRepo
+            .Setup(r => r.ExecutePurchaseTransactionAsync(It.IsAny<PurchaseTransactionData>()))
+            .ReturnsAsync(100);
+        _mockCodeGenerator.Setup(c => c.GenerateReservationCode()).Returns("RES-001");
+        _mockCodeGenerator.Setup(c => c.GenerateInvoiceNumber()).Returns("INV-001");
+        _mockPassengerRepo
+            .Setup(r => r.CreatePassengerAsync(It.IsAny<PassengerInfo>()))
+            .ReturnsAsync(1);
+        _mockPricing
+            .Setup(p => p.Calculate(
+                It.IsAny<List<SeatSelection>>(), It.IsAny<List<PassengerInfo>>(),
+                It.IsAny<decimal>(), It.IsAny<decimal>(),
+                It.IsAny<decimal>(), It.IsAny<decimal>(), It.IsAny<decimal>()))
+            .Returns(MinimalTotals(passengerCount));
+    }
+
 
     [Test]
     public async Task IsFlightAvailable_RouteNotFound_ShouldReturnTrue()
@@ -53,7 +138,7 @@ public class PurchaseServiceTests
         // Act
         var result = await _service.IsFlightAvailableAsync("UNKNOWN", TestDate, 1);
 
-        // Assert — fail-open: unknown route never blocks a user
+        // Assert
         Assert.That(result, Is.True);
     }
 
@@ -67,14 +152,14 @@ public class PurchaseServiceTests
         // Act
         var result = await _service.IsFlightAvailableAsync("R1", TestDate, 5);
 
-        // Assert — fail-open: cannot determine capacity
+        // Assert
         Assert.That(result, Is.True);
     }
 
     [Test]
     public async Task IsFlightAvailable_RouteCapacityZero_FallsBackToAircraftCapacity_CountFits_ShouldReturnTrue()
     {
-        // Arrange — route has 0 (old migration), aircraft has 10 seats
+        // Arrange
         _mockRouteService.Setup(s => s.GetRouteByCode("R1")).Returns(Route(0, 0, "B737"));
         _mockRouteService
             .Setup(s => s.FindExistingScheduledFlight("R1", It.IsAny<DateTime>()))
@@ -91,7 +176,7 @@ public class PurchaseServiceTests
     [Test]
     public async Task IsFlightAvailable_RouteCapacityZero_FallsBackToAircraftCapacity_CountExceeds_ShouldReturnFalse()
     {
-        // Arrange — aircraft has 10 seats, but 12 requested
+        // Arrange
         _mockRouteService.Setup(s => s.GetRouteByCode("R1")).Returns(Route(0, 0, "B737"));
         _mockPurchaseRepo.Setup(r => r.GetAircraftCapacityByTypeAsync("B737")).ReturnsAsync(10);
 
@@ -117,7 +202,7 @@ public class PurchaseServiceTests
     [Test]
     public async Task IsFlightAvailable_NoScheduledFlight_CountFitsCapacity_ShouldReturnTrue()
     {
-        // Arrange — capacity = 8, no prior purchases, requesting 4
+        // Arrange
         _mockRouteService.Setup(s => s.GetRouteByCode("R1")).Returns(Route(6, 2));
         _mockRouteService
             .Setup(s => s.FindExistingScheduledFlight("R1", It.IsAny<DateTime>()))
@@ -133,7 +218,7 @@ public class PurchaseServiceTests
     [Test]
     public async Task IsFlightAvailable_BookedSeatsAndRequestedExactlyFillCapacity_ShouldReturnTrue()
     {
-        // Arrange — capacity = 8, booked = 4, requested = 4 → 4 + 4 = 8 ≤ 8
+        // Arrange
         _mockRouteService.Setup(s => s.GetRouteByCode("R1")).Returns(Route(6, 2));
         _mockRouteService
             .Setup(s => s.FindExistingScheduledFlight("R1", It.IsAny<DateTime>()))
@@ -150,7 +235,7 @@ public class PurchaseServiceTests
     [Test]
     public async Task IsFlightAvailable_BookedPlusRequestedExceedsCapacity_ShouldReturnFalse()
     {
-        // Arrange — capacity = 8, booked = 5, requested = 4 → 4 + 5 = 9 > 8
+        // Arrange
         _mockRouteService.Setup(s => s.GetRouteByCode("R1")).Returns(Route(6, 2));
         _mockRouteService
             .Setup(s => s.FindExistingScheduledFlight("R1", It.IsAny<DateTime>()))
@@ -167,7 +252,7 @@ public class PurchaseServiceTests
     [Test]
     public async Task IsFlightAvailable_FlightFullyBooked_SingleSeatRequest_ShouldReturnFalse()
     {
-        // Arrange — capacity = 6, already booked = 6, requesting 1 more
+        // Arrange
         _mockRouteService.Setup(s => s.GetRouteByCode("R1")).Returns(Route(6, 0));
         _mockRouteService
             .Setup(s => s.FindExistingScheduledFlight("R1", It.IsAny<DateTime>()))
@@ -181,12 +266,11 @@ public class PurchaseServiceTests
         Assert.That(result, Is.False);
     }
 
-    // ── CheckPassengerDuplicatesAsync ──────────────────────────────────────────
 
     [Test]
     public async Task CheckDuplicates_NoScheduledFlight_ShouldReturnEmptyList()
     {
-        // Arrange — no prior purchases means no duplicates possible
+        // Arrange
         _mockRouteService
             .Setup(s => s.FindExistingScheduledFlight("R1", It.IsAny<DateTime>()))
             .Returns((int?)null);
@@ -245,7 +329,7 @@ public class PurchaseServiceTests
     [Test]
     public async Task CheckDuplicates_SameNameDifferentBirthDate_ShouldNotDetectDuplicate()
     {
-        // Arrange — same name and country but different birth date → allowed
+        // Arrange
         _mockRouteService
             .Setup(s => s.FindExistingScheduledFlight("R1", It.IsAny<DateTime>()))
             .Returns(1);
@@ -275,7 +359,7 @@ public class PurchaseServiceTests
     [Test]
     public async Task CheckDuplicates_SameNameDifferentPassportCountry_ShouldNotDetectDuplicate()
     {
-        // Arrange — same name and birth date but different passport country → allowed
+        // Arrange
         _mockRouteService
             .Setup(s => s.FindExistingScheduledFlight("R1", It.IsAny<DateTime>()))
             .Returns(1);
@@ -305,7 +389,7 @@ public class PurchaseServiceTests
     [Test]
     public async Task CheckDuplicates_NoMatchingPassenger_ShouldReturnEmptyList()
     {
-        // Arrange — completely different passenger on the flight
+        // Arrange
         _mockRouteService
             .Setup(s => s.FindExistingScheduledFlight("R1", It.IsAny<DateTime>()))
             .Returns(1);
@@ -335,7 +419,7 @@ public class PurchaseServiceTests
     [Test]
     public async Task CheckDuplicates_MultiplePassengers_OnlyDuplicateIsReturned()
     {
-        // Arrange — two passengers in the request, only one matches the existing booking
+        // Arrange
         var birthDate = new DateOnly(1990, 5, 15);
         _mockRouteService
             .Setup(s => s.FindExistingScheduledFlight("R1", It.IsAny<DateTime>()))
@@ -367,7 +451,7 @@ public class PurchaseServiceTests
     [Test]
     public async Task CheckDuplicates_ComparisonIsCaseInsensitive()
     {
-        // Arrange — name and country in DB are lowercase; request sends uppercase
+        // Arrange
         var birthDate = new DateOnly(1990, 5, 15);
         _mockRouteService
             .Setup(s => s.FindExistingScheduledFlight("R1", It.IsAny<DateTime>()))
@@ -393,5 +477,124 @@ public class PurchaseServiceTests
 
         // Assert
         Assert.That(result, Has.Count.EqualTo(1));
+    }
+
+
+    [Test]
+    public void CreatePurchase_NoSeatsAvailable_ShouldThrowSeatUnavailableException()
+    {
+        // Arrange
+        _mockRouteService.Setup(s => s.GetRouteByCode("R1")).Returns(PricedRoute());
+        _mockRouteService
+            .Setup(s => s.GetOrCreateScheduledFlight("R1", It.IsAny<DateTime>()))
+            .Returns(42);
+        _mockPurchaseRepo
+            .Setup(r => r.HasAvailableSeatsAsync(42, It.IsAny<int>()))
+            .ReturnsAsync(false);
+
+        // Act & Assert
+        Assert.That(
+            () => _service.CreatePurchaseAsync(BuildRequest()),
+            Throws.InstanceOf<SeatUnavailableException>());
+    }
+
+    [Test]
+    public async Task CreatePurchase_HappyPath_ShouldCallExecuteTransactionExactlyOnce()
+    {
+        // Arrange
+        SetupHappyPath(passengerCount: 2);
+
+        // Act
+        await _service.CreatePurchaseAsync(BuildRequest(passengerCount: 2));
+
+        // Assert
+        _mockPurchaseRepo.Verify(
+            r => r.ExecutePurchaseTransactionAsync(It.IsAny<PurchaseTransactionData>()),
+            Times.Once);
+    }
+
+    [Test]
+    public async Task CreatePurchase_HappyPath_ShouldCallCreatePassengerForEachPassenger()
+    {
+        // Arrange
+        const int passengerCount = 3;
+        SetupHappyPath(passengerCount: passengerCount);
+
+        // Act
+        await _service.CreatePurchaseAsync(BuildRequest(passengerCount: passengerCount));
+
+        // Assert
+        _mockPassengerRepo.Verify(
+            r => r.CreatePassengerAsync(It.IsAny<PassengerInfo>()),
+            Times.Exactly(passengerCount));
+    }
+
+    [Test]
+    public async Task CreatePurchase_HappyPath_TransactionDataHasTicketPerSeat()
+    {
+        // Arrange
+        const int passengerCount = 3;
+        SetupHappyPath(passengerCount: passengerCount);
+
+        PurchaseTransactionData? captured = null;
+        _mockPurchaseRepo
+            .Setup(r => r.ExecutePurchaseTransactionAsync(It.IsAny<PurchaseTransactionData>()))
+            .Callback<PurchaseTransactionData>(d => captured = d)
+            .ReturnsAsync(100);
+
+        // Act
+        await _service.CreatePurchaseAsync(BuildRequest(passengerCount: passengerCount));
+
+        // Assert
+        Assert.That(captured, Is.Not.Null);
+        Assert.That(captured!.Tickets1, Has.Count.EqualTo(passengerCount));
+        Assert.That(captured.Tickets2, Is.Null);
+    }
+
+    [Test]
+    public void CreatePurchase_Stopover_SecondFlightFull_ShouldThrowSeatUnavailableException()
+    {
+        // Arrange
+        _mockRouteService.Setup(s => s.GetRouteByCode("R1")).Returns(PricedRoute());
+        _mockRouteService.Setup(s => s.GetRouteByCode("R2")).Returns(PricedRoute());
+        _mockRouteService
+            .Setup(s => s.GetOrCreateScheduledFlight("R1", It.IsAny<DateTime>()))
+            .Returns(42);
+        _mockRouteService
+            .Setup(s => s.GetOrCreateScheduledFlight("R2", It.IsAny<DateTime>()))
+            .Returns(43);
+        _mockPurchaseRepo
+            .Setup(r => r.HasAvailableSeatsAsync(42, It.IsAny<int>()))
+            .ReturnsAsync(true);
+        _mockPurchaseRepo
+            .Setup(r => r.HasAvailableSeatsAsync(43, It.IsAny<int>()))
+            .ReturnsAsync(false);
+
+        // Act & Assert
+        Assert.That(
+            () => _service.CreatePurchaseAsync(BuildRequest(stopover: true)),
+            Throws.InstanceOf<SeatUnavailableException>());
+    }
+
+    [Test]
+    public async Task CreatePurchase_Stopover_TransactionDataHasTicketsForBothFlights()
+    {
+        // Arrange
+        const int passengerCount = 2;
+        SetupHappyPath(passengerCount: passengerCount);
+
+        PurchaseTransactionData? captured = null;
+        _mockPurchaseRepo
+            .Setup(r => r.ExecutePurchaseTransactionAsync(It.IsAny<PurchaseTransactionData>()))
+            .Callback<PurchaseTransactionData>(d => captured = d)
+            .ReturnsAsync(100);
+
+        // Act
+        await _service.CreatePurchaseAsync(BuildRequest(passengerCount: passengerCount, stopover: true));
+
+        // Assert
+        Assert.That(captured, Is.Not.Null);
+        Assert.That(captured!.Tickets1, Has.Count.EqualTo(passengerCount));
+        Assert.That(captured.Tickets2, Has.Count.EqualTo(passengerCount));
     }
 }

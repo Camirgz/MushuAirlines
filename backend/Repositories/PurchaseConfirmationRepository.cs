@@ -84,18 +84,17 @@ namespace backend.Repositories
                 purchase.BaggageDetails = GetPurchaseBaggageDetails(purchaseId);
                 purchase.PassengerBaggageDetails = GetPassengerBaggageDetails(purchaseId);
                 
-                // Populate individual baggage counts and subtotals
-                var handBaggage = purchase.BaggageDetails.FirstOrDefault(b => b.Type == "HandBaggage");
+                var handBaggage = purchase.BaggageDetails.FirstOrDefault(b => b.Type == BaggageType.HandBaggage);
                 if (handBaggage != null)
                 {
-                    purchase.HandBaggageCount = handBaggage.Quantity;
+                    purchase.HandBaggageCount    = handBaggage.Quantity;
                     purchase.HandBaggageSubtotal = handBaggage.Subtotal;
                 }
 
-                var checkedBaggage = purchase.BaggageDetails.FirstOrDefault(b => b.Type == "CheckedBaggage");
+                var checkedBaggage = purchase.BaggageDetails.FirstOrDefault(b => b.Type == BaggageType.CheckedBaggage);
                 if (checkedBaggage != null)
                 {
-                    purchase.CheckedBaggageCount = checkedBaggage.Quantity;
+                    purchase.CheckedBaggageCount    = checkedBaggage.Quantity;
                     purchase.CheckedBaggageSubtotal = checkedBaggage.Subtotal;
                 }
             }

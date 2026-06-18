@@ -1,0 +1,17 @@
+namespace backend.Model;
+
+public class TicketInsertData
+{
+    public int ScheduledFlightId { get; init; }
+    public int PassengerId       { get; init; }
+    public int SeatNumber        { get; init; }
+}
+
+public class TicketBaggageInsertData
+{
+    public int     ScheduledFlightId { get; init; }
+    public int     PassengerId       { get; init; }
+    public int     HandBagCount      { get; init; }
+    public int     CheckedBagCount   { get; init; }
+    public decimal Subtotal          { get; init; }
+}
