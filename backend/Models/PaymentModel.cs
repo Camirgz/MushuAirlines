@@ -6,6 +6,6 @@ namespace backend.Model
         public string CardNumber { get; set; }
         public string Expiry { get; set; }
         public string Cvv { get; set; }
-        public string PaymentMethod { get; set; }
+        public PaymentMethod PaymentMethod { get; set; }
     }
 }
