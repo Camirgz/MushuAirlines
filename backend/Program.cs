@@ -18,7 +18,8 @@ builder.Services.AddCors(options =>
                     {
                         policy.WithOrigins(
                             "http://localhost:8080",
-                            "https://mushu-airlines.vercel.app"
+                            "https://mushu-airlines.vercel.app",
+                            "https://mushu-airlines-git-dev-camirgzs-projects.vercel.app"
                         )
                             .AllowAnyHeader()
                             .AllowAnyMethod();
