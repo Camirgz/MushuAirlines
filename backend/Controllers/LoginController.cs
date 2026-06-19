@@ -8,11 +8,11 @@ namespace backend.Controllers
     [ApiController]
     public class LoginController : ControllerBase
     {
-        private readonly LoginService loginService;
+        private readonly ILoginService loginService;
 
-        public LoginController()
+        public LoginController(ILoginService loginService)
         {
-            loginService = new LoginService();
+            this.loginService = loginService;
         }
 
         [HttpPost]

@@ -1,7 +1,8 @@
 import axios from "axios";
+import API_BASE_URL from "@/config/api";
 
-const baseUrl = "http://localhost:5103/api/aircraft";
-const typeBaseUrl = "http://localhost:5103/api/aircraft-type";
+const baseUrl = `${API_BASE_URL}/api/aircraft`;
+const typeBaseUrl = `${API_BASE_URL}/api/aircraft-type`;
 
 export function getAircraftTypes() {
   return axios.get(baseUrl);

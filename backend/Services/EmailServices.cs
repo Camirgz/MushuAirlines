@@ -19,7 +19,7 @@ namespace backend.Services
         public void SendInvitationEmail(string toEmail, string token)
         {
             // we create the link for the employee to complete the registration
-            string link = "http://localhost:8080/complete-register?token=" + token;
+            string link = "https://mushu-airlines.vercel.app/complete-register?token=" + token;
             // create a connection to the smtp server and send the email at the port 587 
             var client = new SmtpClient("smtp.gmail.com", 587)
             {

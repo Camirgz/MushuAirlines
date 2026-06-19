@@ -303,12 +303,13 @@
 
 <script>
 import axios from "axios";
+import API_BASE_URL from "@/config/api";
 
 import AdminPageLayout from "@/components/layout/AdminPageLayout.vue";
 import AdminHero from "@/components/admin/ui/AdminHero.vue";
 import AdminCard from "@/components/admin/ui/AdminCard.vue";
 
-const BaseURL = "http://localhost:5103/api/UserList";
+const BaseURL = `${API_BASE_URL}/api/UserList`;
 
 export default {
   name: "UsersPage",

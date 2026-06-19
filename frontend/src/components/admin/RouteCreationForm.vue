@@ -320,6 +320,7 @@
 
 <script>
     import axios from "axios";
+    import API_BASE_URL from "@/config/api";
 
     export default {
         data() {
@@ -432,7 +433,7 @@
                     const originAirport = this.airports.find(a => a.code === this.form.originAirport);
                     const destAirport = this.airports.find(a => a.code === this.form.destinationAirport);
 
-                    await axios.post("http://localhost:5103/api/routecreation", {
+                    await axios.post(`${API_BASE_URL}/api/routecreation`, {
                         ...this.form,
                         frequency: this.form.frequency,
                         originCity: originAirport?.city || "",
@@ -474,7 +475,7 @@
 
             async loadAirports() {
                 try {
-                    const response = await axios.get("http://localhost:5103/api/airport");
+                    const response = await axios.get(`${API_BASE_URL}/api/airport`);
                     this.airports = response.data.map(a => ({
                         code: a.code ?? a.Code,
                         airportName: a.airportName ?? a.AirportName,
@@ -488,7 +489,7 @@
 
             async loadRoutes() {
                 try {
-                    const response = await axios.get("http://localhost:5103/api/routecreation");
+                    const response = await axios.get(`${API_BASE_URL}/api/routecreation`);
                     this.routes = response.data.map(r => {
                         const originAirport = this.airports.find(a => a.code === r.originAirport);
                         const destAirport = this.airports.find(a => a.code === r.destinationAirport);
@@ -525,7 +526,7 @@
 
             async loadAircraftTypes() {
                 try {
-                    const response = await axios.get("http://localhost:5103/api/aircraft");
+                    const response = await axios.get(`${API_BASE_URL}/api/aircraft`);
                     this.aircraftTypes = response.data;
                 } catch (error) {
                     this.errorMessage = "No se pudieron cargar los tipos de avión.";

@@ -11,9 +11,10 @@
       </a>
 
       <div class="nav-actions">
-        <a href="#" class="nav-link-item">
-          <i class="bi bi-briefcase me-1"></i>Mis vuelos
-        </a>
+        <router-link to="/my-reservation" class="nav-link-item">
+            <i class="bi bi-briefcase me-1"></i>
+            Mis vuelos
+        </router-link>
         <a href="#" class="nav-link-item">
           <i class="bi bi-calendar-check me-1"></i>Check-in
         </a>
@@ -684,6 +685,7 @@ import FlightResultCard from './FlightResultCard.vue'
 import { findStopoverConnections, isOvernightFlight, addDaysToDateString } from '@/services/connectionFinder.js'
 import { usePurchaseFlow } from '@/composables/usePurchaseFlow'
 import { checkAvailability } from '@/services/PurchaseService'
+import API_BASE_URL from '@/config/api'
 
 function durationToHours(dur) {
   const [h, m] = dur.split(':')
@@ -800,13 +802,13 @@ export default {
 
   async created() {
     try {
-      const airportRes = await fetch('http://localhost:5103/api/airport')
+      const airportRes = await fetch(`${API_BASE_URL}/api/airport`)
       this.airports = await airportRes.json()
     } catch (e) {
       console.error('Error cargando aeropuertos:', e)
     }
     try {
-      const flightsRes = await fetch('http://localhost:5103/api/flights')
+      const flightsRes = await fetch(`${API_BASE_URL}/api/flights`)
       const flights = await flightsRes.json()
       console.log('[DEBUG] primer vuelo raw del API:', JSON.stringify(flights[0]))
       this.flights = flights.map(routeToFlight)
@@ -989,7 +991,7 @@ export default {
       const q = this.originQuery.trim()
       if (!q) { this.originSuggestions = []; return }
       try {
-        const res = await fetch(`http://localhost:5103/api/airport/suggestions?q=${encodeURIComponent(q)}`)
+        const res = await fetch(`${API_BASE_URL}/api/airport/suggestions?q=${encodeURIComponent(q)}`)
         this.originSuggestions = await res.json()
       } catch (e) {
         this.originSuggestions = []
@@ -1011,7 +1013,7 @@ export default {
       const q = this.destinationQuery.trim()
       if (!q) { this.destinationSuggestions = []; return }
       try {
-        const res = await fetch(`http://localhost:5103/api/airport/suggestions?q=${encodeURIComponent(q)}`)
+        const res = await fetch(`${API_BASE_URL}/api/airport/suggestions?q=${encodeURIComponent(q)}`)
         this.destinationSuggestions = await res.json()
       } catch (e) {
         this.destinationSuggestions = []
@@ -1056,8 +1058,8 @@ export default {
         const { value: originVal, type: originType } = this.selectedOrigin
         const { value: destVal, type: destType } = this.selectedDestination
         const [directRes, allRes] = await Promise.all([
-          fetch(`http://localhost:5103/api/flights?date=${this.departureDate}&origin=${encodeURIComponent(originVal)}&originType=${originType}&destination=${encodeURIComponent(destVal)}&destinationType=${destType}`),
-          fetch(`http://localhost:5103/api/flights?date=${this.departureDate}`)
+          fetch(`${API_BASE_URL}/api/flights?date=${this.departureDate}&origin=${encodeURIComponent(originVal)}&originType=${originType}&destination=${encodeURIComponent(destVal)}&destinationType=${destType}`),
+          fetch(`${API_BASE_URL}/api/flights?date=${this.departureDate}`)
         ])
         directFlights = (await directRes.json()).map(routeToFlight)
         availableFlights = (await allRes.json()).map(routeToFlight)
