@@ -72,6 +72,6 @@ public class ReservationLoginServiceTests
         var result = _service.ReservationLogin(model);
 
         // Assert
-        Assert.That(result, Is.EqualTo("Reserva no encontrada"));
+        Assert.That(result, Is.EqualTo("Error: Reserva no encontrada"));
     }
 }
