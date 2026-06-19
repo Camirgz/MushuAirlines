@@ -10,11 +10,13 @@ namespace backend.Controllers
     public class ReservationReportController : ControllerBase
     {
         private readonly IReservationReportService service;
-
+        private readonly IPdfItineraryService pdfService;
         public ReservationReportController(
-            IReservationReportService service)
+            IReservationReportService service,
+            IPdfItineraryService pdfService)
         {
             this.service = service;
+            this.pdfService = pdfService;
         }
 
         [HttpGet]
@@ -23,10 +25,36 @@ namespace backend.Controllers
             try
             {
                var reservationCode = User.FindFirst("ReservationCode")?.Value;
-                var result =
+                var result =service.GetReservation(reservationCode!);
+                
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
+        }
+        [HttpGet("pdf")]
+        public ActionResult PrintItinerary()
+        {
+            try
+            {
+                var reservationCode =
+                    User.FindFirst("ReservationCode")?.Value;
+
+                var reservation =
                     service.GetReservation(reservationCode!);
 
-                return Ok(result);
+                var pdf =
+                    pdfService.GeneratePdf(reservation);
+
+                return File(
+                    pdf,
+                    "application/pdf",
+                    $"Itinerary-{reservation.ReservationCode}.pdf");
             }
             catch (Exception ex)
             {
