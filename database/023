@@ -1,0 +1,3 @@
+USE MushuAirlines;
+ALTER TABLE Ticket
+ADD SeatClass VARCHAR(50) NULL;
