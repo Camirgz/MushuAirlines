@@ -66,4 +66,48 @@ public class ReservationReportServiceTests
 
         Assert.That(ex.Message, Is.EqualTo("Reserva no encontrada."));
     }
+    [Test]
+    public void GetReservation_WithTickets_ShouldReturnPassengerTickets()
+    {
+        // Arrange
+        var reservation = new PurchaseConfirmationModel
+        {
+            PurchaseId = 10,
+            ReservationCode = "AQG2B5",
+            FullName = "Leo Sibaja",
+            Tickets = new List<TicketSummary>
+            {
+                new()
+                {
+                    PassengerFullName = "Leo Sibaja",
+                    SeatNumber = "5",
+                    SeatClass = SeatClass.Economy,
+                    FlightNumber = "15"
+                }
+            }
+        };
+
+        _repository
+            .Setup(r => r.GetPurchaseIdByReservationCode("AQG2B5"))
+            .Returns(10);
+
+        _repository
+            .Setup(r => r.GetPurchase(10))
+            .Returns(reservation);
+
+        // Act
+        var result = _service.GetReservation("AQG2B5");
+
+        // Assert
+        Assert.That(result.Tickets, Is.Not.Null);
+        Assert.That(result.Tickets.Count, Is.EqualTo(1));
+
+        Assert.That(
+            result.Tickets[0].PassengerFullName,
+            Is.EqualTo("Leo Sibaja"));
+
+        Assert.That(
+            result.Tickets[0].FlightNumber,
+            Is.EqualTo("15"));
+    }
 }
