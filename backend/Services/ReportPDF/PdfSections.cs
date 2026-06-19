@@ -175,6 +175,116 @@ namespace backend.Templates
                 });
         }
 
+       public static void BuildTicketsSection(
+    IContainer container,
+    PurchaseConfirmationModel model)
+{
+    container
+        .Background(PdfStyles.CardBackground)
+        .Padding(PdfStyles.CardPadding)
+        .Column(col =>
+        {
+            BuildSectionTitle(col, "Boarding Passes");
+
+            if (model.Tickets != null && model.Tickets.Any())
+            {
+                foreach (var ticket in model.Tickets)
+                {
+                    col.Item()
+                        .PaddingTop(PdfStyles.InnerSpacing)
+                        .ShowEntire()
+                        .Background(PdfStyles.TicketBackground)
+                        .Border(1)
+                        .BorderColor(PdfStyles.DividerColor)
+                        .Padding(PdfStyles.TicketPadding)
+                        .Column(ticketCol =>
+                        {
+                            // name
+                            ticketCol.Item()
+                                .Text(ticket.PassengerFullName ?? "Unknown Passenger")
+                                .FontSize(PdfStyles.NormalSize)
+                                .Bold()
+                                .FontColor(PdfStyles.DarkColor);
+
+                            ticketCol.Item()
+                                .PaddingTop(PdfStyles.SmallSpacing)
+                                .LineHorizontal(PdfStyles.DividerThickness)
+                                .LineColor(PdfStyles.LightDividerColor);
+
+                            // ticket
+                            ticketCol.Item()
+                                .PaddingTop(PdfStyles.SmallSpacing)
+                                .Row(row =>
+                                {
+                                    row.RelativeItem().Column(c =>
+                                    {
+                                        c.Item()
+                                            .Text("FLIGHT")
+                                            .FontSize(PdfStyles.SmallSize)
+                                            .SemiBold()
+                                            .FontColor(PdfStyles.LabelColor);
+
+                                        c.Item()
+                                            .Text(ticket.FlightNumber ?? "-")
+                                            .FontSize(PdfStyles.NormalSize)
+                                            .Bold();
+                                    });
+                                    row.RelativeItem().Column(c =>
+                                    {
+                                        c.Item()
+                                            .Text("SEAT")
+                                            .FontSize(PdfStyles.SmallSize)
+                                            .SemiBold()
+                                            .FontColor(PdfStyles.LabelColor);
+
+                                        c.Item()
+                                            .Text(ticket.SeatNumber ?? "-")
+                                            .FontSize(PdfStyles.NormalSize)
+                                            .Bold();
+                                    });
+
+                                    row.RelativeItem().Column(c =>
+                                    {
+                                        c.Item()
+                                            .Text("CLASS")
+                                            .FontSize(PdfStyles.SmallSize)
+                                            .SemiBold()
+                                            .FontColor(PdfStyles.LabelColor);
+
+                                        c.Item()
+                                            .Text(ticket.SeatClass.ToString() ?? "-")
+                                            .FontSize(PdfStyles.NormalSize)
+                                            .Bold();
+                                    });
+
+                                    row.RelativeItem().Column(c =>
+                                    {
+                                        c.Item()
+                                            .Text("GATE")
+                                            .FontSize(PdfStyles.SmallSize)
+                                            .SemiBold()
+                                            .FontColor(PdfStyles.LabelColor);
+
+                                        c.Item()
+                                            .Text("TBD")
+                                            .FontSize(PdfStyles.NormalSize)
+                                            .Bold();
+                                    });
+                                });
+                        });
+                }
+            }
+            else
+            {
+                col.Item()
+                    .PaddingTop(PdfStyles.InnerSpacing)
+                    .Text("No boarding passes available")
+                    .FontSize(PdfStyles.NormalSize)
+                    .FontColor(PdfStyles.LabelColor);
+            }
+        });
+}
+
         public static void BuildPassengersSection(
             IContainer container,
             PurchaseConfirmationModel model)

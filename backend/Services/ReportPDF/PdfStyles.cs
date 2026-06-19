@@ -39,5 +39,10 @@ namespace backend.Templates
         public const float QrCodeSize       = 100;
         public const float AccentBarWidth   = 3;
         public const float DividerThickness = 0.5f;
+
+        public static readonly string TicketBackground = "#FFFFFF";
+        public static readonly float TicketPadding = 12f;
+        public static readonly string LightDividerColor = "#E8E8E8";
+        public static readonly float SmallSpacing = 8f;
     }
 }

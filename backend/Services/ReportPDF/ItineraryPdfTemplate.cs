@@ -31,6 +31,9 @@ namespace backend.Templates
                             PdfSections.BuildFlightSection(
                                 column.Item(), model);
 
+                            PdfSections.BuildTicketsSection(
+                                column.Item(), model);
+
                             PdfSections.BuildPassengersSection(
                                 column.Item(), model);
                         });
