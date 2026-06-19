@@ -217,7 +217,7 @@
 </template>
 
 <script>
-import { getReservationReport } from '@/services/ReservationService';
+import { getReservationReport, downloadItinerary } from '@/services/ReservationService';
 import AdminHero       from '@/components/admin/ui/AdminHero.vue';
 import AdminCard       from '@/components/admin/ui/AdminCard.vue';
 import AdminPageLayout from '@/components/layout/AdminPageLayout.vue';
@@ -262,6 +262,26 @@ export default {
   },
   
   methods: {
+    async printItinerary() {
+      try {
+        const pdf = await downloadItinerary();
+
+        const url = window.URL.createObjectURL(pdf);
+
+        const link = document.createElement("a");
+
+        link.href = url;
+        link.download = "MushuItinerary.pdf";
+
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        window.URL.revokeObjectURL(url);
+      } catch (error) {
+        alert(error.message);
+      }
+    },
     goBack() {
       localStorage.removeItem("reservationToken");
       this.$router.push("/");

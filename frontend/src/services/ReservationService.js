@@ -26,3 +26,26 @@ export async function getReservationReport() {
         };
     }
 }
+
+export async function downloadItinerary() {
+    const token = localStorage.getItem("reservationToken");
+
+    try {
+        const response = await axios.get(
+            `${BASE}/reservationreport/pdf`,
+            {
+                // to the pdf file
+                responseType: "blob",
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            }
+        );
+
+        return response.data;
+    } catch (err) {
+        throw {
+            message: "No se pudo descargar el itinerario."
+        };
+    }
+}
