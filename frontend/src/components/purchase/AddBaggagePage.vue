@@ -149,23 +149,34 @@
 
               <div class="summary-divider"></div>
 
-              <div class="total-block">
-                <span class="total-label">Total a pagar</span>
-                <span class="total-amount">${{ totalToPay.toLocaleString() }}</span>
-              </div>
+              <template v-if="!showPaymentForm">
+                <div class="total-block">
+                  <span class="total-label">Total a pagar</span>
+                  <span class="total-amount">${{ totalToPay.toLocaleString() }}</span>
+                </div>
 
-              <button
-                class="pay-btn"
-                :disabled="totalExtraBags === 0"
-                @click="handlePay"
-              >
-                <i class="bi bi-credit-card-fill"></i>
-                Pagar maletas adicionales
-              </button>
+                <button
+                  class="pay-btn"
+                  :disabled="totalExtraBags === 0"
+                  @click="handlePay"
+                >
+                  <i class="bi bi-credit-card-fill"></i>
+                  Pagar maletas adicionales
+                </button>
 
-              <p class="pay-hint" v-if="totalExtraBags === 0">
-                Agrega al menos una maleta para continuar.
-              </p>
+                <p class="pay-hint" v-if="totalExtraBags === 0">
+                  Agrega al menos una maleta para continuar.
+                </p>
+              </template>
+
+              <CardPaymentForm
+                v-else
+                :total="totalToPay"
+                :paying="paying"
+                :api-error="paymentApiError"
+                @submit="handleCardSubmit"
+                @cancel="showPaymentForm = false"
+              />
             </AdminCard>
           </div>
         </div>
@@ -182,14 +193,16 @@
 import AdminPageLayout from '@/components/layout/AdminPageLayout.vue';
 import AdminHero from '@/components/admin/ui/AdminHero.vue';
 import AdminCard from '@/components/admin/ui/AdminCard.vue';
-import { getPurchaseData } from '@/services/PurchaseService';
+import { getPurchaseData, validatePayment } from '@/services/PurchaseService';
+import { addBaggage } from '@/services/ReservationService';
+import CardPaymentForm from '@/components/purchase/CardPaymentForm.vue';
 
 const BAG_PRICE = 35;
 
 export default {
   name: 'AddBaggagePage',
 
-  components: { AdminPageLayout, AdminHero, AdminCard },
+  components: { AdminPageLayout, AdminHero, AdminCard, CardPaymentForm },
 
   data() {
     return {
@@ -199,6 +212,8 @@ export default {
       loading: true,
       error: null,
       paying: false,
+      showPaymentForm: false,
+      paymentApiError: null,
     };
   },
 
@@ -275,8 +290,33 @@ export default {
       }
     },
 
-    async handlePay() {
-      // TODO: call addBaggage(purchaseId, payload) once the backend endpoint is available
+    handlePay() {
+      this.paymentApiError = null;
+      this.showPaymentForm = true;
+    },
+
+    async handleCardSubmit(cardData) {
+      this.paying = true;
+      this.paymentApiError = null;
+      try {
+        await validatePayment(cardData);
+      } catch (err) {
+        this.paymentApiError = err.message ?? 'Tarjeta rechazada.';
+        this.paying = false;
+        return;
+      }
+      try {
+        const payload = this.passengersWithExtra.map(p => ({
+          passengerFullName: p.name,
+          extraBags: p.extraBags,
+        }));
+        await addBaggage(payload);
+        this.$router.push('/my-reservation/report');
+      } catch (err) {
+        this.paymentApiError = err.message ?? 'Error al procesar el pago de maletas.';
+      } finally {
+        this.paying = false;
+      }
     },
   },
 };

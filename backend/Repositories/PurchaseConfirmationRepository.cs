@@ -272,15 +272,15 @@ namespace backend.Repositories
             const string upsertBaggageDetail = @"
                 IF EXISTS (
                     SELECT 1 FROM PurchaseBaggageDetail
-                    WHERE PurchaseId = @PurchaseId AND BaggageType = 1
+                    WHERE PurchaseId = @PurchaseId AND BaggageType = 'CheckedBaggage'
                 )
                     UPDATE PurchaseBaggageDetail
                     SET Quantity = Quantity + @TotalExtraBags,
                         Subtotal = Subtotal + @TotalCharged
-                    WHERE PurchaseId = @PurchaseId AND BaggageType = 1
+                    WHERE PurchaseId = @PurchaseId AND BaggageType = 'CheckedBaggage'
                 ELSE
                     INSERT INTO PurchaseBaggageDetail (PurchaseId, BaggageType, Quantity, UnitPrice, Subtotal)
-                    VALUES (@PurchaseId, 1, @TotalExtraBags, @BagPrice, @TotalCharged)";
+                    VALUES (@PurchaseId, 'CheckedBaggage', @TotalExtraBags, @BagPrice, @TotalCharged)";
 
             connection.Execute(upsertBaggageDetail, new
             {
