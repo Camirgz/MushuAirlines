@@ -207,6 +207,9 @@
                 <span class="summary-value">{{ detail.seatCount }} asiento{{ detail.seatCount === 1 ? '' : 's' }}</span>
               </div>
             </AdminCard>
+            <button class="back-home-btn" @click="goBack">
+              <i class="bi bi-arrow-left"></i> Volver al inicio
+            </button>
           </aside>
         </div>
       </div>
@@ -414,4 +417,25 @@ tr:hover td { background: #fafafa; }
 .summary-row:last-child { border-bottom: none; }
 .summary-label { color: #999; }
 .summary-value { font-weight: 600; }
+
+.back-home-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px 14px;
+  background: transparent;
+  border: 1px solid #d0d0d0;
+  border-radius: 10px;
+  color: #999;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.back-home-btn:hover {
+  color: #666;
+  border-color: #bbb;
+}
 </style>
