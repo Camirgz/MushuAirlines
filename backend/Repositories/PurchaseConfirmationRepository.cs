@@ -179,7 +179,7 @@ namespace backend.Repositories
         public List<TicketSummary> GetPassengerTickets(int purchaseId)
         {
             using var connection = new SqlConnection(connectionString);
- 
+
             const string query = @"
               SELECT
                 per.FirstName + ' ' + per.LastName AS PassengerFullName,
@@ -204,8 +204,79 @@ namespace backend.Repositories
                 t.ScheduledId,
                 per.FirstName,
                 per.LastName";
- 
+
             return connection.Query<TicketSummary>(query, new { PurchaseId = purchaseId }).ToList();
+        }
+
+        public void AddCheckedBagsToTickets(int purchaseId, List<PassengerBaggageAddition> additions, decimal unitPrice)
+        {
+            using var connection = new SqlConnection(connectionString);
+            connection.Open();
+            using var tx = connection.BeginTransaction();
+
+            const string getBookingCode = @"
+                SELECT BookingCode FROM Purchase WHERE Id = @PurchaseId";
+
+            var bookingCode = connection.QueryFirstOrDefault<int?>(
+                getBookingCode, new { PurchaseId = purchaseId }, tx)
+                ?? throw new Exception("Compra no encontrada.");
+
+            const string updateTicketBaggage = @"
+                UPDATE tb
+                SET
+                    tb.CheckedBagCount = tb.CheckedBagCount + @ExtraBags,
+                    tb.BaggageSubtotal = tb.BaggageSubtotal + (@ExtraBags * @UnitPrice)
+                FROM TicketBaggage tb
+                INNER JOIN Passenger pa ON tb.PassengerId = pa.Id
+                INNER JOIN Person    per ON pa.Id         = per.Id
+                WHERE tb.BookingCode = @BookingCode
+                  AND per.FirstName + ' ' + per.LastName = @PassengerFullName";
+
+            foreach (var addition in additions.Where(a => a.ExtraBags > 0))
+            {
+                connection.Execute(updateTicketBaggage, new
+                {
+                    addition.ExtraBags,
+                    UnitPrice = unitPrice,
+                    BookingCode = bookingCode,
+                    addition.PassengerFullName
+                }, tx);
+            }
+
+            int totalExtraBags = additions.Sum(a => a.ExtraBags);
+            decimal totalCharged = totalExtraBags * unitPrice;
+
+            const string upsertBaggageDetail = @"
+                IF EXISTS (
+                    SELECT 1 FROM PurchaseBaggageDetail
+                    WHERE PurchaseId = @PurchaseId AND BaggageType = 1
+                )
+                    UPDATE PurchaseBaggageDetail
+                    SET Quantity = Quantity + @TotalExtraBags,
+                        Subtotal = Subtotal + @TotalCharged
+                    WHERE PurchaseId = @PurchaseId AND BaggageType = 1
+                ELSE
+                    INSERT INTO PurchaseBaggageDetail (PurchaseId, BaggageType, Quantity, UnitPrice, Subtotal)
+                    VALUES (@PurchaseId, 1, @TotalExtraBags, @UnitPrice, @TotalCharged)";
+
+            connection.Execute(upsertBaggageDetail, new
+            {
+                PurchaseId = purchaseId,
+                TotalExtraBags = totalExtraBags,
+                TotalCharged = totalCharged,
+                UnitPrice = unitPrice
+            }, tx);
+
+            const string updateTotalPaid = @"
+                UPDATE Purchase SET TotalPaid = TotalPaid + @TotalCharged WHERE Id = @PurchaseId";
+
+            connection.Execute(updateTotalPaid, new
+            {
+                TotalCharged = totalCharged,
+                PurchaseId = purchaseId
+            }, tx);
+
+            tx.Commit();
         }
     }
 }

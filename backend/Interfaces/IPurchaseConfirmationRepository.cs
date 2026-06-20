@@ -9,5 +9,6 @@ namespace backend.Interfaces
         List<SeatClassSubtotal> GetPurchaseDetails(int purchaseId);
         List<BaggageSubtotal> GetPurchaseBaggageDetails(int purchaseId);
         List<PassengerBaggageDetail> GetPassengerBaggageDetails(int purchaseId);
+        void AddCheckedBagsToTickets(int purchaseId, List<PassengerBaggageAddition> additions, decimal unitPrice);
     }
 }
