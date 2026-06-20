@@ -286,6 +286,9 @@ export default {
       localStorage.removeItem("reservationToken");
       this.$router.push("/");
     },
+    goBaggage() {
+      this.$router.push(`/purchase/${this.reservation.purchaseId}/add-baggage`);
+    },
     formatDateShort(dateString) {
       if (!dateString) return '';
       const date = new Date(dateString);
