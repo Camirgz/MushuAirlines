@@ -20,30 +20,39 @@
 
       <template v-else-if="purchase">
 
-      <!-- Flight info banner -->
+      <!-- Tramo 1 -->
       <AdminCard>
         <div class="flight-banner">
           <div class="flight-route">
-            <span class="route-airport">{{ bannerOrigin }}</span>
+            <span class="route-airport">{{ purchase.originAirport }}</span>
             <i class="bi bi-airplane-fill route-plane"></i>
-            <span class="route-airport">{{ bannerDestination }}</span>
+            <span class="route-airport">{{ purchase.destinationAirport }}</span>
           </div>
           <div class="flight-meta">
-            <span class="meta-chip">
-              <i class="bi bi-calendar3"></i>
-              {{ bannerDate }}
-            </span>
-            <span class="meta-chip">
-              <i class="bi bi-tag"></i>
-              {{ bannerFlightNumber }}
-            </span>
-            <span class="meta-chip">
-              <i class="bi bi-receipt"></i>
-              {{ bannerInvoiceNumber }}
-            </span>
-            <span class="meta-chip meta-chip--price">
+            <span class="meta-chip"><i class="bi bi-calendar3"></i>{{ bannerDate }}</span>
+            <span class="meta-chip"><i class="bi bi-tag"></i>{{ purchase.flightNumber }}</span>
+            <span v-if="bagLegs[0]" class="meta-chip meta-chip--price">
               <i class="bi bi-archive-fill"></i>
-              ${{ BAG_PRICE }} / maleta documentada
+              ${{ bagLegs[0].bagPrice }} la 1ª · ${{ (bagLegs[0].bagPrice * bagLegs[0].bagMultiplier).toLocaleString() }} desde la 2ª
+            </span>
+          </div>
+        </div>
+      </AdminCard>
+
+      <!-- Tramo 2 (escala) -->
+      <AdminCard v-if="purchase.flightNumber2">
+        <div class="flight-banner">
+          <div class="flight-route">
+            <span class="route-airport">{{ purchase.originAirport2 }}</span>
+            <i class="bi bi-airplane-fill route-plane"></i>
+            <span class="route-airport">{{ purchase.destinationAirport2 }}</span>
+          </div>
+          <div class="flight-meta">
+            <span class="meta-chip"><i class="bi bi-calendar3"></i>{{ bannerDate2 }}</span>
+            <span class="meta-chip"><i class="bi bi-tag"></i>{{ purchase.flightNumber2 }}</span>
+            <span v-if="bagLegs[1]" class="meta-chip meta-chip--price">
+              <i class="bi bi-archive-fill"></i>
+              ${{ bagLegs[1].bagPrice }} la 1ª · ${{ (bagLegs[1].bagPrice * bagLegs[1].bagMultiplier).toLocaleString() }} desde la 2ª
             </span>
           </div>
         </div>
@@ -132,11 +141,10 @@
                       <span class="summary-name">{{ passenger.name }}</span>
                       <span class="summary-qty">
                         {{ passenger.extraBags }} maleta{{ passenger.extraBags !== 1 ? 's' : '' }}
-                        × ${{ BAG_PRICE }}
                       </span>
                     </div>
                     <span class="summary-subtotal">
-                      ${{ (passenger.extraBags * BAG_PRICE).toLocaleString() }}
+                      ${{ passenger.extraCost.toLocaleString() }}
                     </span>
                   </div>
                 </div>
@@ -197,8 +205,6 @@ import { getPurchaseData, validatePayment } from '@/services/PurchaseService';
 import { addBaggage } from '@/services/ReservationService';
 import CardPaymentForm from '@/components/purchase/CardPaymentForm.vue';
 
-const BAG_PRICE = 35;
-
 export default {
   name: 'AddBaggagePage',
 
@@ -206,7 +212,6 @@ export default {
 
   data() {
     return {
-      BAG_PRICE,
       purchase: null,
       passengerExtras: [],
       loading: true,
@@ -221,16 +226,25 @@ export default {
     purchaseId() {
       return Number(this.$route.params.id);
     },
+    bagLegs() {
+      return this.purchase?.bagLegs ?? [];
+    },
+    bagPrice() {
+      return this.bagLegs.reduce((s, l) => s + l.bagPrice, 0);
+    },
     passengers() {
       if (!this.purchase) return [];
       return this.purchase.tickets.map((ticket, idx) => {
         const detail = (this.purchase.passengerBaggageDetails ?? [])
           .find(d => d.passengerFullName === ticket.passengerFullName);
+        const currentBags = detail?.checkedBagCount ?? 0;
+        const extraBags   = this.passengerExtras[idx] ?? 0;
         return {
           name: ticket.passengerFullName,
           seatClass: this.translateClass(ticket.seatClass),
-          currentBags: detail?.checkedBagCount ?? 0,
-          extraBags: this.passengerExtras[idx] ?? 0,
+          currentBags,
+          extraBags,
+          extraCost: this.calcExtraCost(currentBags, extraBags),
         };
       });
     },
@@ -241,7 +255,7 @@ export default {
       return this.passengers.reduce((sum, p) => sum + p.extraBags, 0);
     },
     totalToPay() {
-      return this.totalExtraBags * BAG_PRICE;
+      return this.passengersWithExtra.reduce((sum, p) => sum + p.extraCost, 0);
     },
     bannerOrigin() {
       return this.purchase?.originAirport ?? '—';
@@ -255,11 +269,11 @@ export default {
         day: 'numeric', month: 'short', year: 'numeric',
       });
     },
-    bannerFlightNumber() {
-      return this.purchase?.flightNumber ?? '—';
-    },
-    bannerInvoiceNumber() {
-      return this.purchase?.invoiceNumber ?? '—';
+    bannerDate2() {
+      if (!this.purchase?.departureDate2) return '—';
+      return new Date(this.purchase.departureDate2).toLocaleDateString('es-CR', {
+        day: 'numeric', month: 'short', year: 'numeric',
+      });
     },
   },
 
@@ -279,6 +293,20 @@ export default {
       if (seatClass === 'FirstClass') return 'Primera Clase';
       if (seatClass === 'Economy')    return 'Clase Turista';
       return seatClass ?? '';
+    },
+
+    bagSubtotal(count, price, multiplier) {
+      if (count === 0) return 0;
+      if (count === 1) return price;
+      return price + (count - 1) * price * multiplier;
+    },
+
+    calcExtraCost(currentBags, extraBags) {
+      if (extraBags === 0) return 0;
+      return this.bagLegs.reduce((sum, leg) =>
+        sum
+        + this.bagSubtotal(currentBags + extraBags, leg.bagPrice, leg.bagMultiplier)
+        - this.bagSubtotal(currentBags, leg.bagPrice, leg.bagMultiplier), 0);
     },
 
     addBag(idx) {

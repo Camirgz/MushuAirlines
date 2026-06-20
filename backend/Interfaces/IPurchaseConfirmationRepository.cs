@@ -9,7 +9,7 @@ namespace backend.Interfaces
         List<SeatClassSubtotal> GetPurchaseDetails(int purchaseId);
         List<BaggageSubtotal> GetPurchaseBaggageDetails(int purchaseId);
         List<PassengerBaggageDetail> GetPassengerBaggageDetails(int purchaseId);
-        BagPricing GetBagPricingByPurchaseId(int purchaseId);
+        List<BagPricing> GetBagPricingByPurchaseId(int purchaseId);
         void AddCheckedBagsToTickets(int purchaseId, List<PassengerBaggageUpdate> updates, decimal bagPrice, decimal totalCharged);
     }
 }

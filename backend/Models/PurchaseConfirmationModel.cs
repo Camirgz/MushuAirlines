@@ -38,6 +38,10 @@ namespace backend.Model
         public decimal HandBaggageSubtotal { get; set; }
         public int CheckedBaggageCount { get; set; }
         public decimal CheckedBaggageSubtotal { get; set; }
+
+        public decimal BagPrice { get; set; }
+        public decimal BagMultiplier { get; set; }
+        public List<BagPricing> BagLegs { get; set; } = new();
     }
 
     public class PassengerBaggageDetail

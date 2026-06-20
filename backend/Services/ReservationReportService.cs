@@ -36,7 +36,8 @@ namespace backend.Services
 
             int purchaseId = repository.GetPurchaseIdByReservationCode(reservationCode);
 
-            var pricing = repository.GetBagPricingByPurchaseId(purchaseId);
+            var legs = repository.GetBagPricingByPurchaseId(purchaseId);
+            decimal totalBagPrice = legs.Sum(l => l.BagPrice);
 
             var currentBags = repository.GetPassengerBaggageDetails(purchaseId)
                 .ToDictionary(p => p.PassengerFullName, p => p.CheckedBagCount);
@@ -45,9 +46,9 @@ namespace backend.Services
                 .Select(addition =>
                 {
                     int current = currentBags.GetValueOrDefault(addition.PassengerFullName, 0);
-                    decimal extraCost =
-                        BagSubtotal(current + addition.ExtraBags, pricing.BagPrice, pricing.BagMultiplier)
-                        - BagSubtotal(current, pricing.BagPrice, pricing.BagMultiplier);
+                    decimal extraCost = legs.Sum(leg =>
+                        BagSubtotal(current + addition.ExtraBags, leg.BagPrice, leg.BagMultiplier)
+                        - BagSubtotal(current, leg.BagPrice, leg.BagMultiplier));
 
                     return new PassengerBaggageUpdate
                     {
@@ -61,7 +62,7 @@ namespace backend.Services
             decimal totalCharged   = updates.Sum(u => u.ExtraCost);
             int     totalBagsAdded = updates.Sum(u => u.ExtraBags);
 
-            repository.AddCheckedBagsToTickets(purchaseId, updates, pricing.BagPrice, totalCharged);
+            repository.AddCheckedBagsToTickets(purchaseId, updates, totalBagPrice, totalCharged);
 
             return new AddBaggageResponse
             {
