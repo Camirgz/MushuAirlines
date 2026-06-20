@@ -10,6 +10,5 @@ public interface IPricingCalculator
         decimal economyPrice,
         decimal firstClassPrice,
         decimal handBagPrice,
-        decimal bagPrice,
-        decimal bagMultiplier);
+        IEnumerable<BagPricing> bagLegs);
 }
