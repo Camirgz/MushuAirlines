@@ -122,7 +122,7 @@ public class PurchaseServiceTests
             .Setup(p => p.Calculate(
                 It.IsAny<List<SeatSelection>>(), It.IsAny<List<PassengerInfo>>(),
                 It.IsAny<decimal>(), It.IsAny<decimal>(),
-                It.IsAny<decimal>(), It.IsAny<decimal>(), It.IsAny<decimal>()))
+                It.IsAny<decimal>(), It.IsAny<IEnumerable<BagPricing>>()))
             .Returns(MinimalTotals(passengerCount));
     }
 
