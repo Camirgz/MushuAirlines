@@ -45,6 +45,17 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
+builder.Services.AddScoped<IPurchaseConfirmationRepository, PurchaseConfirmationRepository>();
+builder.Services.AddScoped<IQrService, QrService>();
+builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+builder.Services.AddScoped<IEmailPurchaseService, EmailPurchaseService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<PurchaseConfirmationService>();
+
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase);
+
 
 builder.Services.AddScoped<IReservationReportService,ReservationReportService>();
 
@@ -116,4 +127,5 @@ app.UseCors(MyAllowSpecificOrigins);
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
 app.Run();
