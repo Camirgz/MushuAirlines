@@ -208,7 +208,31 @@ namespace backend.Repositories
             return connection.Query<TicketSummary>(query, new { PurchaseId = purchaseId }).ToList();
         }
 
-        public void AddCheckedBagsToTickets(int purchaseId, List<PassengerBaggageAddition> additions, decimal unitPrice)
+        public BagPricing GetBagPricingByPurchaseId(int purchaseId)
+        {
+            using var connection = new SqlConnection(connectionString);
+
+            const string sql = @"
+                SELECT TOP 1
+                    r.BagPrice,
+                    r.BagMultiplier
+                FROM Purchase p
+                INNER JOIN Itinerary i
+                    ON p.BookingCode = i.BookingCode
+                INNER JOIN ItineraryScheduledFlight isf
+                    ON i.BookingCode = isf.BookingCode
+                INNER JOIN ScheduledFlight sf
+                    ON isf.ScheduledId = sf.Id
+                INNER JOIN Route r
+                    ON sf.RouteCode = r.Code
+                WHERE p.Id = @PurchaseId
+                ORDER BY isf.ScheduledId";
+
+            return connection.QueryFirstOrDefault<BagPricing>(sql, new { PurchaseId = purchaseId })
+                ?? throw new Exception("No se encontró la información de precios para esta compra.");
+        }
+
+        public void AddCheckedBagsToTickets(int purchaseId, List<PassengerBaggageUpdate> updates, decimal bagPrice, decimal totalCharged)
         {
             using var connection = new SqlConnection(connectionString);
             connection.Open();
@@ -225,26 +249,25 @@ namespace backend.Repositories
                 UPDATE tb
                 SET
                     tb.CheckedBagCount = tb.CheckedBagCount + @ExtraBags,
-                    tb.BaggageSubtotal = tb.BaggageSubtotal + (@ExtraBags * @UnitPrice)
+                    tb.BaggageSubtotal = tb.BaggageSubtotal + @ExtraCost
                 FROM TicketBaggage tb
-                INNER JOIN Passenger pa ON tb.PassengerId = pa.Id
-                INNER JOIN Person    per ON pa.Id         = per.Id
+                INNER JOIN Passenger pa  ON tb.PassengerId = pa.Id
+                INNER JOIN Person    per ON pa.Id          = per.Id
                 WHERE tb.BookingCode = @BookingCode
                   AND per.FirstName + ' ' + per.LastName = @PassengerFullName";
 
-            foreach (var addition in additions.Where(a => a.ExtraBags > 0))
+            foreach (var update in updates)
             {
                 connection.Execute(updateTicketBaggage, new
                 {
-                    addition.ExtraBags,
-                    UnitPrice = unitPrice,
+                    update.ExtraBags,
+                    update.ExtraCost,
                     BookingCode = bookingCode,
-                    addition.PassengerFullName
+                    update.PassengerFullName
                 }, tx);
             }
 
-            int totalExtraBags = additions.Sum(a => a.ExtraBags);
-            decimal totalCharged = totalExtraBags * unitPrice;
+            int totalExtraBags = updates.Sum(u => u.ExtraBags);
 
             const string upsertBaggageDetail = @"
                 IF EXISTS (
@@ -257,14 +280,14 @@ namespace backend.Repositories
                     WHERE PurchaseId = @PurchaseId AND BaggageType = 1
                 ELSE
                     INSERT INTO PurchaseBaggageDetail (PurchaseId, BaggageType, Quantity, UnitPrice, Subtotal)
-                    VALUES (@PurchaseId, 1, @TotalExtraBags, @UnitPrice, @TotalCharged)";
+                    VALUES (@PurchaseId, 1, @TotalExtraBags, @BagPrice, @TotalCharged)";
 
             connection.Execute(upsertBaggageDetail, new
             {
                 PurchaseId = purchaseId,
                 TotalExtraBags = totalExtraBags,
                 TotalCharged = totalCharged,
-                UnitPrice = unitPrice
+                BagPrice = bagPrice
             }, tx);
 
             const string updateTotalPaid = @"
