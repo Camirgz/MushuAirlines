@@ -123,7 +123,8 @@ public class PurchaseService : IPurchaseService
             {
                 ScheduledFlightId = scheduledFlightId1,
                 PassengerId       = passengerIds[seat.PassengerIndex],
-                SeatNumber        = assignedSeatNumbers1[i]
+                SeatNumber        = assignedSeatNumbers1[i],
+                SeatClass         = seat.SeatClass.ToString()
             })
             .ToList();
 
@@ -152,7 +153,8 @@ public class PurchaseService : IPurchaseService
                 {
                     ScheduledFlightId = scheduledFlightId2,
                     PassengerId       = passengerIds[seat.PassengerIndex],
-                    SeatNumber        = assignedSeatNumbers2![i]
+                    SeatNumber        = assignedSeatNumbers2![i],
+                    SeatClass         = seat.SeatClass.ToString()
                 })
                 .ToList();
 
@@ -195,18 +197,14 @@ public class PurchaseService : IPurchaseService
             ScheduledId2   = isStopover ? scheduledFlightId2 : null
         });
 
-        var tickets = request.SeatSelections
-            .Select((seat, i) =>
-            {
-                var passenger = request.Passengers[seat.PassengerIndex];
-                return new TicketSummary
-                {
-                    PassengerFullName = $"{passenger.FirstName} {passenger.LastName}",
-                    SeatNumber        = assignedSeatNumbers1[i].ToString(),
-                    SeatClass         = seat.SeatClass
-                };
-            })
-            .ToList();
+        var tickets = GenerateTicketSummaries(
+            request.SeatSelections,
+            request.Passengers,
+            assignedSeatNumbers1,
+            assignedSeatNumbers2,
+            isStopover,
+            scheduledFlightId1,
+            isStopover ? scheduledFlightId2 : null);
 
         return new PurchaseResponseModel
         {
@@ -220,6 +218,52 @@ public class PurchaseService : IPurchaseService
             Tickets         = tickets
         };
     }
+
+
+    private static List<TicketSummary> GenerateTicketSummaries(
+        List<SeatSelection> seatSelections,
+        List<PassengerInfo> passengers,
+        List<int> seatNumbers1,
+        List<int>? seatNumbers2,
+        bool isStopover,
+        int scheduledFlightId1,
+        int? scheduledFlightId2)
+    {
+    var tickets = new List<TicketSummary>();
+
+    // Vuelo 1
+    tickets.AddRange(seatSelections.Select((seat, i) =>
+    {
+        var passenger = passengers[seat.PassengerIndex];
+
+        return new TicketSummary
+        {
+            PassengerFullName = $"{passenger.FirstName} {passenger.LastName}",
+            SeatNumber = seatNumbers1[i].ToString(),
+            SeatClass = seat.SeatClass,
+            FlightNumber = scheduledFlightId1.ToString()
+        };
+    }));
+
+    // Vuelo 2
+    if (isStopover && seatNumbers2 != null && scheduledFlightId2.HasValue)
+    {
+        tickets.AddRange(seatSelections.Select((seat, i) =>
+        {
+            var passenger = passengers[seat.PassengerIndex];
+
+            return new TicketSummary
+            {
+                PassengerFullName = $"{passenger.FirstName} {passenger.LastName}",
+                SeatNumber = seatNumbers2[i].ToString(),
+                SeatClass = seat.SeatClass,
+                FlightNumber = scheduledFlightId2.Value.ToString()
+            };
+        }));
+    }
+
+    return tickets;
+}
 
     public async Task<bool> IsFlightAvailableAsync(string routeCode, DateOnly flightDate, int requestedCount)
     {

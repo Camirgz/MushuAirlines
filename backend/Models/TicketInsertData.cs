@@ -5,6 +5,7 @@ public class TicketInsertData
     public int ScheduledFlightId { get; init; }
     public int PassengerId       { get; init; }
     public int SeatNumber        { get; init; }
+    public string SeatClass { get; set; } = string.Empty;
 }
 
 public class TicketBaggageInsertData

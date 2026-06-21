@@ -83,7 +83,7 @@ namespace backend.Repositories
                 purchase.Details = GetPurchaseDetails(purchaseId);
                 purchase.BaggageDetails = GetPurchaseBaggageDetails(purchaseId);
                 purchase.PassengerBaggageDetails = GetPassengerBaggageDetails(purchaseId);
-                
+                purchase.Tickets = GetPassengerTickets(purchaseId);
                 var handBaggage = purchase.BaggageDetails.FirstOrDefault(b => b.Type == BaggageType.HandBaggage);
                 if (handBaggage != null)
                 {
@@ -175,6 +175,37 @@ namespace backend.Repositories
                 ORDER BY per.FirstName, per.LastName";
 
             return connection.Query<PassengerBaggageDetail>(query, new { PurchaseId = purchaseId }).ToList();
+        }
+        public List<TicketSummary> GetPassengerTickets(int purchaseId)
+        {
+            using var connection = new SqlConnection(connectionString);
+ 
+            const string query = @"
+              SELECT
+                per.FirstName + ' ' + per.LastName AS PassengerFullName,
+                CAST(t.SeatNumber AS VARCHAR)      AS SeatNumber,
+                t.SeatClass,
+                CAST(t.ScheduledId AS VARCHAR)     AS FlightNumber
+            FROM Ticket t
+            INNER JOIN Passenger pa
+                ON t.PassengerHas = pa.Id
+            INNER JOIN Person per
+                ON pa.Id = per.Id
+            INNER JOIN TicketBaggage tb
+                ON tb.PassengerId = t.PassengerHas
+                AND tb.ScheduledFlightId = t.ScheduledId
+            WHERE tb.BookingCode =
+            (
+                SELECT BookingCode
+                FROM Purchase
+                WHERE Id = @PurchaseId
+            )
+            ORDER BY
+                t.ScheduledId,
+                per.FirstName,
+                per.LastName";
+ 
+            return connection.Query<TicketSummary>(query, new { PurchaseId = purchaseId }).ToList();
         }
     }
 }

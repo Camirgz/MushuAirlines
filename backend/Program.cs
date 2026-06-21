@@ -5,7 +5,7 @@ using backend.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-
+using QuestPDF.Infrastructure;
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 var builder = WebApplication.CreateBuilder(args);
 
@@ -67,6 +67,7 @@ builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<PurchaseConfirmationService>();
 builder.Services.AddScoped<ILoginRepository, LoginRepository>();
 builder.Services.AddScoped<ILoginService, LoginService>();
+builder.Services.AddScoped<IPdfItineraryService, PdfItineraryService>();
 
 builder.Services.AddScoped<IReservationLoginRepository, ReservationLoginRepository>();
 builder.Services.AddScoped<IReservationLoginService, ReservationLoginService>();
@@ -113,7 +114,7 @@ builder.Services.AddControllers()
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
+QuestPDF.Settings.License = LicenseType.Community;
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())

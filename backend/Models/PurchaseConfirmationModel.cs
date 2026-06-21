@@ -20,7 +20,7 @@ namespace backend.Model
         public DateTime DepartureDate { get; set; }
         public DateTime ArrivalDate { get; set; }
         public string Layover { get; set; }
-
+        public List<TicketSummary> Tickets { get; set; } = new();
 
         public string FlightNumber2 { get; set; }
         public string AircraftType2 { get; set; }

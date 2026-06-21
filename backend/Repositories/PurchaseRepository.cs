@@ -173,14 +173,15 @@ public class PurchaseRepository : IPurchaseRepository
             }), transaction);
 
             const string insertTicket = @"
-                INSERT INTO Ticket (ScheduledId, PassengerHas, SeatNumber)
-                VALUES (@ScheduledId, @PassengerHas, @SeatNumber)";
+                INSERT INTO Ticket (ScheduledId, PassengerHas, SeatNumber, SeatClass)
+                VALUES (@ScheduledId, @PassengerHas, @SeatNumber, @SeatClass)";
 
             await connection.ExecuteAsync(insertTicket, data.Tickets1.Select(t => new
             {
                 ScheduledId  = t.ScheduledFlightId,
                 PassengerHas = t.PassengerId,
-                SeatNumber   = t.SeatNumber
+                SeatNumber   = t.SeatNumber,
+                SeatClass    = t.SeatClass
             }), transaction);
 
             const string insertTicketBaggage = @"
@@ -213,7 +214,8 @@ public class PurchaseRepository : IPurchaseRepository
                 {
                     ScheduledId  = t.ScheduledFlightId,
                     PassengerHas = t.PassengerId,
-                    SeatNumber   = t.SeatNumber
+                    SeatNumber   = t.SeatNumber,
+                    SeatClass    = t.SeatClass
                 }), transaction);
 
                 await connection.ExecuteAsync(insertTicketBaggage, data.TicketBaggage2!.Select(tb => new
