@@ -20,10 +20,11 @@
         </a>
 
         <!-- Management dropdown — admins only -->
-        <div v-if="isAdmin" class="management-wrapper">
-          <button class="management-btn" @click="toggleDropdown">
-            <i class="bi bi-gear me-2"></i>Gestión
-            <i class="bi ms-2" :class="isDropdownOpen ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+        <div v-if="isAdmin" class="management-wrapper" ref="managementMenu">
+          <button class="management-btn" type="button" @click.stop="toggleDropdown">
+            <i class="bi bi-gear me-1"></i>
+            Gestión
+            <i class="bi ms-1" :class="isDropdownOpen ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
           </button>
           <div v-if="isDropdownOpen" class="management-dropdown">
             <RouterLink to="/admin" class="dropdown-item-custom" @click="closeDropdown">
@@ -53,10 +54,22 @@
           </div>
         </div>
 
-        <!-- Logged-in: logout button; logged-out: admin login link -->
-        <button v-if="isLoggedIn" class="logout-btn" @click="logout">
-          <i class="bi bi-box-arrow-right me-2"></i>Logout
-        </button>
+        <!-- Profile button (logged-in) / Admin Login link (logged-out) -->
+        <div v-if="isLoggedIn" class="profile-wrapper" ref="profileMenu">
+          <button class="profile-btn" type="button" @click.stop="toggleProfileMenu">
+            <i class="bi bi-person"></i>
+          </button>
+          <div v-if="isProfileMenuOpen" class="profile-dropdown">
+            <RouterLink to="/admin/profile" class="profile-dropdown-item" @click="closeProfileMenu">
+              <i class="bi bi-person"></i>
+              <span>Perfil</span>
+            </RouterLink>
+            <button type="button" class="profile-dropdown-item logout-dropdown-btn" @click="logout">
+              <i class="bi bi-box-arrow-right"></i>
+              <span>Logout</span>
+            </button>
+          </div>
+        </div>
         <a v-else href="/login" class="btn btn-outline-danger rounded-pill px-3 py-1 admin-btn">
           <i class="bi bi-person me-1"></i>Admin Login
         </a>
@@ -763,6 +776,7 @@ export default {
     return {
       userRole: null,
       isDropdownOpen: false,
+      isProfileMenuOpen: false,
 
       airports: [],
       flights: [],
@@ -942,6 +956,11 @@ export default {
 
   mounted() {
     this.userRole = this.getRoleFromToken()
+    document.addEventListener('click', this.handleOutsideClick)
+  },
+
+  beforeUnmount() {
+    document.removeEventListener('click', this.handleOutsideClick)
   },
 
   watch: {
@@ -982,16 +1001,38 @@ export default {
 
     toggleDropdown() {
       this.isDropdownOpen = !this.isDropdownOpen
+      this.isProfileMenuOpen = false
     },
 
     closeDropdown() {
       this.isDropdownOpen = false
     },
 
+    toggleProfileMenu() {
+      this.isProfileMenuOpen = !this.isProfileMenuOpen
+      this.isDropdownOpen = false
+    },
+
+    closeProfileMenu() {
+      this.isProfileMenuOpen = false
+    },
+
+    handleOutsideClick(event) {
+      const managementMenu = this.$refs.managementMenu
+      const profileMenu = this.$refs.profileMenu
+      if (managementMenu && !managementMenu.contains(event.target)) {
+        this.isDropdownOpen = false
+      }
+      if (profileMenu && !profileMenu.contains(event.target)) {
+        this.isProfileMenuOpen = false
+      }
+    },
+
     logout() {
       localStorage.removeItem('token')
       this.userRole = null
       this.isDropdownOpen = false
+      this.isProfileMenuOpen = false
     },
 
     async onOriginInput() {
@@ -1401,34 +1442,33 @@ export default {
 }
 
 .management-btn {
-  padding: 10px 18px;
-  background: var(--gradient-brand-diagonal);
+  padding: 8px 16px;
+  background: linear-gradient(to right, #e74c3c, #f39c12);
   color: #ffffff;
   border: none;
-  border-radius: var(--radius-btn);
-  font-size: 0.9rem;
-  font-weight: 800;
+  border-radius: 999px;
+  font-size: 0.88rem;
+  font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
-  box-shadow: var(--shadow-btn-primary);
-  transition: 0.2s ease;
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
 .management-btn:hover {
+  opacity: 0.9;
   transform: translateY(-1px);
-  box-shadow: var(--shadow-btn-primary-hover);
 }
 
 .management-dropdown {
   position: absolute;
-  top: 50px;
+  top: 48px;
   right: 0;
   width: 320px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-panel);
-  box-shadow: var(--shadow-dropdown);
+  background: #ffffff;
+  border: 1.5px solid #ddd;
+  border-radius: 0 0 10px 10px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.15);
   padding: 8px;
   z-index: 200;
 }
@@ -1438,22 +1478,33 @@ export default {
   align-items: center;
   gap: 12px;
   text-decoration: none;
-  color: var(--text-dark);
-  padding: 11px 14px;
-  border-radius: 9px;
+  color: #1a1a1a;
+  padding: 12px 14px;
+  border-radius: 8px;
   font-size: 0.88rem;
-  font-weight: 700;
-  transition: 0.2s ease;
+  font-weight: 600;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .dropdown-item-custom i {
-  color: var(--color-accent-soft);
-  font-size: 1rem;
+  color: #e74c3c;
+  font-size: 0.95rem;
 }
 
 .dropdown-item-custom:hover {
-  background: var(--bg-dropdown-hover);
-  color: var(--color-accent-soft);
+  background: #fff5f5;
+  color: #e74c3c;
+}
+
+.dropdown-item-custom.router-link-active,
+.dropdown-item-custom.router-link-exact-active {
+  background: linear-gradient(to right, #e74c3c, #f39c12);
+  color: #ffffff;
+}
+
+.dropdown-item-custom.router-link-active i,
+.dropdown-item-custom.router-link-exact-active i {
+  color: #ffffff;
 }
 
 .dropdown-divider {
@@ -1462,25 +1513,75 @@ export default {
   margin: 6px 8px;
 }
 
-/* ─── Logout button ───────────────────────────────────────── */
-.logout-btn {
-  padding: 9px 18px;
-  border: 1px solid #ff4b4b;
-  color: var(--color-primary-hover);
-  border-radius: var(--radius-btn);
-  font-size: 0.9rem;
-  font-weight: 800;
+/* ─── Profile button ──────────────────────────────────────── */
+.profile-wrapper {
+  position: relative;
+}
+
+.profile-btn {
+  width: 42px;
+  height: 42px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #111827;
   display: flex;
   align-items: center;
-  background: var(--bg-card);
+  justify-content: center;
   cursor: pointer;
   transition: 0.2s ease;
 }
 
-.logout-btn:hover {
-  background: var(--color-primary-hover);
-  color: #ffffff;
-  box-shadow: 0 8px 18px rgba(240, 24, 24, 0.18);
+.profile-btn:hover {
+  border-color: #e74c3c;
+  color: #e74c3c;
+}
+
+.profile-dropdown {
+  position: absolute;
+  top: 52px;
+  right: 0;
+  width: 190px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.16);
+  padding: 8px;
+  z-index: 300;
+}
+
+.profile-dropdown-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: none;
+  background: transparent;
+  text-decoration: none;
+  color: #111827;
+  padding: 11px 12px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.profile-dropdown-item i {
+  color: #6b7280;
+}
+
+.profile-dropdown-item:hover {
+  background: #fff4ed;
+  color: #e74c3c;
+}
+
+.profile-dropdown-item:hover i {
+  color: #e74c3c;
+}
+
+.logout-dropdown-btn {
+  text-align: left;
 }
 
 /* ─── Hero ────────────────────────────────────────────────── */
