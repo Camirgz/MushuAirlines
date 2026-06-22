@@ -8,6 +8,18 @@ function authHeaders() {
     return { Authorization: `Bearer ${token}` };
 }
 
+async function readBlobError(err) {
+    try {
+        const blob = err.response?.data;
+        if (blob instanceof Blob) {
+            const text = await blob.text();
+            const parsed = JSON.parse(text);
+            return parsed.message ?? parsed.title ?? text;
+        }
+    } catch (_) { /* ignore */ }
+    return err.response?.data?.message ?? err.response?.data ?? err.message ?? "Error desconocido.";
+}
+
 function buildQuery(params) {
     const query = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
@@ -40,7 +52,7 @@ export async function downloadFlightDetailExcel(filters = {}) {
         );
         return response.data;
     } catch (err) {
-        throw { message: "No se pudo descargar el archivo Excel." };
+        throw { message: await readBlobError(err) };
     }
 }
 
@@ -65,7 +77,7 @@ export async function downloadMonthlyIncomeExcel(filters = {}) {
         );
         return response.data;
     } catch (err) {
-        throw { message: "No se pudo descargar el archivo Excel." };
+        throw { message: await readBlobError(err) };
     }
 }
 
@@ -77,7 +89,7 @@ export async function downloadFlightDetailPdf(filters = {}) {
         );
         return response.data;
     } catch (err) {
-        throw { message: "No se pudo descargar el PDF." };
+        throw { message: await readBlobError(err) };
     }
 }
 
@@ -89,6 +101,6 @@ export async function downloadMonthlyIncomePdf(filters = {}) {
         );
         return response.data;
     } catch (err) {
-        throw { message: "No se pudo descargar el PDF." };
+        throw { message: await readBlobError(err) };
     }
 }
