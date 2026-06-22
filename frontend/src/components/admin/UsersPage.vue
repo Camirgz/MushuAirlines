@@ -73,25 +73,29 @@
                   </span>
                 </td>
                 <td>
-                  <div class="actions-wrapper">
-                    <button
-                      type="button"
-                      class="view-btn"
-                      @click="openUserDetails(user)"
-                    >
-                      <i class="bi bi-eye me-1"></i>
-                      Ver
-                    </button>
+                    <div class="actions-wrapper">
+                        <button type="button"
+                                class="view-btn"
+                                @click="openUserDetails(user)">
+                            <i class="bi bi-eye me-1"></i>
+                            Ver
+                        </button>
 
-                    <button
-                      type="button"
-                      class="edit-btn"
-                      @click="openUserEdit(user)"
-                    >
-                      <i class="bi bi-pencil me-1"></i>
-                      Editar
-                    </button>
-                  </div>
+                        <button type="button"
+                                class="edit-btn"
+                                @click="openUserEdit(user)">
+                            <i class="bi bi-pencil me-1"></i>
+                            Editar
+                        </button>
+
+                        <button type="button"
+                                class="delete-btn"
+                                @click="openDeleteModal(user)">
+                            <i class="bi bi-trash3 me-1"></i>
+                            Eliminar
+                        </button>
+
+                    </div>
                 </td>
               </tr>
             </tbody>
@@ -900,6 +904,141 @@ export default {
 
 .edit-btn:hover {
   color: #1d4ed8;
+}
+
+.delete-btn {
+    border: none;
+    background: transparent;
+    color: #dc2626;
+    font-size: 0.88rem;
+    font-weight: 700;
+    padding: 0;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+}
+
+.delete-btn:hover {
+    text-decoration: underline;
+    color: #b91c1c;
+}
+
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+    transition: opacity 0.18s ease;
+}
+
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+    opacity: 0;
+}
+
+.delete-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    background: rgba(17, 24, 39, 0.55);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.delete-modal {
+    position: relative;
+    width: min(100%, 460px);
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 28px;
+    box-shadow: 0 24px 80px rgba(15, 23, 42, 0.28);
+    text-align: center;
+}
+
+.modal-close-btn {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 34px;
+    height: 34px;
+    border: none;
+    border-radius: 999px;
+    background: #f8fafc;
+    color: #94a3b8;
+    cursor: pointer;
+}
+
+.delete-modal-icon {
+    width: 64px;
+    height: 64px;
+    margin: 4px auto 16px;
+    border-radius: 20px;
+    background: #fff1f2;
+    color: #e11d48;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+}
+
+.delete-modal h3 {
+    margin: 0 0 12px;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.delete-modal-text {
+    margin: 0;
+    color: #334155;
+    font-size: 0.98rem;
+    line-height: 1.5;
+}
+
+.delete-modal-warning {
+    margin: 10px 0 0;
+    color: #ef4444;
+    font-size: 0.92rem;
+    font-weight: 700;
+}
+
+.delete-modal-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.modal-secondary-btn,
+.modal-danger-btn {
+    border: none;
+    border-radius: 12px;
+    padding: 13px 16px;
+    font-size: 0.95rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform 0.2s ease, opacity 0.2s ease, background 0.2s ease;
+}
+
+.modal-secondary-btn {
+    background: #f3f4f6;
+    color: #1f2937;
+}
+
+.modal-danger-btn {
+    background: linear-gradient(to right, #e11d48, #f97316);
+    color: #ffffff;
+}
+
+.modal-secondary-btn:hover:not(:disabled),
+.modal-danger-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+}
+
+.modal-secondary-btn:disabled,
+.modal-danger-btn:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
 }
 
 .success-message {
