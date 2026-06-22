@@ -16,8 +16,20 @@ BEGIN
     BEGIN TRY
 
         SELECT
-            DATENAME(MONTH, sf.DepartureDate) + ' ' +
-                CAST(YEAR(sf.DepartureDate) AS VARCHAR(4))          AS Mes,
+            CASE MONTH(sf.DepartureDate)
+                WHEN 1  THEN 'Enero'
+                WHEN 2  THEN 'Febrero'
+                WHEN 3  THEN 'Marzo'
+                WHEN 4  THEN 'Abril'
+                WHEN 5  THEN 'Mayo'
+                WHEN 6  THEN 'Junio'
+                WHEN 7  THEN 'Julio'
+                WHEN 8  THEN 'Agosto'
+                WHEN 9  THEN 'Septiembre'
+                WHEN 10 THEN 'Octubre'
+                WHEN 11 THEN 'Noviembre'
+                WHEN 12 THEN 'Diciembre'
+            END + ' ' + CAST(YEAR(sf.DepartureDate) AS VARCHAR(4))  AS Mes,
             COUNT(DISTINCT sf.Id)                                   AS CantidadVuelos,
             SUM(CASE WHEN t.SeatClass = 'FirstClass' THEN 1 ELSE 0 END)
                                                                     AS TotalPasajerosPrimeraClase,
