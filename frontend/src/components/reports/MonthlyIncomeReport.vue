@@ -98,7 +98,7 @@
       <i class="bi bi-exclamation-circle-fill"></i> {{ loadError }}
     </div>
 
-    <AdminCard v-if="rows.length > 0">
+    <AdminCard v-if="rows.length > 0" class="results-card">
       <div class="table-header">
         <h2><i class="bi bi-table"></i> Resultados ({{ dataRows.length }} {{ dataRows.length === 1 ? 'mes' : 'meses' }})</h2>
         <div class="export-actions">
@@ -155,7 +155,7 @@
       </div>
     </AdminCard>
 
-    <AdminCard v-else-if="searched && !loading && rows.length === 0">
+    <AdminCard v-else-if="searched && !loading && rows.length === 0" class="results-card">
       <div class="empty-state">
         <i class="bi bi-inbox"></i>
         <p>No se encontraron ingresos con los filtros aplicados.</p>
@@ -459,6 +459,10 @@ export default {
 
 .btn-secondary:hover {
   background: #e5e7eb;
+}
+
+.results-card {
+  margin-top: 12px;
 }
 
 .error-banner {
