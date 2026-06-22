@@ -102,6 +102,12 @@ builder.Services.AddSingleton<IPricingCalculator, PurchasePricingCalculator>();
 builder.Services.AddScoped<IRouteCreationService, RouteCreationService>();
 builder.Services.AddScoped<IPurchaseService, PurchaseService>();
 
+builder.Services.AddScoped<IFlightDetailReportRepository, FlightDetailReportRepository>();
+builder.Services.AddScoped<IFlightDetailReportService, FlightDetailReportService>();
+
+builder.Services.AddScoped<IMonthlyIncomeReportRepository, MonthlyIncomeReportRepository>();
+builder.Services.AddScoped<IMonthlyIncomeReportService, MonthlyIncomeReportService>();
+
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
