@@ -1,0 +1,17 @@
+USE MushuAirlines;
+GO
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE name = 'idx_SF_DepartureDate'
+      AND object_id = OBJECT_ID('ScheduledFlight')
+)
+BEGIN
+    CREATE INDEX idx_SF_DepartureDate
+        ON ScheduledFlight (DepartureDate);
+END
+GO
+
+CREATE INDEX idx_Purchase_PurchaseDate
+    ON Purchase (PurchaseDate);
+GO
