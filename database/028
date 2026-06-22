@@ -1,0 +1,262 @@
+USE MushuAirlines;
+GO
+
+CREATE OR ALTER PROCEDURE sp_GetFlightDetailReport
+    @Origen    NVARCHAR(10)  = NULL,
+    @Destino   NVARCHAR(10)  = NULL,
+    @Clase     NVARCHAR(20)  = NULL,
+    @FechaDesde DATE          = NULL,
+    @FechaHasta DATE          = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+
+    BEGIN TRANSACTION;
+
+    BEGIN TRY
+
+        WITH TicketPurchase AS (
+            -- Vincula cada ticket a su compra sin producto cartesiano
+            SELECT
+                t.ScheduledId,
+                t.PassengerHas,
+                t.SeatClass,
+                p.Id AS PurchaseId
+            FROM Ticket t
+            INNER JOIN TicketBaggage tb
+                ON tb.ScheduledFlightId = t.ScheduledId
+                AND tb.PassengerId      = t.PassengerHas
+            INNER JOIN Purchase p
+                ON p.BookingCode = tb.BookingCode
+        ),
+        PurchaseSeats AS (
+            SELECT
+                PurchaseId,
+                SUM(CASE WHEN @Clase IS NULL OR SeatClass = @Clase THEN Subtotal ELSE 0 END) AS Subtotal
+            FROM PurchaseDetail
+            GROUP BY PurchaseId
+        ),
+        PurchaseBaggage AS (
+            SELECT
+                PurchaseId,
+                SUM(Subtotal) AS Subtotal
+            FROM PurchaseBaggageDetail
+            GROUP BY PurchaseId
+        )
+
+        SELECT
+            sf.DepartureDate                                        AS Fecha,
+            fs.OriginAirport                                        AS Origen,
+            fs.DestinationAirport                                   AS Destino,
+            sf.Id                                                   AS NumeroVuelo,
+            SUM(CASE WHEN tp.SeatClass = 'FirstClass' THEN 1 ELSE 0 END)
+                                                                    AS PasajerosPrimeraClase,
+            SUM(CASE WHEN tp.SeatClass = 'Economy'    THEN 1 ELSE 0 END)
+                                                                    AS PasajerosEconomia,
+            'Mushu Airlines'                                        AS Aerolinea,
+            ISNULL(SUM(DISTINCT ps.Subtotal), 0)                    AS VentaPasajeros,
+            ISNULL(SUM(DISTINCT pb.Subtotal), 0)                    AS VentaEquipajes,
+            ISNULL(SUM(DISTINCT ps.Subtotal), 0) + ISNULL(SUM(DISTINCT pb.Subtotal), 0)
+                                                                    AS TotalVenta
+        FROM ScheduledFlight sf
+        INNER JOIN FlightScheduleHasScheduledFlight fshsf
+            ON fshsf.ScheduledFlightId = sf.Id
+        INNER JOIN FlightSchedule fs
+            ON fs.Id = fshsf.FlightScheduleId
+        INNER JOIN TicketPurchase tp
+            ON tp.ScheduledId = sf.Id
+        LEFT JOIN PurchaseSeats ps
+            ON ps.PurchaseId = tp.PurchaseId
+        LEFT JOIN PurchaseBaggage pb
+            ON pb.PurchaseId = tp.PurchaseId
+        WHERE
+            (@Origen    IS NULL OR fs.OriginAirport      = @Origen)
+            AND (@Destino   IS NULL OR fs.DestinationAirport = @Destino)
+            AND (@Clase     IS NULL OR tp.SeatClass          = @Clase)
+            AND (@FechaDesde IS NULL OR sf.DepartureDate    >= @FechaDesde)
+            AND (@FechaHasta IS NULL OR sf.DepartureDate    <= @FechaHasta)
+        GROUP BY
+            sf.DepartureDate,
+            fs.OriginAirport,
+            fs.DestinationAirport,
+            sf.Id
+
+        UNION ALL
+
+        SELECT
+            NULL                                                    AS Fecha,
+            NULL                                                    AS Origen,
+            NULL                                                    AS Destino,
+            NULL                                                    AS NumeroVuelo,
+            ISNULL(SUM(CASE WHEN tp.SeatClass = 'FirstClass' THEN 1 ELSE 0 END), 0),
+            ISNULL(SUM(CASE WHEN tp.SeatClass = 'Economy'    THEN 1 ELSE 0 END), 0),
+            'TOTALES'                                               AS Aerolinea,
+            ISNULL(SUM(DISTINCT ps.Subtotal), 0),
+            ISNULL(SUM(DISTINCT pb.Subtotal), 0),
+            ISNULL(SUM(DISTINCT ps.Subtotal), 0) + ISNULL(SUM(DISTINCT pb.Subtotal), 0)
+        FROM ScheduledFlight sf
+        INNER JOIN FlightScheduleHasScheduledFlight fshsf
+            ON fshsf.ScheduledFlightId = sf.Id
+        INNER JOIN FlightSchedule fs
+            ON fs.Id = fshsf.FlightScheduleId
+        INNER JOIN TicketPurchase tp
+            ON tp.ScheduledId = sf.Id
+        LEFT JOIN PurchaseSeats ps
+            ON ps.PurchaseId = tp.PurchaseId
+        LEFT JOIN PurchaseBaggage pb
+            ON pb.PurchaseId = tp.PurchaseId
+        WHERE
+            (@Origen    IS NULL OR fs.OriginAirport      = @Origen)
+            AND (@Destino   IS NULL OR fs.DestinationAirport = @Destino)
+            AND (@Clase     IS NULL OR tp.SeatClass          = @Clase)
+            AND (@FechaDesde IS NULL OR sf.DepartureDate    >= @FechaDesde)
+            AND (@FechaHasta IS NULL OR sf.DepartureDate    <= @FechaHasta)
+
+        ORDER BY Fecha;
+
+        COMMIT TRANSACTION;
+
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        THROW;
+    END CATCH;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE sp_GetMonthlyIncomeReport
+    @Anio      INT           = NULL,
+    @Origen    NVARCHAR(10)  = NULL,
+    @Destino   NVARCHAR(10)  = NULL,
+    @Aerolinea NVARCHAR(100) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+
+    BEGIN TRANSACTION;
+
+    BEGIN TRY
+
+        WITH TicketPurchase AS (
+            SELECT
+                t.ScheduledId,
+                t.PassengerHas,
+                t.SeatClass,
+                p.Id AS PurchaseId
+            FROM Ticket t
+            INNER JOIN TicketBaggage tb
+                ON tb.ScheduledFlightId = t.ScheduledId
+                AND tb.PassengerId      = t.PassengerHas
+            INNER JOIN Purchase p
+                ON p.BookingCode = tb.BookingCode
+        ),
+        PurchaseSeats AS (
+            SELECT
+                PurchaseId,
+                SUM(Subtotal) AS Subtotal
+            FROM PurchaseDetail
+            GROUP BY PurchaseId
+        ),
+        PurchaseBaggage AS (
+            SELECT
+                PurchaseId,
+                SUM(Subtotal) AS Subtotal
+            FROM PurchaseBaggageDetail
+            GROUP BY PurchaseId
+        )
+
+        SELECT
+            CASE MONTH(sf.DepartureDate)
+                WHEN 1  THEN 'Enero'
+                WHEN 2  THEN 'Febrero'
+                WHEN 3  THEN 'Marzo'
+                WHEN 4  THEN 'Abril'
+                WHEN 5  THEN 'Mayo'
+                WHEN 6  THEN 'Junio'
+                WHEN 7  THEN 'Julio'
+                WHEN 8  THEN 'Agosto'
+                WHEN 9  THEN 'Septiembre'
+                WHEN 10 THEN 'Octubre'
+                WHEN 11 THEN 'Noviembre'
+                WHEN 12 THEN 'Diciembre'
+            END + ' ' + CAST(YEAR(sf.DepartureDate) AS VARCHAR(4))  AS Mes,
+            COUNT(DISTINCT sf.Id)                                   AS CantidadVuelos,
+            SUM(CASE WHEN tp.SeatClass = 'FirstClass' THEN 1 ELSE 0 END)
+                                                                    AS TotalPasajerosPrimeraClase,
+            SUM(CASE WHEN tp.SeatClass = 'Economy'    THEN 1 ELSE 0 END)
+                                                                    AS TotalPasajerosEconomia,
+            COUNT(tp.PassengerHas)                                  AS TotalPasajeros,
+            ISNULL(SUM(DISTINCT ps.Subtotal), 0)                    AS IngresosTiquetes,
+            ISNULL(SUM(DISTINCT pb.Subtotal), 0)                    AS IngresosMaletas,
+            ISNULL(SUM(DISTINCT ps.Subtotal), 0) + ISNULL(SUM(DISTINCT pb.Subtotal), 0)
+                                                                    AS TotalIngresos,
+            YEAR(sf.DepartureDate)                                  AS _AnioSort,
+            MONTH(sf.DepartureDate)                                 AS _MesSort
+        FROM ScheduledFlight sf
+        INNER JOIN FlightScheduleHasScheduledFlight fshsf
+            ON fshsf.ScheduledFlightId = sf.Id
+        INNER JOIN FlightSchedule fs
+            ON fs.Id = fshsf.FlightScheduleId
+        INNER JOIN TicketPurchase tp
+            ON tp.ScheduledId = sf.Id
+        LEFT JOIN PurchaseSeats ps
+            ON ps.PurchaseId = tp.PurchaseId
+        LEFT JOIN PurchaseBaggage pb
+            ON pb.PurchaseId = tp.PurchaseId
+        WHERE
+            (@Anio      IS NULL OR YEAR(sf.DepartureDate)    = @Anio)
+            AND (@Origen    IS NULL OR fs.OriginAirport      = @Origen)
+            AND (@Destino   IS NULL OR fs.DestinationAirport = @Destino)
+            AND (@Aerolinea IS NULL OR @Aerolinea            = 'Mushu Airlines')
+        GROUP BY
+            YEAR(sf.DepartureDate),
+            MONTH(sf.DepartureDate),
+            DATENAME(MONTH, sf.DepartureDate)
+
+        UNION ALL
+
+        SELECT
+            'TOTALES'                                               AS Mes,
+            ISNULL(COUNT(DISTINCT sf.Id), 0)                        AS CantidadVuelos,
+            ISNULL(SUM(CASE WHEN tp.SeatClass = 'FirstClass' THEN 1 ELSE 0 END), 0),
+            ISNULL(SUM(CASE WHEN tp.SeatClass = 'Economy'    THEN 1 ELSE 0 END), 0),
+            ISNULL(COUNT(tp.PassengerHas), 0),
+            ISNULL(SUM(DISTINCT ps.Subtotal), 0),
+            ISNULL(SUM(DISTINCT pb.Subtotal), 0),
+            ISNULL(SUM(DISTINCT ps.Subtotal), 0) + ISNULL(SUM(DISTINCT pb.Subtotal), 0),
+            9999                                                    AS _AnioSort,
+            13                                                      AS _MesSort
+        FROM ScheduledFlight sf
+        INNER JOIN FlightScheduleHasScheduledFlight fshsf
+            ON fshsf.ScheduledFlightId = sf.Id
+        INNER JOIN FlightSchedule fs
+            ON fs.Id = fshsf.FlightScheduleId
+        INNER JOIN TicketPurchase tp
+            ON tp.ScheduledId = sf.Id
+        LEFT JOIN PurchaseSeats ps
+            ON ps.PurchaseId = tp.PurchaseId
+        LEFT JOIN PurchaseBaggage pb
+            ON pb.PurchaseId = tp.PurchaseId
+        WHERE
+            (@Anio      IS NULL OR YEAR(sf.DepartureDate)    = @Anio)
+            AND (@Origen    IS NULL OR fs.OriginAirport      = @Origen)
+            AND (@Destino   IS NULL OR fs.DestinationAirport = @Destino)
+            AND (@Aerolinea IS NULL OR @Aerolinea            = 'Mushu Airlines')
+
+        ORDER BY _AnioSort, _MesSort;
+
+        COMMIT TRANSACTION;
+
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        THROW;
+    END CATCH;
+END;
+GO

@@ -65,7 +65,7 @@
           <select v-model="filtros.clase">
             <option value="">Todos</option>
             <option value="FirstClass">Primera Clase</option>
-            <option value="Economy">Económica</option>
+            <option value="Economy">Clase Turista</option>
           </select>
         </div>
 
