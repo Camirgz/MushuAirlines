@@ -39,6 +39,7 @@ export async function getFlightDetailReport(filters = {}) {
         );
         return response.data;
     } catch (err) {
+        if (err.response?.status === 401) throw { status: 401, message: "Sesión expirada." };
         const msg = err.response?.data?.message ?? err.response?.data ?? err.message ?? "No se pudo cargar el reporte de vuelo detallado.";
         throw { message: typeof msg === 'string' ? msg : JSON.stringify(msg) };
     }
@@ -52,6 +53,7 @@ export async function downloadFlightDetailExcel(filters = {}) {
         );
         return response.data;
     } catch (err) {
+        if (err.response?.status === 401) throw { status: 401, message: "Sesión expirada." };
         throw { message: await readBlobError(err) };
     }
 }
@@ -64,6 +66,7 @@ export async function getMonthlyIncomeReport(filters = {}) {
         );
         return response.data;
     } catch (err) {
+        if (err.response?.status === 401) throw { status: 401, message: "Sesión expirada." };
         const msg = err.response?.data?.message ?? err.response?.data ?? err.message ?? "No se pudo cargar el reporte de ingresos mensuales.";
         throw { message: typeof msg === 'string' ? msg : JSON.stringify(msg) };
     }
@@ -77,6 +80,7 @@ export async function downloadMonthlyIncomeExcel(filters = {}) {
         );
         return response.data;
     } catch (err) {
+        if (err.response?.status === 401) throw { status: 401, message: "Sesión expirada." };
         throw { message: await readBlobError(err) };
     }
 }
@@ -89,6 +93,7 @@ export async function downloadFlightDetailPdf(filters = {}) {
         );
         return response.data;
     } catch (err) {
+        if (err.response?.status === 401) throw { status: 401, message: "Sesión expirada." };
         throw { message: await readBlobError(err) };
     }
 }
@@ -101,6 +106,7 @@ export async function downloadMonthlyIncomePdf(filters = {}) {
         );
         return response.data;
     } catch (err) {
+        if (err.response?.status === 401) throw { status: 401, message: "Sesión expirada." };
         throw { message: await readBlobError(err) };
     }
 }

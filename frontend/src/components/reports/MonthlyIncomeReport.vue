@@ -257,6 +257,16 @@ export default {
       };
     },
 
+    handleError(err) {
+      if (err.status === 401) {
+        localStorage.removeItem('token');
+        sessionStorage.setItem('authMessage', 'Su sesión expiró. Por favor inicie sesión nuevamente.');
+        this.$router.push('/login');
+        return true;
+      }
+      return false;
+    },
+
     async cargarReporte() {
       this.loading   = true;
       this.loadError = null;
@@ -264,8 +274,10 @@ export default {
       try {
         this.rows = await getMonthlyIncomeReport(this.buildFilters());
       } catch (err) {
-        this.loadError = err.message;
-        this.rows = [];
+        if (!this.handleError(err)) {
+          this.loadError = err.message;
+          this.rows = [];
+        }
       } finally {
         this.loading = false;
       }
@@ -277,7 +289,7 @@ export default {
         const blob = await downloadMonthlyIncomeExcel(this.buildFilters());
         this.triggerDownload(blob, 'ReporteIngresosPorMes.xlsx');
       } catch (err) {
-        this.loadError = err.message;
+        if (!this.handleError(err)) this.loadError = err.message;
       } finally {
         this.exporting = false;
       }
@@ -289,7 +301,7 @@ export default {
         const blob = await downloadMonthlyIncomePdf(this.buildFilters());
         this.triggerDownload(blob, 'ReporteIngresosPorMes.pdf');
       } catch (err) {
-        this.loadError = err.message;
+        if (!this.handleError(err)) this.loadError = err.message;
       } finally {
         this.exportingPdf = false;
       }
