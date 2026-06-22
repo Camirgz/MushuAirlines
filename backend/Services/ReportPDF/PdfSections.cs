@@ -118,7 +118,7 @@ namespace backend.Templates
                 });
         }
 
-        private static void BuildFlightCard(
+       private static void BuildFlightCard(
             ColumnDescriptor col,
             PurchaseConfirmationModel model,
             int flightNumber)
@@ -127,8 +127,15 @@ namespace backend.Templates
             var destination = flightNumber == 1 ? model.DestinationAirport : model.DestinationAirport2;
             var flight      = flightNumber == 1 ? model.FlightNumber       : model.FlightNumber2;
             var aircraft    = flightNumber == 1 ? model.AircraftModel      : model.AircraftModel2;
-            DateTime? departure = flightNumber == 1 ? model.DepartureDate  : model.DepartureDate2;
-            DateTime? arrival   = flightNumber == 1 ? model.ArrivalDate    : model.ArrivalDate2;
+
+            DateTime? departure = flightNumber == 1 ? model.DepartureDate : model.DepartureDate2;
+            DateTime? arrival   = flightNumber == 1 ? model.ArrivalDate   : model.ArrivalDate2;
+
+            // in case is overnight flight
+            if (departure.HasValue && arrival.HasValue && arrival < departure)
+            {
+                arrival = arrival.Value.AddDays(1);
+            }
 
             col.Item().Row(row =>
             {
@@ -168,10 +175,10 @@ namespace backend.Templates
                 .Row(row =>
                 {
                     row.RelativeItem();
-                    BuildLabelValueInline(row.RelativeItem(), "Flight",    flight    ?? "-");
-                    BuildLabelValueInline(row.RelativeItem(), "Aircraft",  aircraft  ?? "-");
-                    BuildLabelValueInline(row.RelativeItem(), "Departure", departure?.ToString("dd MMM yyyy HH:mm") ?? "-");
-                    BuildLabelValueInline(row.RelativeItem(), "Arrival",   arrival?.ToString("dd MMM yyyy HH:mm")   ?? "-");
+                    BuildLabelValueInline(row.RelativeItem(),"Flight",flight ?? "-");
+                    BuildLabelValueInline(row.RelativeItem(),"Aircraft",aircraft ?? "-");
+                    BuildLabelValueInline(row.RelativeItem(),"Departure",departure?.ToString("dd MMM yyyy HH:mm") ?? "-");
+                    BuildLabelValueInline(row.RelativeItem(),"Arrival",arrival?.ToString("dd MMM yyyy HH:mm") ?? "-");
                 });
         }
 

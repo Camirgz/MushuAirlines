@@ -83,6 +83,7 @@
                   <div class="code">{{ reservation.originAirport }}</div>
                   <div class="city">{{ reservation.originCity }}</div>
                   <div class="time">{{ formatTime(reservation.departureDate) }}</div>
+                  <div class="date">{{ formatDate(reservation.departureDate,) }}</div>
                 </div>
                 <div class="tl-line">
                   <div class="track"></div>
@@ -93,6 +94,7 @@
                   <div class="code">{{ reservation.destinationAirport }}</div>
                   <div class="city">{{ reservation.destinationCity }}</div>
                   <div class="time">{{ formatTime(reservation.arrivalDate) }}</div>
+                  <div class="date">{{ formatDate(reservation.arrivalDate, reservation.departureDate)}}</div>
                 </div>
               </div>
               <div class="aircraft">
@@ -113,6 +115,7 @@
                   <div class="code">{{ reservation.originAirport2 }}</div>
                   <div class="city">{{ reservation.originCity2 }}</div>
                   <div class="time">{{ formatTime(reservation.departureDate2) }}</div>
+                  <div class="date">{{ formatDate(reservation.departureDate2) }}</div>
                 </div>
                 <div class="tl-line">
                   <div class="track"></div>
@@ -123,6 +126,7 @@
                   <div class="code">{{ reservation.destinationAirport2 }}</div>
                   <div class="city">{{ reservation.destinationCity2 }}</div>
                   <div class="time">{{ formatTime(reservation.arrivalDate2) }}</div>
+                  <div class="date">{{ formatDate(reservation.arrivalDate2, reservation.departureDate2) }}</div>
                 </div>
               </div>
               <div class="aircraft">
@@ -297,7 +301,33 @@ export default {
       const date = new Date(dateString);
       return date.toLocaleDateString('es-CR', { day: '2-digit', month: 'short', year: 'numeric' });
     },
+    correctDateIfCrossesMidnight(referenceDateString, dateString) {
+      if (!referenceDateString || !dateString) {
+        return new Date(dateString);
+      }
 
+      const referenceDate = new Date(referenceDateString);
+      let date = new Date(dateString);
+
+      if (date < referenceDate) {
+        date = new Date(date.getTime() + MILLISECONDS_IN_A_DAY);
+      }
+
+      return date;
+    },
+    formatDate(dateString, referenceDateString = null) {
+      if (!dateString) return '';
+      const date = referenceDateString
+        ? this.correctDateIfCrossesMidnight(referenceDateString, dateString)
+        : new Date(dateString);
+
+
+      return date.toLocaleDateString('es-CR', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      });
+    },
     formatTime(dateString) {
       if (!dateString) return '';
       const date = new Date(dateString);
@@ -389,6 +419,7 @@ export default {
 .code       { font-size: 1.8rem; font-weight: 800; color: #e8631a; line-height: 1; }
 .city       { font-size: 0.73rem; color: #888; margin-top: 2px; }
 .time       { font-size: 0.95rem; font-weight: 700; margin-top: 4px; }
+.date       { font-size: 0.73rem; color: #888; }
 .tl-line    { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0 12px; }
 .track      { width: 100%; height: 2px; background: #e8631a; border-radius: 2px; }
 .duration   { font-size: 0.73rem; color: #888; border: 1px solid #e0e0e0; border-radius: 20px; padding: 2px 8px; white-space: nowrap; }
