@@ -41,6 +41,15 @@
             <RouterLink to="/admin/users" class="dropdown-item-custom" @click="closeDropdown">
               <i class="bi bi-people"></i><span>Usuarios administradores y operarios</span>
             </RouterLink>
+
+            <div class="dropdown-divider"></div>
+
+            <RouterLink to="/admin/reports/flight-detail" class="dropdown-item-custom" @click="closeDropdown">
+              <i class="bi bi-airplane-fill"></i><span>Reporte vuelo detallado</span>
+            </RouterLink>
+            <RouterLink to="/admin/reports/monthly-income" class="dropdown-item-custom" @click="closeDropdown">
+              <i class="bi bi-bar-chart-line-fill"></i><span>Reporte ingresos por mes</span>
+            </RouterLink>
           </div>
         </div>
 
@@ -1445,6 +1454,12 @@ export default {
 .dropdown-item-custom:hover {
   background: var(--bg-dropdown-hover);
   color: var(--color-accent-soft);
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: #f0f0f0;
+  margin: 6px 8px;
 }
 
 /* ─── Logout button ───────────────────────────────────────── */
