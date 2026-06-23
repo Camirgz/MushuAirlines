@@ -275,6 +275,22 @@ public class PurchaseRepository : IPurchaseRepository
             new { Id = scheduledFlightId });
     }
 
+    public async Task<int> GetBookedSeatsByClassAsync(int scheduledFlightId, string seatClass)
+    {
+        using var connection = new SqlConnection(_connectionString);
+        const string query = @"
+            SELECT COUNT(*)
+            FROM   Ticket
+            WHERE  ScheduledId = @ScheduledFlightId
+            AND    SeatClass   = @SeatClass";
+
+        return await connection.ExecuteScalarAsync<int>(query, new
+        {
+            ScheduledFlightId = scheduledFlightId,
+            SeatClass         = seatClass
+        });
+    }
+
     public async Task<int> GetAircraftCapacityByTypeAsync(string aircraftTypeId)
     {
         using var connection = new SqlConnection(_connectionString);
@@ -286,6 +302,22 @@ public class PurchaseRepository : IPurchaseRepository
             JOIN AircraftType aty ON a.[Type] = aty.Id
             WHERE aty.AircraftType = @AircraftTypeId",
             new { AircraftTypeId = aircraftTypeId });
+    }
+
+    public async Task<(int FirstClass, int Economy)> GetAircraftCapacityByClassAsync(string aircraftTypeId)
+    {
+        using var connection = new SqlConnection(_connectionString);
+        var row = await connection.QueryFirstOrDefaultAsync(@"
+            SELECT TOP 1
+                ISNULL(a.FirstClassRows * a.FirstClassSeatsPerRow, 0) AS FirstClass,
+                ISNULL(a.EconomyRows    * a.EconomySeatsPerRow,    0) AS Economy
+            FROM Aircraft a
+            JOIN AircraftType aty ON a.[Type] = aty.Id
+            WHERE aty.AircraftType = @AircraftTypeId",
+            new { AircraftTypeId = aircraftTypeId });
+
+        if (row == null) return (0, 0);
+        return ((int)row.FirstClass, (int)row.Economy);
     }
 
     public async Task<List<PassengerIdentityRecord>> GetPassengerIdentitiesOnFlightAsync(int scheduledFlightId)

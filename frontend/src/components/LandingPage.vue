@@ -1172,14 +1172,17 @@ export default {
       const leg2 = conn.leg2
 
       const [avail1, avail2] = await Promise.all([
-        checkAvailability(leg1.id, leg1.date, this.passengerCount),
-        checkAvailability(leg2.id, leg2.date, this.passengerCount),
+        checkAvailability(leg1.id, leg1.date, this.stopoverFirstClassCount, this.stopoverEconomyCount),
+        checkAvailability(leg2.id, leg2.date, this.stopoverFirstClassCount, this.stopoverEconomyCount),
       ])
 
       if (!avail1 || !avail2) {
         const leg = !avail1 ? leg1 : leg2
+        const classLabel = this.stopoverFirstClassCount > 0 && this.stopoverEconomyCount > 0
+          ? 'las clases seleccionadas'
+          : this.stopoverFirstClassCount > 0 ? 'Primera Clase' : 'Economy'
         this.stopoverSeatAvailabilityError =
-          `Lo sentimos, el vuelo ${leg.origin}→${leg.destination} ya no tiene asientos disponibles para la cantidad de pasajeros solicitada.`
+          `Lo sentimos, el vuelo ${leg.origin}→${leg.destination} no tiene suficientes asientos de ${classLabel} disponibles.`
         return
       }
 
@@ -1242,10 +1245,13 @@ export default {
     async startPurchase() {
       const f = this.selectedFlight
 
-      // Verify seat availability before navigating
-      const available = await checkAvailability(f.id, f.date, this.passengerCount)
+      // Verify seat availability per class before navigating
+      const available = await checkAvailability(f.id, f.date, this.firstClassCount, this.economyCount)
       if (!available) {
-        this.seatAvailabilityError = 'Lo sentimos, este vuelo ya no tiene asientos disponibles para la cantidad de pasajeros solicitada.'
+        const classLabel = this.firstClassCount > 0 && this.economyCount > 0
+          ? 'las clases seleccionadas'
+          : this.firstClassCount > 0 ? 'Primera Clase' : 'Economy'
+        this.seatAvailabilityError = `Lo sentimos, no hay suficientes asientos de ${classLabel} disponibles para este vuelo.`
         return
       }
 

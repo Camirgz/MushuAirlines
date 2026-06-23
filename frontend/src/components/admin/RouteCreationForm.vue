@@ -132,8 +132,8 @@
                             <label>Tipo de Aeronave<span>*</span></label>
                             <select v-model="form.aircraftTypeId" class="form-control" required>
                                 <option value="" disabled>Seleccione un tipo de aeronave</option>
-                                <option v-for="type in aircraftTypes" :key="type.model" :value="type.model">
-                                    {{ type.model }}
+                                <option v-for="type in aircraftTypes" :key="type.id" :value="type.type">
+                                    {{ type.type }} — {{ type.model }}
                                 </option>
                             </select>
                         </div>
