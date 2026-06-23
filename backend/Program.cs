@@ -102,6 +102,12 @@ builder.Services.AddSingleton<IPricingCalculator, PurchasePricingCalculator>();
 builder.Services.AddScoped<IRouteCreationService, RouteCreationService>();
 builder.Services.AddScoped<IPurchaseService, PurchaseService>();
 
+builder.Services.AddScoped<IReservationCancellationService, ReservationCancellationService>();
+builder.Services.AddScoped<IReservationCancellationRepository, ReservationCancellationRepository>();
+builder.Services.AddScoped<IEmailCancellationService, EmailCancellationService>();
+
+
+
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
