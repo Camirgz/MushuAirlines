@@ -373,12 +373,12 @@
 
         watch: {
             'form.aircraftTypeId'(newName) {
-                const selected = this.aircraftTypes.find(t => t.name === newName);
+                const selected = this.aircraftTypes.find(t => t.type === newName);
                 if (selected) {
                     this.form.firstClassCapacity =
-                        (selected.defaultFirstClassRows || 0) * (selected.defaultFirstClassSeatsPerRow || 0);
+                        (selected.firstClassRows || 0) * (selected.firstClassSeatsPerRow || 0);
                     this.form.economyClassCapacity =
-                        (selected.defaultEconomyRows || 0) * (selected.defaultEconomySeatsPerRow || 0);
+                        (selected.economyRows || 0) * (selected.economySeatsPerRow || 0);
                 }
             }
         },
