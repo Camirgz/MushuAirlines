@@ -243,7 +243,7 @@
           <h3>Correo enviado</h3>
           <p>{{ popupMessage }}</p>
           <div class="popup-buttons">
-            <button class="primary" style="background: #16a34a" @click="popupMessage = null">Aceptar</button>
+            <button class="primary" style="background: #16a34a" @click="goBack">Aceptar</button>
           </div>
         </div>
       </div>
