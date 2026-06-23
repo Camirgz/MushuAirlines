@@ -11,10 +11,11 @@ public class AddBaggageUITests
     private IWebDriver _driver = null!;
     private WebDriverWait _wait = null!;
 
+    // Datos generados por seed_test_purchase.sql
     private const string BaseUrl            = "http://localhost:8080";
-    private const string ReservationCode    = "9CLRLD";
-    private const string PassengerFirstName = "Daniel";
-    private const string PassengerLastName  = "Rojas";
+    private const string ReservationCode    = "SELENM";
+    private const string PassengerFirstName = "Test";
+    private const string PassengerLastName  = "Selenium";
 
     [SetUp]
     public void SetUp()
