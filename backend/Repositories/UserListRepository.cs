@@ -250,4 +250,12 @@ public class UserListRepository : IUserListRepository
             }
         }
     }
+
+    public bool DeleteUser(int employeeId)
+    {
+        using var connection = new SqlConnection(_connectionString);
+        connection.Open();
+
+    }
+
 }

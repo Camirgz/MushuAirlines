@@ -127,4 +127,25 @@ public class UserListService : IUserListService
 
         return string.Empty;
     }
+
+    public string DeleteUser(int employeeId)
+    {
+        if (employeeId <= 0)
+        {
+            return "El usuario seleccionado no es válido.";
+        }
+        try
+        {
+            bool deleted = _repository.DeleteUser(employeeId);
+            if (!deleted)
+            {
+                return "No se encontró el usuario que desea eliminar.";
+            }
+            return string.Empty;
+        }
+        catch
+        {
+            return "No se pudo eliminar el usuario.";
+        }
+    }
 }

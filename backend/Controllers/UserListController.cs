@@ -39,5 +39,17 @@ public class UserListController : ControllerBase
 
         return Ok("Usuario actualizado correctamente.");
     }
-}
 
+    [HttpDelete("{id:int}")]
+    public ActionResult DeleteUser(int id)
+    {
+        string result = _userListService.DeleteUser(id);
+
+        if (!string.IsNullOrWhiteSpace(result))
+        {
+            return BadRequest(result);
+        }
+
+        return Ok("Usuario eliminado correctamente.");
+    }
+}
