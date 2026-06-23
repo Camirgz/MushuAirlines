@@ -74,16 +74,20 @@ public class PurchaseService : IPurchaseService
                 request.Flight2.FlightDate.ToDateTime(TimeOnly.MinValue));
         }
 
-        var seatCount = request.SeatSelections.Count;
+        int seatCount       = request.SeatSelections.Count;
+        int firstClassCount = request.SeatSelections.Count(s => s.SeatClass == SeatClass.FirstClass);
+        int economyCount    = request.SeatSelections.Count(s => s.SeatClass == SeatClass.Economy);
 
-        var seatCheckResults = await Task.WhenAll(
-            _purchaseRepo.HasAvailableSeatsAsync(scheduledFlightId1, seatCount),
-            isStopover
-                ? _purchaseRepo.HasAvailableSeatsAsync(scheduledFlightId2, seatCount)
-                : Task.FromResult(true));
+        bool flight1Available = await IsFlightAvailableAsync(
+            request.Flight.RouteCode, request.Flight.FlightDate, firstClassCount, economyCount);
+        if (!flight1Available) throw new SeatUnavailableException(scheduledFlightId1);
 
-        if (!seatCheckResults[0]) throw new SeatUnavailableException(scheduledFlightId1);
-        if (isStopover && !seatCheckResults[1]) throw new SeatUnavailableException(scheduledFlightId2);
+        if (isStopover)
+        {
+            bool flight2Available = await IsFlightAvailableAsync(
+                request.Flight2!.RouteCode, request.Flight2.FlightDate, firstClassCount, economyCount);
+            if (!flight2Available) throw new SeatUnavailableException(scheduledFlightId2);
+        }
 
         var seatNumberResults = await Task.WhenAll(
             _purchaseRepo.GetNextAvailableSeatNumbersAsync(scheduledFlightId1, seatCount),
