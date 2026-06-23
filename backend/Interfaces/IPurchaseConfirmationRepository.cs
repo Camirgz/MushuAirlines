@@ -6,6 +6,8 @@ namespace backend.Interfaces
     {
         PurchaseConfirmationModel GetPurchase(int purchaseId);
         int GetPurchaseIdByReservationCode(string reservationCode);
+        List<TicketSummary> GetPassengerTicketsForBaggage(int purchaseId);
+        PurchaseConfirmationModel GetPurchaseForBaggage(int purchaseId);
         List<SeatClassSubtotal> GetPurchaseDetails(int purchaseId);
         List<BaggageSubtotal> GetPurchaseBaggageDetails(int purchaseId);
         List<PassengerBaggageDetail> GetPassengerBaggageDetails(int purchaseId);

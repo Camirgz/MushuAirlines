@@ -201,7 +201,7 @@
 import AdminPageLayout from '@/components/layout/AdminPageLayout.vue';
 import AdminHero from '@/components/admin/ui/AdminHero.vue';
 import AdminCard from '@/components/admin/ui/AdminCard.vue';
-import { getPurchaseData, validatePayment } from '@/services/PurchaseService';
+import { getPurchaseDataForBaggage, validatePayment } from '@/services/PurchaseService';
 import { addBaggage } from '@/services/ReservationService';
 import CardPaymentForm from '@/components/purchase/CardPaymentForm.vue';
 
@@ -279,7 +279,7 @@ export default {
 
   async mounted() {
     try {
-      this.purchase = await getPurchaseData(this.purchaseId);
+      this.purchase = await getPurchaseDataForBaggage(this.purchaseId);
       this.passengerExtras = new Array(this.purchase.tickets.length).fill(0);
     } catch (err) {
       this.error = err.message ?? 'No se pudo cargar la información de la compra.';

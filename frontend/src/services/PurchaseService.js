@@ -146,3 +146,17 @@ export async function getPurchaseData(purchaseId) {
 export async function sendConfirmation(purchaseId) {
   await axios.post(`${BASE}/purchaseconfirmation/send/${purchaseId}`)
 }
+export async function getPurchaseDataForBaggage(purchaseId) {
+  try {
+    const response = await axios.get(
+      `${BASE}/purchaseconfirmation/${purchaseId}/baggage`
+    );
+    return response.data;
+  } catch (err) {
+    const data = err.response?.data ?? {};
+    throw {
+      type: "notFound",
+      message: data.message ?? "Compra no encontrada."
+    };
+  }
+}
