@@ -19,21 +19,19 @@ namespace backend.Repositories
             using var connection = new SqlConnection(connectionString);
 
             string query = @"
-
-            SELECT COUNT(*)
-
-            FROM Purchase PU
-
-            INNER JOIN Passenger PA
-                ON PA.Id = PU.PassengerId
-
-            INNER JOIN Person PE
-                ON PE.Id = PA.Id
-
-            WHERE
-                PU.ReservationCode = @ReservationCode
-                AND PE.FirstName=@FirstName
-                AND PE.LastName=@LastName
+                SELECT COUNT(*)
+                FROM Purchase PU
+                INNER JOIN Passenger PA
+                    ON PA.Id = PU.PassengerId
+                INNER JOIN Person PE
+                    ON PE.Id = PA.Id
+                INNER JOIN Itinerary I
+                    ON I.PassengerBooks = PA.Id
+                WHERE
+                    PU.ReservationCode = @ReservationCode
+                    AND PE.FirstName = @FirstName
+                    AND PE.LastName = @LastName
+                    AND I.Status = 'Active'
             ";
 
             return connection.ExecuteScalar<int>(query, model) > 0;
