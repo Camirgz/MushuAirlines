@@ -198,6 +198,39 @@ namespace backend.Repositories
                     ON t.PassengerHas = pa.Id
                 INNER JOIN Person per
                     ON pa.Id = per.Id
+                INNER JOIN TicketBaggage tb
+                    ON tb.PassengerId = t.PassengerHas
+                    AND tb.ScheduledFlightId = t.ScheduledId
+                WHERE tb.BookingCode =
+                (
+                    SELECT BookingCode
+                    FROM Purchase
+                    WHERE Id = @PurchaseId
+                )
+                ORDER BY
+                    t.ScheduledId,
+                    per.FirstName,
+                    per.LastName";
+
+            return connection.Query<TicketSummary>(query, new { PurchaseId = purchaseId }).ToList();
+        }
+        public List<TicketSummary> GetPassengerTicketsForBaggage(int purchaseId)
+        {
+            using var connection = new SqlConnection(connectionString);
+
+            const string query = @"
+                SELECT
+                    per.FirstName + ' ' + per.LastName AS PassengerFullName,
+                    CAST(t.SeatNumber AS VARCHAR)      AS SeatNumber,
+                    t.SeatClass,
+                    sf.RouteCode                       AS FlightNumber
+                FROM Ticket t
+                INNER JOIN ScheduledFlight sf
+                    ON sf.Id = t.ScheduledId
+                INNER JOIN Passenger pa
+                    ON t.PassengerHas = pa.Id
+                INNER JOIN Person per
+                    ON pa.Id = per.Id
                 WHERE t.ScheduledId =
                 (
                     SELECT TOP 1 isf.ScheduledId
@@ -213,12 +246,27 @@ namespace backend.Repositories
                     FROM TicketBaggage tb
                     WHERE tb.BookingCode =
                     (
-                        SELECT BookingCode FROM Purchase WHERE Id = @PurchaseId
+                        SELECT BookingCode
+                        FROM Purchase
+                        WHERE Id = @PurchaseId
                     )
                 )
-                ORDER BY per.FirstName, per.LastName";
+                ORDER BY
+                    per.FirstName,
+                    per.LastName";
 
-            return connection.Query<TicketSummary>(query, new { PurchaseId = purchaseId }).ToList();
+            return connection.Query<TicketSummary>(
+                query,
+                new { PurchaseId = purchaseId }
+            ).ToList();
+        }
+        public PurchaseConfirmationModel GetPurchaseForBaggage(int purchaseId)
+        {
+            var purchase = GetPurchase(purchaseId);
+
+            purchase.Tickets = GetPassengerTicketsForBaggage(purchaseId);
+
+            return purchase;
         }
 
         public List<BagPricing> GetBagPricingByPurchaseId(int purchaseId)
