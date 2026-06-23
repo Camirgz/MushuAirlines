@@ -102,14 +102,18 @@ function findStopoverConnections(allFlights, originCodes, destinationCodes, date
 
   for (const leg1 of firstLegs) {
     const leg1IsOvernight = isOvernightFlight(leg1)
-    const weekdayRequiredForLeg2 = leg1IsOvernight ? nextDayWeekday : selectedWeekday
+    const leg1ArrivalDay = leg1IsOvernight ? nextDayWeekday : selectedWeekday
 
     for (const leg2 of secondLegs) {
       if (leg2.origin !== leg1.destination) continue
-      if (!flightOperatesOnWeekday(leg2, weekdayRequiredForLeg2)) continue
 
       const layoverMinutes = calculateLayoverMinutes(leg1.arrivalTime, leg2.departureTime)
       if (!isValidLayover(layoverMinutes)) continue
+
+      // leg2 departs after midnight relative to leg1 arrival when its clock time is earlier
+      const layoverCrossesMidnight = timeToMinutes(leg2.departureTime) < timeToMinutes(leg1.arrivalTime)
+      const weekdayRequiredForLeg2 = layoverCrossesMidnight ? advanceWeekday(leg1ArrivalDay) : leg1ArrivalDay
+      if (!flightOperatesOnWeekday(leg2, weekdayRequiredForLeg2)) continue
 
       connections.push({
         leg1,
