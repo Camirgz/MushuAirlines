@@ -20,6 +20,7 @@ import ProfilePage from './components/admin/ProfilePage.vue';
 import PaymentForm from './components/PaymentForm.vue';
 import ReservationLogin from "./components/login/ReservationLogin.vue";
 import ReservationReport from "./components/reports/ReservationReport.vue";
+import AddBaggagePage from './components/purchase/AddBaggagePage.vue';
 
 import "@/assets/styles/admin-shared.css";
 
@@ -44,6 +45,7 @@ const router = createRouter({
         { path: "/payment", name: "Payment", component: PaymentForm },
         { path: "/my-reservation", name: "ReservationLogin",component: ReservationLogin},
         { path: "/my-reservation/report", name: "ReservationReport",component: ReservationReport, meta:{requiresAuth:true}},
+        { path: "/purchase/:id/add-baggage", name: "AddBaggage", component: AddBaggagePage },
     ],
 });
 

@@ -56,5 +56,18 @@ namespace backend.Controllers
                 return BadRequest(ex.Message);
             }
         }
+        [HttpGet("{purchaseId}/baggage")]
+        public ActionResult GetPurchaseForBaggage(int purchaseId)
+        {
+            try
+            {
+                var result = service.GetPurchaseDataForBaggage(purchaseId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+        }
     }
 }

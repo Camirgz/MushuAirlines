@@ -93,8 +93,13 @@ public class PurchaseService : IPurchaseService
         decimal economyPrice    = route1.PriceEconomy    + (isStopover ? route2!.PriceEconomy    : 0);
         decimal firstClassPrice = route1.PriceFirstClass + (isStopover ? route2!.PriceFirstClass : 0);
         decimal handBagPrice    = route1.HandBagPrice    + (isStopover ? route2!.HandBagPrice    : 0);
-        decimal bagPrice        = route1.BagPrice        + (isStopover ? route2!.BagPrice        : 0);
-        decimal bagMultiplier   = route1.BagMultiplier;
+
+        var bagLegs = new List<BagPricing>
+        {
+            new() { BagPrice = route1.BagPrice, BagMultiplier = route1.BagMultiplier }
+        };
+        if (isStopover)
+            bagLegs.Add(new() { BagPrice = route2!.BagPrice, BagMultiplier = route2.BagMultiplier });
 
         var totals = _pricingCalculator.Calculate(
             request.SeatSelections,
@@ -102,8 +107,7 @@ public class PurchaseService : IPurchaseService
             economyPrice,
             firstClassPrice,
             handBagPrice,
-            bagPrice,
-            bagMultiplier);
+            bagLegs);
 
         var uniqueCodes = await Task.WhenAll(
             GenerateUniqueReservationCodeAsync(),

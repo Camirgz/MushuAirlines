@@ -11,11 +11,12 @@ public class PurchasePricingCalculator : IPricingCalculator
         decimal economyPrice,
         decimal firstClassPrice,
         decimal handBagPrice,
-        decimal bagPrice,
-        decimal bagMultiplier)
+        IEnumerable<BagPricing> bagLegs)
     {
         var seatList      = seats.ToList();
         var passengerList = passengers.ToList();
+        var legsList      = bagLegs.ToList();
+        decimal handBagMultiplier = legsList.FirstOrDefault()?.BagMultiplier ?? 1m;
 
         var detailByClass = seatList
             .GroupBy(s => s.SeatClass)
@@ -45,8 +46,8 @@ public class PurchasePricingCalculator : IPricingCalculator
                 PassengerIndex  = idx,
                 HandBagCount    = p.HandBagCount,
                 CheckedBagCount = p.CheckedBagCount,
-                HandSubtotal    = BagSubtotal(p.HandBagCount,    handBagPrice, bagMultiplier),
-                CheckedSubtotal = BagSubtotal(p.CheckedBagCount, bagPrice,     bagMultiplier)
+                HandSubtotal    = BagSubtotal(p.HandBagCount, handBagPrice, handBagMultiplier),
+                CheckedSubtotal = legsList.Sum(leg => BagSubtotal(p.CheckedBagCount, leg.BagPrice, leg.BagMultiplier))
             })
             .ToList();
 
@@ -70,7 +71,7 @@ public class PurchasePricingCalculator : IPricingCalculator
             {
                 Type      = BaggageType.CheckedBaggage,
                 Quantity  = totalCheckedCount,
-                UnitPrice = bagPrice,
+                UnitPrice = legsList.Sum(l => l.BagPrice),
                 Subtotal  = checkedBaggageSubtotal
             });
 
