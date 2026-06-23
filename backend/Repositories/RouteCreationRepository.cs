@@ -102,8 +102,7 @@ namespace backend.Repositories
                     OriginCity,
                     DestinationCity
                 )
-                VALUES
-                (
+                SELECT
                     @Code,
                     @OriginAirport,
                     @DestinationAirport,
@@ -121,11 +120,18 @@ namespace backend.Repositories
                     @BagMultiplier,
                     @StartDate,
                     @FinalizationDate,
-                    @EconomyClassCapacity,
-                    @FirstClassCapacity,
+                    a.EconomyRows * a.EconomySeatsPerRow,
+                    a.FirstClassRows * a.FirstClassSeatsPerRow,
                     @OriginCity,
                     @DestinationCity
-                );";
+                FROM (
+                    SELECT TOP 1 a.EconomyRows, a.EconomySeatsPerRow,
+                                 a.FirstClassRows, a.FirstClassSeatsPerRow
+                    FROM Aircraft a
+                    JOIN AircraftType aty ON a.[Type] = aty.Id
+                    WHERE aty.AircraftType = @AircraftTypeId
+                    ORDER BY a.Code
+                ) a;";
 
             connection.Execute(query, new
             {
@@ -146,8 +152,6 @@ namespace backend.Repositories
                 route.BagMultiplier,
                 route.StartDate,
                 route.FinalizationDate,
-                route.EconomyClassCapacity,
-                route.FirstClassCapacity,
                 route.OriginCity,
                 route.DestinationCity
             });
