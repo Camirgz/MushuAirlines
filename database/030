@@ -48,7 +48,7 @@ BEGIN
         WHERE tb.BookingCode = @BookingCode;
 
         UPDATE TicketBaggage
-        SET HandBagCount = 0, CheckedBagCount = 0, BaggageSubtotal = 0
+        SET HandBagCount = 0, CheckedBagCount = 0
         WHERE BookingCode = @BookingCode;
 
         UPDATE Itinerary
