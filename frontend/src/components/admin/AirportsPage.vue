@@ -9,6 +9,11 @@
         back-text="Volver al panel"
       />
 
+      <div v-if="successMessage" class="success-message">
+        <i class="bi bi-check-circle-fill"></i>
+        <span>{{ successMessage }}</span>
+      </div>
+
       <div v-if="errorMessage" class="error-message">
         <i class="bi bi-exclamation-circle-fill"></i>
         <span>{{ errorMessage }}</span>
@@ -81,6 +86,16 @@
                     >
                       <i class="bi bi-pencil me-1"></i>
                       Editar
+                    </button>
+
+                    <button
+                      v-if="isAdmin"
+                      type="button"
+                      class="delete-btn"
+                      @click="openDeleteConfirmation(airport)"
+                    >
+                      <i class="bi bi-trash me-1"></i>
+                      Eliminar
                     </button>
                   </div>
                 </td>
@@ -231,6 +246,58 @@
         </form>
       </AdminCard>
     </template>
+
+    <div
+      v-if="airportToDelete"
+      class="modal-backdrop"
+      @click.self="clseDeleteConfirmation"
+    >
+      <div
+        class="delete-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete-airport-title"
+      >
+        <div class="modal-header-row">
+          <h2 id="delete-airport-title">Eliminar aeropuerto</h2>
+
+          <button
+            type="button"
+            class="modal-close-btn"
+            aria-label="Cerrar"
+            :disabled="deleting"
+            @click="closeDeleteConfirmation"
+          >
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <p class="modal-question">
+          ¿Estás seguro de eliminar {{ airportToDelete.airportName }}?
+        </p>
+
+        <p class="modal-warning">Esta acción es irreversible.</p>
+
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="delete-confirm-btn"
+            :disabled="deleting"
+            @click="deleteAirport"
+          >
+            {{ deleting ? "Eliminando..." : "Eliminar" }}
+          </button>
+
+          <button
+            type="button"
+            class="delete-cancel-btn"
+            :disabled="deleting"
+            @click="closeDeleteConfirmation"
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
   </AdminPageLayout>
 </template>
 
@@ -258,12 +325,14 @@ export default {
       searchText: "",
       selectedAirport: null,
       editingAirport: null,
+      airportToDelete: null,
       editAirportName: "",
       editErrors: {},
       editSubmitted: false,
       airports: [],
       loading: false,
       saving: false,
+      deleting: false,
       successMessage: "",
       errorMessage: "",
       userRole: null,
@@ -418,6 +487,57 @@ export default {
       this.errorMessage = "";
 
       window.scrollTo({ top: 0, behavior: "smooth" });
+    },
+
+    openDeleteConfirmation(airport) {
+      this.airportToDelete = { ...airport };
+      this.successMessage = "";
+      this.errorMessage = "";
+    },
+
+    closeDeleteConfirmation() {
+      if (this.deleting) {
+        return;
+      }
+
+      this.airportToDelete = null;
+    },
+
+    async deleteAirport() {
+      if (!this.airportToDelete) {
+        return;
+      }
+
+      this.deleting = true;
+      this.successMessage = "";
+      this.errorMessage = "";
+
+      const airportName = this.airportToDelete.airportName;
+      const airportCode = this.airportToDelete.code;
+
+      try {
+        await axios.delete(`${BaseURL}/${airportCode}`);
+
+        this.airports = this.airports.filter(
+          (airport) => airport.code !== airportCode
+        );
+
+        this.successMessage = `Aeropuerto "${airportName}" eliminado correctamente.`;
+        this.airportToDelete = null;
+
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } catch (error) {
+        let deleteErrorMessage = "No se pudo eliminar al aeropuerto.";
+
+        if (error.response?.data) {
+          deleteErrorMessage = error.response.data;
+        }
+        this.airportToDelete = null;
+        await this.loadAirports();
+        this.errorMessage = deleteErrorMessage;
+      } finally {
+        this.deleting = false;
+      }
     },
 
     validateEditForm() {
@@ -662,7 +782,8 @@ export default {
 }
 
 .view-btn,
-.edit-btn {
+.edit-btn,
+.delete-btn {
   border: none;
   background: transparent;
   font-size: 0.88rem;
@@ -681,8 +802,13 @@ export default {
   color: #2563eb;
 }
 
+.delete-btn {
+  color: #ef0012;
+}
+
 .view-btn:hover,
-.edit-btn:hover {
+.edit-btn:hover,
+.delete-btn:hover {
   text-decoration: underline;
 }
 
@@ -692,6 +818,10 @@ export default {
 
 .edit-btn:hover {
   color: #1d4ed8;
+}
+
+.delete-btn:hover {
+  color: #c80010;
 }
 
 .empty-state {
@@ -898,6 +1028,107 @@ export default {
   background: #e5e7eb;
 }
 
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.18);
+  backdrop-filter: blur(8px);
+}
+
+.delete-modal {
+  width: min(420px, 100%);
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 26px 24px 22px;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.18);
+}
+
+.modal-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.modal-header-row h2 {
+  margin: 0;
+  color: #1f2937;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.modal-close-btn {
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px;
+  font-size: 0.9rem;
+}
+
+.modal-close-btn:hover:not(:disabled) {
+  color: #475569;
+}
+
+.modal-question {
+  margin: 0 0 10px;
+  color: #374151;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.modal-warning {
+  margin: 0;
+  color: #ef0012;
+  font-size: 0.82rem;
+}
+
+.modal-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.delete-confirm-btn,
+.delete-cancel-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 12px 18px;
+  font-size: 0.88rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.2s ease, background 0.2s ease;
+}
+
+.delete-confirm-btn {
+  background: #ef0012;
+  color: #ffffff;
+}
+
+.delete-cancel-btn {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.delete-confirm-btn:hover:not(:disabled),
+.delete-cancel-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.delete-confirm-btn:disabled,
+.delete-cancel-btn:disabled,
+.modal-close-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 @media (max-width: 768px) {
   .card-header-row {
     align-items: stretch;
@@ -920,7 +1151,8 @@ export default {
   }
 
   .details-actions,
-  .edit-actions {
+  .edit-actions,
+  .modal-actions {
     grid-template-columns: 1fr;
   }
 }
@@ -948,3 +1180,4 @@ export default {
   box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.12);
 }
 </style>
+
