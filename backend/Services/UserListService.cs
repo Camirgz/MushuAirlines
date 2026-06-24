@@ -131,16 +131,25 @@ public class UserListService : IUserListService
     public string DeleteUser(int employeeId)
     {
         if (employeeId <= 0)
-        {
             return "El usuario seleccionado no es válido.";
-        }
+
         try
         {
-            bool deleted = _repository.DeleteUser(employeeId);
-            if (!deleted)
+            bool isAdmin = _repository.IsAdministrator(employeeId);
+
+            if (isAdmin)
             {
-                return "No se encontró el usuario que desea eliminar.";
+                int adminCount = _repository.GetActiveAdministratorCount();
+
+                if (adminCount <= 1)
+                    return "No se puede eliminar el único administrador del sistema.";
             }
+
+            bool deleted = _repository.DeleteUser(employeeId);
+
+            if (!deleted)
+                return "No se encontró el usuario que desea eliminar.";
+
             return string.Empty;
         }
         catch
@@ -148,4 +157,5 @@ public class UserListService : IUserListService
             return "No se pudo eliminar el usuario.";
         }
     }
+
 }
