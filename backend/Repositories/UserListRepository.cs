@@ -2,6 +2,7 @@ using backend.Interfaces;
 using backend.Model;
 using Dapper;
 using System.Data.SqlClient;
+using System.Data;
 
 namespace backend.Repositories;
 
@@ -256,6 +257,19 @@ public class UserListRepository : IUserListRepository
         using var connection = new SqlConnection(_connectionString);
         connection.Open();
 
+        try
+        {
+            connection.Execute(
+                "DeleteEmployee",
+                new { id = employeeId },
+                commandType: CommandType.StoredProcedure
+            );
+            return true;
+        }
+        catch
+        {
+            throw;
+        }
     }
 
 }
