@@ -1,5 +1,5 @@
 using System.Text.RegularExpressions;
-using Microsoft.AspNetCore.StaticAssets;
+
 namespace backend.Model;
 
 public class AirportModel
@@ -19,7 +19,7 @@ public class AirportModel
 
     public void Normalize()
     {
-        Code = Code?.Trim().ToUpper() ?? string.Empty;
+        Code = NormalizeCode(Code);
         AirportName = NormalizeAirportName(AirportName);
         Country = Country?.Trim() ?? string.Empty;
         City = City?.Trim() ?? string.Empty;
@@ -29,12 +29,12 @@ public class AirportModel
     {
         if (string.IsNullOrWhiteSpace(Country))
         {
-            return "Debe seleccionar un país";
+            return "Debe seleccionar un país.";
         }
 
         if (string.IsNullOrWhiteSpace(City))
         {
-            return "Debe seleccionar una ciudad";
+            return "Debe seleccionar una ciudad.";
         }
 
         string airportNameValidationMessage = ValidateAirportName(
@@ -50,6 +50,16 @@ public class AirportModel
         return ValidateCode(Code);
     }
 
+    public static string NormalizeCode(string? code)
+    {
+        return code?.Trim().ToUpper() ?? string.Empty;
+    }
+
+    public static string NormalizeAirportName(string? airportName)
+    {
+        return airportName?.Trim() ?? string.Empty;
+    }
+
     public static string ValidateCode(string? code)
     {
         if (string.IsNullOrWhiteSpace(code))
@@ -57,7 +67,9 @@ public class AirportModel
             return "Debe ingresar el código del aeropuerto.";
         }
 
-        if (code.Trim().Length != AirportCodeLength)
+        string normalizedCode = NormalizeCode(code);
+
+        if (normalizedCode.Length != AirportCodeLength)
         {
             return "El código del aeropuerto debe tener exactamente 3 caracteres.";
         }
@@ -67,7 +79,7 @@ public class AirportModel
 
     public static string ValidateAirportName(
         string? airportName,
-        bool useCreationMessage
+        bool useCreationMessage = false
     )
     {
         if (string.IsNullOrWhiteSpace(airportName))
@@ -86,16 +98,9 @@ public class AirportModel
 
         if (!AirportNameRegex.IsMatch(normalizedAirportName))
         {
-            return useCreationMessage
-                ? "El nombre del aeropuerto no debe contener números ni caracteres especiales como #, !, %, $."
-                : "El nombre del aeropuerto no debe contener caracteres especiales como #, !, %, $.";
+            return "El nombre del aeropuerto solo puede contener letras, espacios, punto, guion y apóstrofo.";
         }
 
         return string.Empty;
-    }
-
-    public static string NormalizeAirportName(string? airportName)
-    {
-        return airportName?.Trim() ?? string.Empty;
     }
 }
