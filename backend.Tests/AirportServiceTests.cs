@@ -292,7 +292,7 @@ public class AirportServiceTests
         var result = _airportService.CreateAirport(airport);
 
         // Assert
-        Assert.That(result, Is.EqualTo("El nombre del aeropuerto no debe contener números ni caracteres especiales como #, !, %, $."));
+        Assert.That(result, Is.EqualTo("El nombre del aeropuerto solo puede contener letras, espacios, punto, guion y apóstrofo."));
     }
 
     [Test]
@@ -393,7 +393,7 @@ public class AirportServiceTests
         var result = _airportService.UpdateAirportName("MAD", "Airport123#");
 
         // Assert
-        Assert.That(result, Is.EqualTo("El nombre del aeropuerto no debe contener caracteres especiales como #, !, %, $."));
+        Assert.That(result, Is.EqualTo("El nombre del aeropuerto solo puede contener letras, espacios, punto, guion y apóstrofo."));
     }
 
     [Test]
@@ -457,6 +457,81 @@ public class AirportServiceTests
 
         // Act
         var result = _airportService.UpdateAirportName(code, newName);
+
+        // Assert
+        Assert.That(result, Is.Empty);
+    }
+
+    [Test]
+    public void DeleteAirport_WhenAirportDoesNotExist_ShouldReturnErrorMessage()
+    {
+        // Arrange
+        string code = "SJO";
+
+        _mockAirportRepository
+            .Setup(repository => repository.GetAirportByCode(code))
+            .Returns((AirportModel?)null);
+
+        // Act
+        var result = _airportService.DeleteAirport(code);
+
+        // Assert
+        Assert.That(result, Is.EqualTo("No existe un aeropuerto con ese código."));
+    }
+
+    [Test]
+    public void DeleteAirport_WhenRepositoryReturnsFalse_ShouldReturnErrorMessage()
+    {
+        // Arrange
+        string code = "SJO";
+
+        var airport = new AirportModel
+        {
+            Code = code,
+            AirportName = "Aeropuerto Internacional Juan Santamaría",
+            Country = "Costa Rica",
+            City = "San José"
+        };
+
+        _mockAirportRepository
+            .Setup(repository => repository.GetAirportByCode(code))
+            .Returns(airport);
+
+        _mockAirportRepository
+            .Setup(repository => repository.DeleteAirport(code))
+            .Returns(false);
+
+        // Act
+        var result = _airportService.DeleteAirport(code);
+
+        // Assert
+        Assert.That(result, Is.EqualTo("No se encontró el aeropuerto que desea eliminar."));
+    }
+
+    [Test]
+    public void DeleteAirport_WhenAirportExists_ShouldDeleteAirport()
+    {
+        // Arrange
+        string code = "SJO";
+
+        var airport = new AirportModel
+        {
+            Code = code,
+            AirportName = "Aeropuerto Internacional Juan Santamaría",
+            Country = "Costa Rica",
+            City = "San José"
+        };
+
+        _mockAirportRepository
+            .Setup(repository => repository.GetAirportByCode(code))
+            .Returns(airport);
+
+        _mockAirportRepository
+            .Setup(repository => repository.DeleteAirport(code))
+            .Returns(true);
+
+        // Act
+        var result = _airportService.DeleteAirport(code);
 
         // Assert
         Assert.That(result, Is.Empty);
