@@ -1,0 +1,4 @@
+USE MushuAirlines;
+
+ALTER TABLE Employee
+ADD IsDeleted BIT NOT NULL DEFAULT 0;
