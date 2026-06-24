@@ -1180,7 +1180,7 @@ export default {
         const leg = !avail1 ? leg1 : leg2
         const classLabel = this.stopoverFirstClassCount > 0 && this.stopoverEconomyCount > 0
           ? 'las clases seleccionadas'
-          : this.stopoverFirstClassCount > 0 ? 'Primera Clase' : 'Economy'
+          : this.stopoverFirstClassCount > 0 ? 'Primera Clase' : 'Clase Turista'
         this.stopoverSeatAvailabilityError =
           `Lo sentimos, el vuelo ${leg.origin}→${leg.destination} no tiene suficientes asientos de ${classLabel} disponibles.`
         return
@@ -1250,7 +1250,7 @@ export default {
       if (!available) {
         const classLabel = this.firstClassCount > 0 && this.economyCount > 0
           ? 'las clases seleccionadas'
-          : this.firstClassCount > 0 ? 'Primera Clase' : 'Economy'
+          : this.firstClassCount > 0 ? 'Primera Clase' : 'Clase Turista'
         this.seatAvailabilityError = `Lo sentimos, no hay suficientes asientos de ${classLabel} disponibles para este vuelo.`
         return
       }
