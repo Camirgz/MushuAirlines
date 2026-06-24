@@ -20,7 +20,12 @@ public class PurchasePricingCalculatorTests
     private static List<PassengerInfo> WithBags(params (int hand, int checkedBag)[] bags) =>
         bags.Select(b => new PassengerInfo { HandBagCount = b.hand, CheckedBagCount = b.checkedBag }).ToList();
 
-    // ── Seat totals ───────────────────────────────────────────────────────────
+    private static List<BagPricing> Legs(decimal price, decimal multiplier) =>
+        [new() { BagPrice = price, BagMultiplier = multiplier }];
+
+    private static List<BagPricing> TwoLegs(decimal p1, decimal m1, decimal p2, decimal m2) =>
+        [new() { BagPrice = p1, BagMultiplier = m1 }, new() { BagPrice = p2, BagMultiplier = m2 }];
+
 
     [Test]
     public void Calculate_OnlyEconomySeats_NoBaggage_ShouldReturnCorrectTotal()
@@ -32,7 +37,7 @@ public class PurchasePricingCalculatorTests
             new() { PassengerIndex = 2, SeatClass = SeatClass.Economy, SeatNumber = 3 },
         };
 
-        var result = _calculator.Calculate(seats, NoBaggage(3), economyPrice: 100m, firstClassPrice: 300m, 0m, 0m, 1m);
+        var result = _calculator.Calculate(seats, NoBaggage(3), economyPrice: 100m, firstClassPrice: 300m, handBagPrice: 0m, bagLegs: Legs(0m, 1m));
 
         Assert.Multiple(() =>
         {
@@ -50,7 +55,7 @@ public class PurchasePricingCalculatorTests
             new() { PassengerIndex = 1, SeatClass = SeatClass.FirstClass, SeatNumber = 2 },
         };
 
-        var result = _calculator.Calculate(seats, NoBaggage(2), economyPrice: 100m, firstClassPrice: 400m, 0m, 0m, 1m);
+        var result = _calculator.Calculate(seats, NoBaggage(2), economyPrice: 100m, firstClassPrice: 400m, handBagPrice: 0m, bagLegs: Legs(0m, 1m));
 
         Assert.Multiple(() =>
         {
@@ -69,11 +74,11 @@ public class PurchasePricingCalculatorTests
             new() { PassengerIndex = 2, SeatClass = SeatClass.FirstClass, SeatNumber = 1 },
         };
 
-        var result = _calculator.Calculate(seats, NoBaggage(3), economyPrice: 150m, firstClassPrice: 500m, 0m, 0m, 1m);
+        var result = _calculator.Calculate(seats, NoBaggage(3), economyPrice: 150m, firstClassPrice: 500m, handBagPrice: 0m, bagLegs: Legs(0m, 1m));
 
         Assert.Multiple(() =>
         {
-            Assert.That(result.TotalPaid,  Is.EqualTo(800m)); // 2×150 + 1×500
+            Assert.That(result.TotalPaid,  Is.EqualTo(800m));
             Assert.That(result.TotalSeats, Is.EqualTo(3));
         });
     }
@@ -81,7 +86,7 @@ public class PurchasePricingCalculatorTests
     [Test]
     public void Calculate_EmptySeatList_ShouldReturnZeroTotals()
     {
-        var result = _calculator.Calculate([], NoBaggage(0), economyPrice: 100m, firstClassPrice: 200m, 0m, 0m, 1m);
+        var result = _calculator.Calculate([], NoBaggage(0), economyPrice: 100m, firstClassPrice: 200m, handBagPrice: 0m, bagLegs: Legs(0m, 1m));
 
         Assert.Multiple(() =>
         {
@@ -99,7 +104,7 @@ public class PurchasePricingCalculatorTests
             new() { PassengerIndex = 0, SeatClass = SeatClass.Economy, SeatNumber = 1 }
         };
 
-        var result = _calculator.Calculate(seats, NoBaggage(1), economyPrice: 99.99m, firstClassPrice: 0m, 0m, 0m, 1m);
+        var result = _calculator.Calculate(seats, NoBaggage(1), economyPrice: 99.99m, firstClassPrice: 0m, handBagPrice: 0m, bagLegs: Legs(0m, 1m));
 
         Assert.Multiple(() =>
         {
@@ -119,12 +124,11 @@ public class PurchasePricingCalculatorTests
             new() { PassengerIndex = 3, SeatClass = SeatClass.FirstClass, SeatNumber = 2 },
         };
 
-        var result = _calculator.Calculate(seats, NoBaggage(4), economyPrice: 175m, firstClassPrice: 450m, 0m, 0m, 1m);
+        var result = _calculator.Calculate(seats, NoBaggage(4), economyPrice: 175m, firstClassPrice: 450m, handBagPrice: 0m, bagLegs: Legs(0m, 1m));
 
         decimal expectedTotal = result.DetailByClass.Sum(d => d.Subtotal);
         Assert.That(result.TotalPaid, Is.EqualTo(expectedTotal));
     }
-
 
     [Test]
     public void Calculate_MixedClasses_ShouldProduceTwoDetailEntries()
@@ -135,7 +139,7 @@ public class PurchasePricingCalculatorTests
             new() { PassengerIndex = 1, SeatClass = SeatClass.FirstClass, SeatNumber = 1  },
         };
 
-        var result = _calculator.Calculate(seats, NoBaggage(2), economyPrice: 200m, firstClassPrice: 600m, 0m, 0m, 1m);
+        var result = _calculator.Calculate(seats, NoBaggage(2), economyPrice: 200m, firstClassPrice: 600m, handBagPrice: 0m, bagLegs: Legs(0m, 1m));
 
         Assert.That(result.DetailByClass, Has.Count.EqualTo(2));
     }
@@ -149,7 +153,7 @@ public class PurchasePricingCalculatorTests
             new() { PassengerIndex = 1, SeatClass = SeatClass.Economy, SeatNumber = 4 },
         };
 
-        var result = _calculator.Calculate(seats, NoBaggage(2), economyPrice: 250m, firstClassPrice: 999m, 0m, 0m, 1m);
+        var result = _calculator.Calculate(seats, NoBaggage(2), economyPrice: 250m, firstClassPrice: 999m, handBagPrice: 0m, bagLegs: Legs(0m, 1m));
 
         var detail = result.DetailByClass.Single(d => d.SeatClass == SeatClass.Economy);
         Assert.Multiple(() =>
@@ -169,7 +173,7 @@ public class PurchasePricingCalculatorTests
             new() { PassengerIndex = 2, SeatClass = SeatClass.FirstClass, SeatNumber = 3 },
         };
 
-        var result = _calculator.Calculate(seats, NoBaggage(3), economyPrice: 50m, firstClassPrice: 700m, 0m, 0m, 1m);
+        var result = _calculator.Calculate(seats, NoBaggage(3), economyPrice: 50m, firstClassPrice: 700m, handBagPrice: 0m, bagLegs: Legs(0m, 1m));
 
         var detail = result.DetailByClass.Single(d => d.SeatClass == SeatClass.FirstClass);
         Assert.Multiple(() =>
@@ -189,7 +193,7 @@ public class PurchasePricingCalculatorTests
         };
 
         var result = _calculator.Calculate(seats, WithBags((hand: 1, checkedBag: 0)),
-            economyPrice: 100m, firstClassPrice: 0m, handBagPrice: 30m, bagPrice: 0m, bagMultiplier: 2m);
+            economyPrice: 100m, firstClassPrice: 0m, handBagPrice: 30m, bagLegs: Legs(0m, 2m));
 
         Assert.Multiple(() =>
         {
@@ -206,9 +210,8 @@ public class PurchasePricingCalculatorTests
             new() { PassengerIndex = 0, SeatClass = SeatClass.Economy, SeatNumber = 1 },
         };
 
-        // 1st bag: 30, 2nd bag: 30 × 2 = 60 → total hand = 90
         var result = _calculator.Calculate(seats, WithBags((hand: 2, checkedBag: 0)),
-            economyPrice: 100m, firstClassPrice: 0m, handBagPrice: 30m, bagPrice: 0m, bagMultiplier: 2m);
+            economyPrice: 100m, firstClassPrice: 0m, handBagPrice: 30m, bagLegs: Legs(0m, 2m));
 
         Assert.Multiple(() =>
         {
@@ -225,12 +228,12 @@ public class PurchasePricingCalculatorTests
             new() { PassengerIndex = 0, SeatClass = SeatClass.Economy, SeatNumber = 1 },
         };
 
-        // 1st: 30, 2nd: 30×2=60, 3rd: 30×2=60 → total hand = 150
         var result = _calculator.Calculate(seats, WithBags((hand: 3, checkedBag: 0)),
-            economyPrice: 0m, firstClassPrice: 0m, handBagPrice: 30m, bagPrice: 0m, bagMultiplier: 2m);
+            economyPrice: 0m, firstClassPrice: 0m, handBagPrice: 30m, bagLegs: Legs(0m, 2m));
 
         Assert.That(result.HandBaggageSubtotal, Is.EqualTo(150m));
     }
+
 
     [Test]
     public void Calculate_OneCheckedBag_ShouldChargeBasePriceWithoutMultiplier()
@@ -241,11 +244,11 @@ public class PurchasePricingCalculatorTests
         };
 
         var result = _calculator.Calculate(seats, WithBags((hand: 0, checkedBag: 1)),
-            economyPrice: 100m, firstClassPrice: 0m, handBagPrice: 0m, bagPrice: 50m, bagMultiplier: 1.5m);
+            economyPrice: 100m, firstClassPrice: 0m, handBagPrice: 0m, bagLegs: Legs(50m, 1.5m));
 
         Assert.Multiple(() =>
         {
-            Assert.That(result.CheckedBaggageSubtotal, Is.EqualTo(50m)); // no multiplier on first bag
+            Assert.That(result.CheckedBaggageSubtotal, Is.EqualTo(50m));
             Assert.That(result.TotalPaid,              Is.EqualTo(150m));
         });
     }
@@ -259,7 +262,7 @@ public class PurchasePricingCalculatorTests
         };
 
         var result = _calculator.Calculate(seats, WithBags((hand: 0, checkedBag: 2)),
-            economyPrice: 100m, firstClassPrice: 0m, handBagPrice: 0m, bagPrice: 50m, bagMultiplier: 1.5m);
+            economyPrice: 100m, firstClassPrice: 0m, handBagPrice: 0m, bagLegs: Legs(50m, 1.5m));
 
         Assert.Multiple(() =>
         {
@@ -277,7 +280,7 @@ public class PurchasePricingCalculatorTests
         };
 
         var result = _calculator.Calculate(seats, WithBags((hand: 1, checkedBag: 2)),
-            economyPrice: 100m, firstClassPrice: 0m, handBagPrice: 20m, bagPrice: 50m, bagMultiplier: 1.0m);
+            economyPrice: 100m, firstClassPrice: 0m, handBagPrice: 20m, bagLegs: Legs(50m, 1.0m));
 
         Assert.Multiple(() =>
         {
@@ -298,7 +301,7 @@ public class PurchasePricingCalculatorTests
 
         var result = _calculator.Calculate(seats,
             WithBags((hand: 0, checkedBag: 2), (hand: 0, checkedBag: 1)),
-            economyPrice: 100m, firstClassPrice: 0m, handBagPrice: 0m, bagPrice: 50m, bagMultiplier: 2m);
+            economyPrice: 100m, firstClassPrice: 0m, handBagPrice: 0m, bagLegs: Legs(50m, 2m));
 
         Assert.Multiple(() =>
         {
@@ -319,7 +322,7 @@ public class PurchasePricingCalculatorTests
 
         var result = _calculator.Calculate(seats,
             WithBags((hand: 1, checkedBag: 0), (hand: 0, checkedBag: 2)),
-            economyPrice: 0m, firstClassPrice: 0m, handBagPrice: 20m, bagPrice: 50m, bagMultiplier: 1.5m);
+            economyPrice: 0m, firstClassPrice: 0m, handBagPrice: 20m, bagLegs: Legs(50m, 1.5m));
 
         Assert.That(result.PassengerBaggageDetails, Has.Count.EqualTo(2));
 
@@ -333,5 +336,36 @@ public class PurchasePricingCalculatorTests
             Assert.That(p1.HandSubtotal,    Is.EqualTo(0m));
             Assert.That(p1.CheckedSubtotal, Is.EqualTo(125m));
         });
+    }
+
+
+    [Test]
+    public void Calculate_TwoLegs_OneCheckedBag_ShouldSumBothLegPrices()
+    {
+        var seats = new List<SeatSelection>
+        {
+            new() { PassengerIndex = 0, SeatClass = SeatClass.Economy, SeatNumber = 1 },
+        };
+
+        var result = _calculator.Calculate(seats, WithBags((hand: 0, checkedBag: 1)),
+            economyPrice: 0m, firstClassPrice: 0m, handBagPrice: 0m,
+            bagLegs: TwoLegs(30m, 1.5m, 25m, 1.2m));
+
+        Assert.That(result.CheckedBaggageSubtotal, Is.EqualTo(55m));
+    }
+
+    [Test]
+    public void Calculate_TwoLegs_TwoCheckedBags_ShouldApplyEachMultiplierIndependently()
+    {
+        var seats = new List<SeatSelection>
+        {
+            new() { PassengerIndex = 0, SeatClass = SeatClass.Economy, SeatNumber = 1 },
+        };
+
+        var result = _calculator.Calculate(seats, WithBags((hand: 0, checkedBag: 2)),
+            economyPrice: 0m, firstClassPrice: 0m, handBagPrice: 0m,
+            bagLegs: TwoLegs(30m, 1.5m, 25m, 1.2m));
+
+        Assert.That(result.CheckedBaggageSubtotal, Is.EqualTo(130m));
     }
 }

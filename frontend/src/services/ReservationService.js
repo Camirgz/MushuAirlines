@@ -27,6 +27,21 @@ export async function getReservationReport() {
     }
 }
 
+export async function addBaggage(passengers) {
+    const token = localStorage.getItem("reservationToken");
+    try {
+        const response = await axios.post(
+            `${BASE}/reservationreport/add-baggage`,
+            { passengers },
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+        return response.data;
+    } catch (err) {
+        const data = err.response?.data ?? {};
+        throw { message: data.message ?? "No se pudo procesar el pago de maletas." };
+    }
+}
+
 export async function downloadItinerary() {
     const token = localStorage.getItem("reservationToken");
 

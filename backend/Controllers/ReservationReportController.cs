@@ -1,4 +1,5 @@
 using backend.Interfaces;
+using backend.Model;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -62,6 +63,25 @@ namespace backend.Controllers
                 {
                     message = ex.Message
                 });
+            }
+        }
+
+        [HttpPost("add-baggage")]
+        public ActionResult<AddBaggageResponse> AddBaggage([FromBody] AddBaggageRequest request)
+        {
+            try
+            {
+                var reservationCode = User.FindFirst("ReservationCode")?.Value;
+                var result = service.AddBaggage(reservationCode!, request);
+                return Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
             }
         }
     }

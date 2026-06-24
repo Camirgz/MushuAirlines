@@ -35,6 +35,10 @@
                     Iniciar Sesión
                 </button>
             </form>
+
+            <button class="back-home-btn" @click="$router.push('/')">
+                <i class="bi bi-arrow-left"></i> Volver al inicio
+            </button>
         </div>
     </div>
 </template>
