@@ -208,6 +208,21 @@ public class PurchaseRepository : IPurchaseRepository
                 BookingCode = bookingCode
             }, transaction);
 
+            const string updateBookedSeats = @"
+                UPDATE ScheduledFlight
+                SET    BookedSeats             = BookedSeats             + @SeatCount,
+                       BookedSeatsFirstClass   = BookedSeatsFirstClass   + @FirstClassCount,
+                       BookedSeatsEconomy      = BookedSeatsEconomy      + @EconomyCount
+                WHERE  Id = @ScheduledFlightId";
+
+            await connection.ExecuteAsync(updateBookedSeats, new
+            {
+                ScheduledFlightId = data.ScheduledId1,
+                SeatCount         = data.Tickets1.Count,
+                FirstClassCount   = data.Tickets1.Count(t => t.SeatClass == "FirstClass"),
+                EconomyCount      = data.Tickets1.Count(t => t.SeatClass == "Economy")
+            }, transaction);
+
             if (data.Tickets2 != null)
             {
                 await connection.ExecuteAsync(insertTicket, data.Tickets2.Select(t => new
@@ -232,6 +247,14 @@ public class PurchaseRepository : IPurchaseRepository
                 {
                     ScheduledId = data.ScheduledId2!.Value,
                     BookingCode = bookingCode
+                }, transaction);
+
+                await connection.ExecuteAsync(updateBookedSeats, new
+                {
+                    ScheduledFlightId = data.ScheduledId2!.Value,
+                    SeatCount         = data.Tickets2.Count,
+                    FirstClassCount   = data.Tickets2.Count(t => t.SeatClass == "FirstClass"),
+                    EconomyCount      = data.Tickets2.Count(t => t.SeatClass == "Economy")
                 }, transaction);
             }
 
