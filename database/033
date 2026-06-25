@@ -1,0 +1,65 @@
+USE MushuAirlines;
+go
+CREATE PROCEDURE CancelReservation
+(
+    @ReservationCode NVARCHAR(20)
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    BEGIN TRANSACTION;
+
+    BEGIN TRY
+
+        DECLARE @BookingCode INT;
+
+        SELECT @BookingCode = BookingCode
+        FROM Purchase
+        WHERE ReservationCode = @ReservationCode;
+
+        IF @BookingCode IS NULL
+        BEGIN
+            RAISERROR('Reserva no encontrada.', 16, 1);
+            RETURN;
+        END
+
+        UPDATE sf
+        SET sf.BookedSeats = sf.BookedSeats - x.TicketCount
+        FROM ScheduledFlight sf
+        INNER JOIN
+        (
+            SELECT t.ScheduledId, COUNT(*) AS TicketCount
+            FROM Ticket t
+            INNER JOIN TicketBaggage tb
+                ON tb.PassengerId = t.PassengerHas
+                AND tb.ScheduledFlightId = t.ScheduledId
+            WHERE tb.BookingCode = @BookingCode
+            GROUP BY t.ScheduledId
+        ) x ON sf.Id = x.ScheduledId;
+
+        UPDATE t
+        SET Status = 'Cancelled'
+        FROM Ticket t
+        INNER JOIN TicketBaggage tb
+            ON tb.PassengerId = t.PassengerHas
+            AND tb.ScheduledFlightId = t.ScheduledId
+        WHERE tb.BookingCode = @BookingCode;
+
+        UPDATE TicketBaggage
+        SET HandBagCount = 0, CheckedBagCount = 0
+        WHERE BookingCode = @BookingCode;
+
+        UPDATE Itinerary
+        SET Status = 'Cancelled', CancelledAt = GETDATE()
+        WHERE BookingCode = @BookingCode;
+
+        COMMIT TRANSACTION;
+
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
+END
