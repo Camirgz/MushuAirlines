@@ -23,7 +23,8 @@
 
   <!-- msedgedriver.exe debe colocarse en la carpeta selenium.Tests/ antes de ejecutar -->
   <ItemGroup>
-    <Content Include="msedgedriver.exe" CopyToOutputDirectory="PreserveNewest" Condition="Exists('msedgedriver.exe')" />
+    <Content Include="chromedriver.exe" CopyToOutputDirectory="PreserveNewest" Condition="Exists('chromedriver.exe')" />
+
   </ItemGroup>
 
 </Project>
