@@ -10,22 +10,33 @@ namespace backend.Controllers;
 public class PurchaseController : ControllerBase
 {
     private readonly IPurchaseService _purchaseService;
+    private readonly ILogger<PurchaseController> _logger;
 
-    public PurchaseController(IPurchaseService purchaseService)
+    public PurchaseController(IPurchaseService purchaseService, ILogger<PurchaseController> logger)
     {
         _purchaseService = purchaseService;
+        _logger = logger;
     }
 
     [HttpGet("check-availability")]
     public async Task<ActionResult> CheckAvailability(
         [FromQuery] string routeCode,
         [FromQuery] string flightDate,
-        [FromQuery] int count)
+        [FromQuery] int firstClassCount,
+        [FromQuery] int economyCount)
     {
-        if (!DateOnly.TryParse(flightDate, out DateOnly date))
-            return BadRequest(new { message = "Formato de fecha inválido." });
+        _logger.LogInformation(
+            "check-availability: routeCode={RouteCode} flightDate={FlightDate} firstClassCount={FC} economyCount={Eco}",
+            routeCode, flightDate, firstClassCount, economyCount);
 
-        bool available = await _purchaseService.IsFlightAvailableAsync(routeCode, date, count);
+        if (!DateOnly.TryParse(flightDate, out DateOnly date))
+        {
+            _logger.LogWarning("check-availability: invalid date format '{FlightDate}'", flightDate);
+            return BadRequest(new { message = "Formato de fecha inválido." });
+        }
+
+        bool available = await _purchaseService.IsFlightAvailableAsync(routeCode, date, firstClassCount, economyCount);
+        _logger.LogInformation("check-availability: result={Available}", available);
         return Ok(new { available });
     }
 
