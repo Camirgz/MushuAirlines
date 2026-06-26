@@ -441,10 +441,12 @@ export default {
         return;
       }
 
-      const seatCount = this.purchaseState.seats.length;
-      const availLeg1 = checkAvailability(this.flight.code, this.flight.flightDate, seatCount);
+      const seats = this.purchaseState.seats;
+      const firstClassCount = seats.filter(s => s.seatClass === 'FirstClass').length;
+      const economyCount    = seats.filter(s => s.seatClass === 'Economy').length;
+      const availLeg1 = checkAvailability(this.flight.code, this.flight.flightDate, firstClassCount, economyCount);
       const availLeg2 = flight2
-        ? checkAvailability(flight2.code, flight2.flightDate, seatCount)
+        ? checkAvailability(flight2.code, flight2.flightDate, firstClassCount, economyCount)
         : Promise.resolve(true);
 
       const [avail1, avail2] = await Promise.all([availLeg1, availLeg2]);
