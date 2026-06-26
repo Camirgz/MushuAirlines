@@ -1,0 +1,7 @@
+USE MushuAirlines;
+GO
+
+ALTER TABLE Aircraft
+ADD IsDeleted BIT NOT NULL
+    CONSTRAINT DF_Aircraft_IsDeleted DEFAULT (0);
+GO
