@@ -1040,7 +1040,7 @@ export default {
             this.currentPage = this.totalPages;
           }
 
-          this.successMessage = `Aeronave "${this.aircraftToDelete.model}" eliminada correctamente.`;
+          this.successMessage = `Aeronave eliminada correctamente.`;
 
           this.showDeleteModal = false;
           this.aircraftToDelete = null;
