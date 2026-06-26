@@ -20,6 +20,10 @@ export function updateAircraftType(id, payload) {
   return axios.put(`${baseUrl}/${id}`, payload);
 }
 
+export function deleteAircraftType(id) {
+  return axios.delete(`${baseUrl}/${id}`);
+}
+
 export function getAircraftTypeOptions() {
   return axios.get(typeBaseUrl);
 }

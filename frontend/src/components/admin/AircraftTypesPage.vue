@@ -106,6 +106,16 @@
                         <i class="bi bi-pencil me-1"></i>
                         Editar
                       </button>
+
+                      <button
+                        v-if="isAdmin"
+                        type="button"
+                        class="delete-btn"
+                        @click="openDeleteModal(aircraft)"
+                      >
+                        <i class="bi bi-trash me-1"></i>
+                        Eliminar
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -483,6 +493,59 @@
         </form>
       </AdminCard>
     </template>
+
+    <div
+      v-if="showDeleteModal"
+      class="delete-modal-overlay"
+      @click.self="closeDeleteModal"
+    >
+      <div class="delete-modal">
+        <button
+          type="button"
+          class="delete-modal-close"
+          @click="closeDeleteModal"
+          aria-label="Cerrar modal"
+          :disabled="deletingAircraft"
+        >
+          <i class="bi bi-x-lg"></i>
+        </button>
+
+        <div class="delete-modal-icon">
+          <i class="bi bi-trash"></i>
+        </div>
+
+        <h3 class="delete-modal-title">Eliminar aeronave</h3>
+
+        <p class="delete-modal-text">
+          ¿Estás seguro de eliminar
+          <strong>{{ aircraftToDelete?.model }}</strong>?
+        </p>
+
+        <p class="delete-modal-warning">
+          Esta acción es irreversible.
+        </p>
+
+        <div class="delete-modal-actions">
+          <button
+            type="button"
+            class="delete-cancel-btn"
+            @click="closeDeleteModal"
+            :disabled="deletingAircraft"
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="button"
+            class="delete-confirm-btn"
+            @click="confirmDeleteAircraft"
+            :disabled="deletingAircraft"
+          >
+            {{ deletingAircraft ? "Eliminando..." : "Eliminar" }}
+          </button>
+        </div>
+      </div>
+    </div>
   </AdminPageLayout>
 </template>
 
@@ -495,6 +558,7 @@ import {
   getAircraftTypes,
   getAircraftTypeById,
   updateAircraftType,
+  deleteAircraftType,
 } from "../../services/AircraftTypesService";
 
 const minPage = 1;
@@ -521,6 +585,9 @@ export default {
       successMessage: "",
       selectedAircraft: null,
       editingAircraft: null,
+      showDeleteModal: false,
+      aircraftToDelete: null,
+      deletingAircraft: false,
       editSubmitted: false,
       editErrors: {},
       editForm: {
@@ -938,6 +1005,56 @@ export default {
       return Number(value ?? 0).toLocaleString();
     },
 
+    openDeleteModal(aircraft) {
+      this.aircraftToDelete = { ...aircraft };
+      this.showDeleteModal = true;
+      this.successMessage = "";
+      this.errorMessage = "";
+    },
+
+    closeDeleteModal() {
+      if (this.deletingAircraft) {
+        return;
+      }
+
+      this.showDeleteModal = false;
+      this.aircraftToDelete = null;
+    },
+
+    confirmDeleteAircraft() {
+      if (!this.aircraftToDelete) {
+        return;
+      }
+
+      this.deletingAircraft = true;
+      this.successMessage = "";
+      this.errorMessage = "";
+
+      deleteAircraftType(this.aircraftToDelete.id)
+        .then(() => {
+          this.aircraftTypes = this.aircraftTypes.filter(
+            (aircraft) => aircraft.id !== this.aircraftToDelete.id
+          );
+
+          if (this.currentPage > this.totalPages) {
+            this.currentPage = this.totalPages;
+          }
+
+          this.successMessage = `Aeronave "${this.aircraftToDelete.model}" eliminada correctamente.`;
+
+          this.showDeleteModal = false;
+          this.aircraftToDelete = null;
+
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        })
+        .catch((error) => {
+          this.errorMessage = this.parseError(error);
+        })
+        .finally(() => {
+          this.deletingAircraft = false;
+        });
+    },
+
     goToPage(page) {
       if (page < minPage || page > this.totalPages) {
         return;
@@ -970,6 +1087,10 @@ export default {
       }
 
       if (typeof data === "string") {
+        if (data.includes("aeronave")) {
+          return data;
+        }
+
         if (data.startsWith("Ya existe")) {
           return data;
         }
@@ -1183,7 +1304,8 @@ export default {
 }
 
 .view-btn,
-.edit-btn {
+.edit-btn,
+.delete-btn {
   border: none;
   background: transparent;
   font-size: 0.88rem;
@@ -1202,8 +1324,17 @@ export default {
   color: #2563eb;
 }
 
+.delete-btn {
+  color: #ef0012;
+}
+
+.delete-btn:hover {
+  color: #c80010;
+}
+
 .view-btn:hover,
-.edit-btn:hover {
+.edit-btn:hover,
+.delete-btn:hover {
   text-decoration: underline;
 }
 
@@ -1575,6 +1706,122 @@ export default {
   align-items: center;
 }
 
+.delete-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(8px);
+}
+
+.delete-modal {
+  position: relative;
+  width: min(420px, 100%);
+  background: #ffffff;
+  border-radius: 22px;
+  padding: 28px 26px 24px;
+  box-shadow: 0 25px 60px rgba(15, 23, 42, 0.22);
+  text-align: center;
+}
+
+.delete-modal-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  border: none;
+  background: #f8fafc;
+  color: #94a3b8;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.delete-modal-close:hover:not(:disabled) {
+  color: #475569;
+  background: #f1f5f9;
+}
+
+.delete-modal-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 18px;
+  border-radius: 18px;
+  background: #fff1f2;
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.55rem;
+}
+
+.delete-modal-title {
+  margin: 0 0 10px;
+  color: #0f172a;
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.delete-modal-text {
+  margin: 0;
+  color: #475569;
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.delete-modal-warning {
+  margin: 12px 0 24px;
+  color: #ef4444;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.delete-modal-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.delete-cancel-btn,
+.delete-confirm-btn {
+  border: none;
+  border-radius: 14px;
+  padding: 14px 18px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.2s ease, background 0.2s ease;
+}
+
+.delete-cancel-btn {
+  background: #f3f4f6;
+  color: #1f2937;
+}
+
+.delete-confirm-btn {
+  background: linear-gradient(to right, #e11d48, #f97316);
+  color: #ffffff;
+}
+
+.delete-cancel-btn:hover:not(:disabled),
+.delete-confirm-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.delete-cancel-btn:disabled,
+.delete-confirm-btn:disabled,
+.delete-modal-close:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 @keyframes spin {
   from {
     transform: rotate(0deg);
@@ -1604,7 +1851,8 @@ export default {
   .form-row,
   .class-summary,
   .details-actions,
-  .edit-actions {
+  .edit-actions,
+  .delete-modal-actions {
     grid-template-columns: 1fr;
   }
 
