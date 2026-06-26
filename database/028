@@ -17,8 +17,8 @@ BEGIN
     BEGIN TRY
 
         WITH TicketPurchase AS (
-            -- Vincula cada ticket a su compra sin producto cartesiano
-            SELECT
+            -- Vincula cada ticket a su compra, una fila por (vuelo, pasajero, compra)
+            SELECT DISTINCT
                 t.ScheduledId,
                 t.PassengerHas,
                 t.SeatClass,
@@ -43,6 +43,19 @@ BEGIN
                 SUM(Subtotal) AS Subtotal
             FROM PurchaseBaggageDetail
             GROUP BY PurchaseId
+        ),
+        -- Subtotales únicos por vuelo (evita sumar la misma compra múltiples veces)
+        FlightTotals AS (
+            SELECT
+                tp.ScheduledId,
+                SUM(CASE WHEN tp.SeatClass = 'FirstClass' THEN 1 ELSE 0 END) AS PasajerosPrimeraClase,
+                SUM(CASE WHEN tp.SeatClass = 'Economy'    THEN 1 ELSE 0 END) AS PasajerosEconomia,
+                ISNULL(SUM(ps.Subtotal), 0)                                   AS VentaPasajeros,
+                ISNULL(SUM(pb.Subtotal), 0)                                   AS VentaEquipajes
+            FROM (SELECT DISTINCT ScheduledId, PassengerHas, SeatClass, PurchaseId FROM TicketPurchase) tp
+            LEFT JOIN PurchaseSeats  ps ON ps.PurchaseId = tp.PurchaseId
+            LEFT JOIN PurchaseBaggage pb ON pb.PurchaseId = tp.PurchaseId
+            GROUP BY tp.ScheduledId
         )
 
         SELECT
@@ -50,37 +63,37 @@ BEGIN
             fs.OriginAirport                                        AS Origen,
             fs.DestinationAirport                                   AS Destino,
             sf.Id                                                   AS NumeroVuelo,
-            SUM(CASE WHEN tp.SeatClass = 'FirstClass' THEN 1 ELSE 0 END)
-                                                                    AS PasajerosPrimeraClase,
-            SUM(CASE WHEN tp.SeatClass = 'Economy'    THEN 1 ELSE 0 END)
-                                                                    AS PasajerosEconomia,
+            ft.PasajerosPrimeraClase,
+            ft.PasajerosEconomia,
             'Mushu Airlines'                                        AS Aerolinea,
-            ISNULL(SUM(DISTINCT ps.Subtotal), 0)                    AS VentaPasajeros,
-            ISNULL(SUM(DISTINCT pb.Subtotal), 0)                    AS VentaEquipajes,
-            ISNULL(SUM(DISTINCT ps.Subtotal), 0) + ISNULL(SUM(DISTINCT pb.Subtotal), 0)
-                                                                    AS TotalVenta
+            ft.VentaPasajeros,
+            ft.VentaEquipajes,
+            ft.VentaPasajeros + ft.VentaEquipajes                  AS TotalVenta
         FROM ScheduledFlight sf
         INNER JOIN FlightScheduleHasScheduledFlight fshsf
             ON fshsf.ScheduledFlightId = sf.Id
         INNER JOIN FlightSchedule fs
             ON fs.Id = fshsf.FlightScheduleId
-        INNER JOIN TicketPurchase tp
-            ON tp.ScheduledId = sf.Id
-        LEFT JOIN PurchaseSeats ps
-            ON ps.PurchaseId = tp.PurchaseId
-        LEFT JOIN PurchaseBaggage pb
-            ON pb.PurchaseId = tp.PurchaseId
+        INNER JOIN FlightTotals ft
+            ON ft.ScheduledId = sf.Id
         WHERE
             (@Origen    IS NULL OR fs.OriginAirport      = @Origen)
             AND (@Destino   IS NULL OR fs.DestinationAirport = @Destino)
-            AND (@Clase     IS NULL OR tp.SeatClass          = @Clase)
             AND (@FechaDesde IS NULL OR sf.DepartureDate    >= @FechaDesde)
             AND (@FechaHasta IS NULL OR sf.DepartureDate    <= @FechaHasta)
+            AND (@Clase IS NULL OR EXISTS (
+                SELECT 1 FROM TicketPurchase tp2
+                WHERE tp2.ScheduledId = sf.Id AND tp2.SeatClass = @Clase
+            ))
         GROUP BY
             sf.DepartureDate,
             fs.OriginAirport,
             fs.DestinationAirport,
-            sf.Id
+            sf.Id,
+            ft.PasajerosPrimeraClase,
+            ft.PasajerosEconomia,
+            ft.VentaPasajeros,
+            ft.VentaEquipajes
 
         UNION ALL
 
@@ -89,29 +102,28 @@ BEGIN
             NULL                                                    AS Origen,
             NULL                                                    AS Destino,
             NULL                                                    AS NumeroVuelo,
-            ISNULL(SUM(CASE WHEN tp.SeatClass = 'FirstClass' THEN 1 ELSE 0 END), 0),
-            ISNULL(SUM(CASE WHEN tp.SeatClass = 'Economy'    THEN 1 ELSE 0 END), 0),
+            ISNULL(SUM(ft.PasajerosPrimeraClase), 0),
+            ISNULL(SUM(ft.PasajerosEconomia), 0),
             'TOTALES'                                               AS Aerolinea,
-            ISNULL(SUM(DISTINCT ps.Subtotal), 0),
-            ISNULL(SUM(DISTINCT pb.Subtotal), 0),
-            ISNULL(SUM(DISTINCT ps.Subtotal), 0) + ISNULL(SUM(DISTINCT pb.Subtotal), 0)
+            ISNULL(SUM(ft.VentaPasajeros), 0),
+            ISNULL(SUM(ft.VentaEquipajes), 0),
+            ISNULL(SUM(ft.VentaPasajeros), 0) + ISNULL(SUM(ft.VentaEquipajes), 0)
         FROM ScheduledFlight sf
         INNER JOIN FlightScheduleHasScheduledFlight fshsf
             ON fshsf.ScheduledFlightId = sf.Id
         INNER JOIN FlightSchedule fs
             ON fs.Id = fshsf.FlightScheduleId
-        INNER JOIN TicketPurchase tp
-            ON tp.ScheduledId = sf.Id
-        LEFT JOIN PurchaseSeats ps
-            ON ps.PurchaseId = tp.PurchaseId
-        LEFT JOIN PurchaseBaggage pb
-            ON pb.PurchaseId = tp.PurchaseId
+        INNER JOIN FlightTotals ft
+            ON ft.ScheduledId = sf.Id
         WHERE
             (@Origen    IS NULL OR fs.OriginAirport      = @Origen)
             AND (@Destino   IS NULL OR fs.DestinationAirport = @Destino)
-            AND (@Clase     IS NULL OR tp.SeatClass          = @Clase)
             AND (@FechaDesde IS NULL OR sf.DepartureDate    >= @FechaDesde)
             AND (@FechaHasta IS NULL OR sf.DepartureDate    <= @FechaHasta)
+            AND (@Clase IS NULL OR EXISTS (
+                SELECT 1 FROM TicketPurchase tp2
+                WHERE tp2.ScheduledId = sf.Id AND tp2.SeatClass = @Clase
+            ))
 
         ORDER BY Fecha;
 
@@ -142,7 +154,7 @@ BEGIN
     BEGIN TRY
 
         WITH TicketPurchase AS (
-            SELECT
+            SELECT DISTINCT
                 t.ScheduledId,
                 t.PassengerHas,
                 t.SeatClass,
@@ -167,6 +179,20 @@ BEGIN
                 SUM(Subtotal) AS Subtotal
             FROM PurchaseBaggageDetail
             GROUP BY PurchaseId
+        ),
+        -- Subtotales únicos por vuelo (evita sumar la misma compra múltiples veces)
+        FlightTotals AS (
+            SELECT
+                tp.ScheduledId,
+                SUM(CASE WHEN tp.SeatClass = 'FirstClass' THEN 1 ELSE 0 END) AS PasajerosPrimeraClase,
+                SUM(CASE WHEN tp.SeatClass = 'Economy'    THEN 1 ELSE 0 END) AS PasajerosEconomia,
+                COUNT(tp.PassengerHas)                                        AS TotalPasajeros,
+                ISNULL(SUM(ps.Subtotal), 0)                                   AS IngresosTiquetes,
+                ISNULL(SUM(pb.Subtotal), 0)                                   AS IngresosMaletas
+            FROM TicketPurchase tp
+            LEFT JOIN PurchaseSeats   ps ON ps.PurchaseId = tp.PurchaseId
+            LEFT JOIN PurchaseBaggage pb ON pb.PurchaseId = tp.PurchaseId
+            GROUP BY tp.ScheduledId
         )
 
         SELECT
@@ -185,14 +211,12 @@ BEGIN
                 WHEN 12 THEN 'Diciembre'
             END + ' ' + CAST(YEAR(sf.DepartureDate) AS VARCHAR(4))  AS Mes,
             COUNT(DISTINCT sf.Id)                                   AS CantidadVuelos,
-            SUM(CASE WHEN tp.SeatClass = 'FirstClass' THEN 1 ELSE 0 END)
-                                                                    AS TotalPasajerosPrimeraClase,
-            SUM(CASE WHEN tp.SeatClass = 'Economy'    THEN 1 ELSE 0 END)
-                                                                    AS TotalPasajerosEconomia,
-            COUNT(tp.PassengerHas)                                  AS TotalPasajeros,
-            ISNULL(SUM(DISTINCT ps.Subtotal), 0)                    AS IngresosTiquetes,
-            ISNULL(SUM(DISTINCT pb.Subtotal), 0)                    AS IngresosMaletas,
-            ISNULL(SUM(DISTINCT ps.Subtotal), 0) + ISNULL(SUM(DISTINCT pb.Subtotal), 0)
+            SUM(ft.PasajerosPrimeraClase)                           AS TotalPasajerosPrimeraClase,
+            SUM(ft.PasajerosEconomia)                               AS TotalPasajerosEconomia,
+            SUM(ft.TotalPasajeros)                                  AS TotalPasajeros,
+            ISNULL(SUM(ft.IngresosTiquetes), 0)                     AS IngresosTiquetes,
+            ISNULL(SUM(ft.IngresosMaletas), 0)                      AS IngresosMaletas,
+            ISNULL(SUM(ft.IngresosTiquetes), 0) + ISNULL(SUM(ft.IngresosMaletas), 0)
                                                                     AS TotalIngresos,
             YEAR(sf.DepartureDate)                                  AS _AnioSort,
             MONTH(sf.DepartureDate)                                 AS _MesSort
@@ -201,12 +225,8 @@ BEGIN
             ON fshsf.ScheduledFlightId = sf.Id
         INNER JOIN FlightSchedule fs
             ON fs.Id = fshsf.FlightScheduleId
-        INNER JOIN TicketPurchase tp
-            ON tp.ScheduledId = sf.Id
-        LEFT JOIN PurchaseSeats ps
-            ON ps.PurchaseId = tp.PurchaseId
-        LEFT JOIN PurchaseBaggage pb
-            ON pb.PurchaseId = tp.PurchaseId
+        INNER JOIN FlightTotals ft
+            ON ft.ScheduledId = sf.Id
         WHERE
             (@Anio      IS NULL OR YEAR(sf.DepartureDate)    = @Anio)
             AND (@Origen    IS NULL OR fs.OriginAirport      = @Origen)
@@ -222,12 +242,12 @@ BEGIN
         SELECT
             'TOTALES'                                               AS Mes,
             ISNULL(COUNT(DISTINCT sf.Id), 0)                        AS CantidadVuelos,
-            ISNULL(SUM(CASE WHEN tp.SeatClass = 'FirstClass' THEN 1 ELSE 0 END), 0),
-            ISNULL(SUM(CASE WHEN tp.SeatClass = 'Economy'    THEN 1 ELSE 0 END), 0),
-            ISNULL(COUNT(tp.PassengerHas), 0),
-            ISNULL(SUM(DISTINCT ps.Subtotal), 0),
-            ISNULL(SUM(DISTINCT pb.Subtotal), 0),
-            ISNULL(SUM(DISTINCT ps.Subtotal), 0) + ISNULL(SUM(DISTINCT pb.Subtotal), 0),
+            ISNULL(SUM(ft.PasajerosPrimeraClase), 0),
+            ISNULL(SUM(ft.PasajerosEconomia), 0),
+            ISNULL(SUM(ft.TotalPasajeros), 0),
+            ISNULL(SUM(ft.IngresosTiquetes), 0),
+            ISNULL(SUM(ft.IngresosMaletas), 0),
+            ISNULL(SUM(ft.IngresosTiquetes), 0) + ISNULL(SUM(ft.IngresosMaletas), 0),
             9999                                                    AS _AnioSort,
             13                                                      AS _MesSort
         FROM ScheduledFlight sf
@@ -235,12 +255,8 @@ BEGIN
             ON fshsf.ScheduledFlightId = sf.Id
         INNER JOIN FlightSchedule fs
             ON fs.Id = fshsf.FlightScheduleId
-        INNER JOIN TicketPurchase tp
-            ON tp.ScheduledId = sf.Id
-        LEFT JOIN PurchaseSeats ps
-            ON ps.PurchaseId = tp.PurchaseId
-        LEFT JOIN PurchaseBaggage pb
-            ON pb.PurchaseId = tp.PurchaseId
+        INNER JOIN FlightTotals ft
+            ON ft.ScheduledId = sf.Id
         WHERE
             (@Anio      IS NULL OR YEAR(sf.DepartureDate)    = @Anio)
             AND (@Origen    IS NULL OR fs.OriginAirport      = @Origen)
