@@ -11,10 +11,7 @@ public class RouteDbModel
     public string ArrivalTime { get; set; }
     public string Duration { get; set; }
     public string AircraftTypeId { get; set; }
-    public string StartDate { get; set; }
-    public string FinalizationDate { get; set; }
-    public string OriginCity { get; set; }
-    public string DestinationCity { get; set; }
+    public int AircraftCode { get; set; }
     public string Frequency { get; set; }
     public decimal PriceFirstClass { get; set; }
     public decimal PriceEconomy { get; set; }
@@ -23,6 +20,10 @@ public class RouteDbModel
     public decimal BagPrice { get; set; }
     public decimal BagWeight { get; set; }
     public decimal BagMultiplier { get; set; }
+    public string StartDate { get; set; }
+    public string FinalizationDate { get; set; }
     public int EconomyClassCapacity { get; set; }
     public int FirstClassCapacity { get; set; }
+    public string OriginCity { get; set; }
+    public string DestinationCity { get; set; }
 }

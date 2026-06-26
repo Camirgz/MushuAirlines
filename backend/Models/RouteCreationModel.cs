@@ -25,5 +25,5 @@ public class RouteCreationModel
     public decimal BagMultiplier { get; set; }
     public int EconomyClassCapacity { get; set; }
     public int FirstClassCapacity { get; set; }
-
+    public int AircraftCode { get; set; }
 }
