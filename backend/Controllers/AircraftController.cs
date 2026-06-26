@@ -89,5 +89,23 @@ namespace backend.Controllers
 
             return BadRequest(error);
         }
+
+        [HttpDelete("{id}")]
+        public ActionResult Delete(int id)
+        {
+            var error = _aircraftService.Delete(id);
+
+            if (string.IsNullOrEmpty(error))
+            {
+                return Ok("Aeronave eliminada correctamente.");
+            }
+
+            if (error == "No se encontró la aeronave que desea eliminar.")
+            {
+                return NotFound(error);
+            }
+
+            return BadRequest(error);
+        }
     }
 }

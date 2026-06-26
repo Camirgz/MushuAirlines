@@ -9,5 +9,6 @@ namespace backend.Interfaces
         bool AircraftExists(string model, string type);
         void Create(CreateAircraftRequestModel aircraft);
         void Update(int id, UpdateAircraftRequestModel aircraft);
+        bool Delete(int id);
     }
 }

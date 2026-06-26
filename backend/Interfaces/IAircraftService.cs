@@ -8,5 +8,6 @@ namespace backend.Interfaces
         AircraftResponseModel? GetById(int id);
         string Create(CreateAircraftRequestModel aircraft);
         string Update(int id, UpdateAircraftRequestModel aircraft);
+        string Delete(int id);
     }
 }
