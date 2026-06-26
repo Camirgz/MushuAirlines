@@ -5,7 +5,7 @@ namespace backend.DTOs
         public DateOnly? Fecha { get; set; }
         public string? Origen { get; set; }
         public string? Destino { get; set; }
-        public int? NumeroVuelo { get; set; }
+        public string? CodigoVuelo { get; set; }
         public int PasajerosPrimeraClase { get; set; }
         public int PasajerosEconomia { get; set; }
         public string Aerolinea { get; set; } = string.Empty;

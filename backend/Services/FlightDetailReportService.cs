@@ -30,8 +30,8 @@ namespace backend.Services
 
             var headers = new[]
             {
-                "Fecha", "Origen", "Destino", "Número de Vuelo",
-                "Pasajeros Primera Clase", "Pasajeros Economía", "Aerolínea",
+                "Fecha", "Origen", "Destino", "Código de Vuelo",
+                "Pasajeros Primera Clase", "Pasajeros Turista", "Aerolínea",
                 "Venta Pasajeros", "Venta Equipajes", "Total Venta"
             };
 
@@ -53,7 +53,7 @@ namespace backend.Services
                 sheet.Cell(row, 1).Value  = isTotalsRow ? "TOTALES" : item.Fecha!.Value.ToString("dd/MM/yyyy");
                 sheet.Cell(row, 2).Value  = item.Origen   ?? string.Empty;
                 sheet.Cell(row, 3).Value  = item.Destino  ?? string.Empty;
-                sheet.Cell(row, 4).Value  = item.NumeroVuelo.HasValue ? item.NumeroVuelo.Value.ToString() : string.Empty;
+                sheet.Cell(row, 4).Value  = item.CodigoVuelo ?? string.Empty;
                 sheet.Cell(row, 5).Value  = item.PasajerosPrimeraClase;
                 sheet.Cell(row, 6).Value  = item.PasajerosEconomia;
                 sheet.Cell(row, 7).Value  = item.Aerolinea;
@@ -137,8 +137,8 @@ namespace backend.Services
                         static IContainer TotalsCell(IContainer c) =>
                             c.Background("#F4F6F8").Padding(4);
 
-                        var headers = new[] { "Fecha", "Origen", "Destino", "N° Vuelo",
-                            "1ª Clase", "Economía", "Aerolínea",
+                        var headers = new[] { "Fecha", "Origen", "Destino", "Código Vuelo",
+                            "1ª Clase", "Turista", "Aerolínea",
                             "Venta Pasajeros", "Venta Equipajes", "Total Venta" };
 
                         table.Header(header =>
@@ -153,7 +153,7 @@ namespace backend.Services
                             table.Cell().Element(DataCell).Text(item.Fecha!.Value.ToString("dd/MM/yyyy"));
                             table.Cell().Element(DataCell).Text(item.Origen ?? "");
                             table.Cell().Element(DataCell).Text(item.Destino ?? "");
-                            table.Cell().Element(DataCell).Text(item.NumeroVuelo?.ToString() ?? "");
+                            table.Cell().Element(DataCell).Text(item.CodigoVuelo ?? "");
                             table.Cell().Element(DataCell).AlignCenter().Text(item.PasajerosPrimeraClase.ToString());
                             table.Cell().Element(DataCell).AlignCenter().Text(item.PasajerosEconomia.ToString());
                             table.Cell().Element(DataCell).Text(item.Aerolinea);

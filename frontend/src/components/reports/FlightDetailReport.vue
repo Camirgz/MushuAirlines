@@ -119,9 +119,9 @@
               <th>Fecha</th>
               <th>Origen</th>
               <th>Destino</th>
-              <th>N° Vuelo</th>
+              <th>Código Vuelo</th>
               <th>1ª Clase</th>
-              <th>Economía</th>
+              <th>Turista</th>
               <th>Aerolínea</th>
               <th>Venta Pasajeros</th>
               <th>Venta Equipajes</th>
@@ -133,7 +133,7 @@
               <td>{{ formatDate(row.fecha) }}</td>
               <td><span class="airport-badge">{{ row.origen }}</span></td>
               <td><span class="airport-badge">{{ row.destino }}</span></td>
-              <td>{{ row.numeroVuelo }}</td>
+              <td>{{ row.codigoVuelo }}</td>
               <td>{{ row.pasajerosPrimeraClase }}</td>
               <td>{{ row.pasajerosEconomia }}</td>
               <td>{{ row.aerolinea }}</td>

@@ -44,7 +44,7 @@ namespace backend.Repositories
                     Fecha                 = reader.IsDBNull("Fecha")                 ? null : DateOnly.FromDateTime(reader.GetDateTime("Fecha")),
                     Origen                = reader.IsDBNull("Origen")                ? null : reader.GetString("Origen"),
                     Destino               = reader.IsDBNull("Destino")               ? null : reader.GetString("Destino"),
-                    NumeroVuelo           = reader.IsDBNull("NumeroVuelo")           ? null : reader.GetInt32("NumeroVuelo"),
+                    CodigoVuelo           = reader.IsDBNull("CodigoVuelo")           ? null : reader.GetString("CodigoVuelo"),
                     PasajerosPrimeraClase = reader.IsDBNull("PasajerosPrimeraClase") ? 0    : reader.GetInt32("PasajerosPrimeraClase"),
                     PasajerosEconomia     = reader.IsDBNull("PasajerosEconomia")     ? 0    : reader.GetInt32("PasajerosEconomia"),
                     Aerolinea             = reader.IsDBNull("Aerolinea")             ? string.Empty : reader.GetString("Aerolinea"),
