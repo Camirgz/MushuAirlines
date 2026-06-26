@@ -378,6 +378,7 @@
             :direct-flight="flight"
             :passenger-count="passengerCount"
             :airports="airports"
+            :airline="flight.airline || null"
             @select="openFlightDetails"
           />
 
@@ -715,6 +716,37 @@ function flightOperatesOnDate(flight, dateStr) {
   return flight.frequency.includes(dayName)
 }
 
+function externalFlightToFlight(f, date) {
+  const hours = durationToHours(f.duration)
+  return {
+    id: f.flightGUID,
+    origin: f.departureAirport?.code || '',
+    destination: f.arrivalAirport?.code || '',
+    originCity: f.departureAirport?.city || '',
+    destinationCity: f.arrivalAirport?.city || '',
+    duration: f.duration,
+    departureTime: f.departureTime?.includes('T') ? f.departureTime.substring(11, 16) : f.departureTime?.substring(0, 5),
+    arrivalTime: f.arrivalTime?.includes('T') ? f.arrivalTime.substring(11, 16) : f.arrivalTime?.substring(0, 5),
+    durationHours: hours,
+    durationLabel: durationToLabel(f.duration),
+    aircraftTypeId: null,
+    price: f.touristPrice,
+    priceFirstClass: f.firstClassPrice,
+    priceEconomy: f.touristPrice,
+    handBagPrice: f.carryOnPrice,
+    handBagWeight: 0,
+    bagPrice: f.checkedPrice,
+    bagWeight: 0,
+    bagMultiplier: 0,
+    frequency: [],
+    finalizationDate: null,
+    airline: f.airline,
+    isExternal: true,
+    date: date,
+    arrivalDate: date,
+  }
+}
+
 function routeToFlight(r) {
   const hours = durationToHours(r.duration)
   return {
@@ -809,7 +841,8 @@ export default {
     }
     try {
       const flightsRes = await fetch(`${API_BASE_URL}/api/flights`)
-      const flights = await flightsRes.json()
+      const flightsData = await flightsRes.json()
+      const flights = flightsData.flights ?? flightsData
       console.log('[DEBUG] primer vuelo raw del API:', JSON.stringify(flights[0]))
       this.flights = flights.map(routeToFlight)
       console.log('[DEBUG] primer vuelo mapeado finalizationDate:', this.flights[0]?.finalizationDate)
@@ -1061,8 +1094,12 @@ export default {
           fetch(`${API_BASE_URL}/api/flights?date=${this.departureDate}&origin=${encodeURIComponent(originVal)}&originType=${originType}&destination=${encodeURIComponent(destVal)}&destinationType=${destType}`),
           fetch(`${API_BASE_URL}/api/flights?date=${this.departureDate}`)
         ])
-        directFlights = (await directRes.json()).map(routeToFlight)
-        availableFlights = (await allRes.json()).map(routeToFlight)
+        const directData = await directRes.json()
+        const allData = await allRes.json()
+        const localDirect = (directData.flights ?? directData).map(routeToFlight)
+        const externalDirect = (directData.externalFlights ?? []).map(f => externalFlightToFlight(f, this.departureDate))
+        directFlights = [...localDirect, ...externalDirect]
+        availableFlights = (allData.flights ?? allData).map(routeToFlight)
       } catch (e) {
         console.error('Error consultando vuelos:', e)
       }

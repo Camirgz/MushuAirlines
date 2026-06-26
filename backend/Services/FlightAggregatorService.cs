@@ -1,4 +1,4 @@
-﻿using backend.Model;
+using backend.Model;
 using backend.Repositories;
 
 namespace backend.Services;
@@ -6,10 +6,14 @@ namespace backend.Services;
 public class FlightAggregatorService
 {
     private readonly IFlightRepository _flightRepository;
+    private readonly IExternalAirlinesService _externalAirlinesService;
 
-    public FlightAggregatorService(IFlightRepository flightRepository)
+    public FlightAggregatorService(
+        IFlightRepository flightRepository,
+        IExternalAirlinesService externalAirlinesService)
     {
         _flightRepository = flightRepository;
+        _externalAirlinesService = externalAirlinesService;
     }
 
     public IEnumerable<FlightDto> GetAllFlights(
@@ -20,6 +24,18 @@ public class FlightAggregatorService
         string destinationType = null)
     {
         return _flightRepository.GetAll(date, origin, originType, destination, destinationType).Select(ToDto);
+    }
+
+    public async Task<IEnumerable<ExternalAirlineFlightDto>> GetExternalFlightsAsync(
+        string destination,
+        string destinationType,
+        string date)
+    {
+        // Las APIs externas solo aceptan código IATA de aeropuerto como destino
+        if (string.IsNullOrWhiteSpace(destination) || destinationType != "airport")
+            return Enumerable.Empty<ExternalAirlineFlightDto>();
+
+        return await _externalAirlinesService.GetExternalFlightsAsync(destination, date);
     }
 
     private static FlightDto ToDto(RouteDbModel r) => new FlightDto
