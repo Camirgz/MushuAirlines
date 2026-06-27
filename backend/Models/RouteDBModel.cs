@@ -26,4 +26,5 @@ public class RouteDbModel
     public int FirstClassCapacity { get; set; }
     public string OriginCity { get; set; }
     public string DestinationCity { get; set; }
+    public bool IsDeleted { get; set; }
 }

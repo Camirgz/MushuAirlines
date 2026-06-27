@@ -2,10 +2,12 @@ using backend.Model;
 using Dapper;
 using Microsoft.Extensions.Configuration;
 using System.Data.SqlClient;
+using backend.Interfaces;
+using System.Data;
 
 namespace backend.Repositories
 {
-    public class RouteCreationRepository : IFlightRepository
+    public class RouteCreationRepository : IFlightRepository, IRouteCreationRepository
     {
         private readonly string _connectionString;
 
@@ -29,57 +31,105 @@ namespace backend.Repositories
             string destinationType = null)
         {
             using var connection = new SqlConnection(_connectionString);
+
             bool hasLocation = origin != null && destination != null;
+
+            string baseSelect = @"
+                SELECT
+                    r.Code,
+                    r.OriginAirport,
+                    r.DestinationAirport,
+                    r.DepartureTime,
+                    r.ArrivalTime,
+                    r.Duration,
+                    COALESCE(ar.Model, r.AircraftTypeId) AS AircraftTypeId,
+                    r.AircraftCode,
+                    r.Frequency,
+                    r.PriceFirstClass,
+                    r.PriceEconomy,
+                    r.HandBagPrice,
+                    r.HandBagWeight,
+                    r.BagPrice,
+                    r.BagWeight,
+                    r.BagMultiplier,
+                    r.StartDate,
+                    r.FinalizationDate,
+                    r.EconomyClassCapacity,
+                    r.FirstClassCapacity,
+                    r.OriginCity,
+                    r.DestinationCity
+                FROM Route r
+                INNER JOIN Airport ao
+                    ON r.OriginAirport = ao.Code
+                AND ao.IsDeleted = 0
+                INNER JOIN Airport ad
+                    ON r.DestinationAirport = ad.Code
+                AND ad.IsDeleted = 0
+                INNER JOIN Aircraft ar
+                    ON r.AircraftCode = ar.Code
+                AND ar.IsDeleted = 0
+                WHERE r.IsDeleted = 0
+            ";
 
             if (!hasLocation && date == null)
             {
-                return connection.Query<RouteDbModel>(@"
-                    SELECT
-                        r.*,
-                        COALESCE(a.Model, r.AircraftTypeId) AS AircraftTypeId
-                    FROM Route r
-                    LEFT JOIN Aircraft a
-                        ON r.AircraftCode = a.Code;
-                ").ToList();
+                return connection.Query<RouteDbModel>(baseSelect).ToList();
             }
 
             if (!hasLocation)
-                return connection.Query<RouteDbModel>(@"
-                    SELECT r.* FROM Route r
-                    WHERE NOT EXISTS (
-                        SELECT 1 FROM ScheduledFlight sf
+            {
+                return connection.Query<RouteDbModel>(
+                    baseSelect + @"
+                    AND NOT EXISTS (
+                        SELECT 1
+                        FROM ScheduledFlight sf
                         JOIN Aircraft a ON sf.AircraftCode = a.Code
                         WHERE sf.RouteCode = r.Code
-                          AND sf.DepartureDate = @Date
-                          AND sf.BookedSeats >= (a.EconomyRows * a.EconomySeatsPerRow
-                                               + a.FirstClassRows * a.FirstClassSeatsPerRow)
-                    )", new { Date = date }).ToList();
+                        AND sf.DepartureDate = @Date
+                        AND sf.BookedSeats >= (
+                                a.EconomyRows * a.EconomySeatsPerRow
+                            + a.FirstClassRows * a.FirstClassSeatsPerRow
+                        )
+                    );",
+                    new { Date = date }
+                ).ToList();
+            }
 
-            return connection.Query<RouteDbModel>(@"
-                SELECT r.*
-                FROM Route r
-                JOIN Airport ao ON r.OriginAirport      = ao.Code
-                JOIN Airport ad ON r.DestinationAirport = ad.Code
-                WHERE
-                  ((@OriginType = 'city'    AND ao.City         = @Origin)
-                OR (@OriginType = 'airport' AND r.OriginAirport = @Origin))
-                AND
-                  ((@DestType   = 'city'    AND ad.City              = @Destination)
-                OR (@DestType   = 'airport' AND r.DestinationAirport = @Destination))
-                AND (@Date IS NULL OR NOT EXISTS (
-                    SELECT 1 FROM ScheduledFlight sf
-                    JOIN Aircraft a ON sf.AircraftCode = a.Code
-                    WHERE sf.RouteCode = r.Code
-                      AND sf.DepartureDate = @Date
-                      AND sf.BookedSeats >= (a.EconomyRows * a.EconomySeatsPerRow
-                                           + a.FirstClassRows * a.FirstClassSeatsPerRow)
-                ))",
+            return connection.Query<RouteDbModel>(
+                baseSelect + @"
+                AND (
+                    (@OriginType = 'city' AND ao.City = @Origin)
+                    OR
+                    (@OriginType = 'airport' AND r.OriginAirport = @Origin)
+                )
+                AND (
+                    (@DestType = 'city' AND ad.City = @Destination)
+                    OR
+                    (@DestType = 'airport' AND r.DestinationAirport = @Destination)
+                )
+                AND (
+                    @Date IS NULL
+                    OR NOT EXISTS (
+                        SELECT 1
+                        FROM ScheduledFlight sf
+                        JOIN Aircraft a ON sf.AircraftCode = a.Code
+                        WHERE sf.RouteCode = r.Code
+                        AND sf.DepartureDate = @Date
+                        AND sf.BookedSeats >= (
+                                a.EconomyRows * a.EconomySeatsPerRow
+                            + a.FirstClassRows * a.FirstClassSeatsPerRow
+                        )
+                    )
+                );",
                 new
                 {
-                    Origin = origin, OriginType = originType,
-                    Destination = destination, DestType = destinationType,
+                    Origin = origin,
+                    OriginType = originType,
+                    Destination = destination,
+                    DestType = destinationType,
                     Date = date
-                }).ToList();
+                }
+            ).ToList();
         }
 
         public void InsertRoute(RouteCreationModel route)
@@ -173,22 +223,48 @@ namespace backend.Repositories
         {
             var query = @"
                 SELECT
-                    r.*,
-                    COALESCE(a.Model, r.AircraftTypeId) AS AircraftTypeId
+                    r.Code,
+                    r.OriginAirport,
+                    r.DestinationAirport,
+                    r.DepartureTime,
+                    r.ArrivalTime,
+                    r.Duration,
+                    COALESCE(a.Model, r.AircraftTypeId) AS AircraftTypeId,
+                    r.AircraftCode,
+                    r.Frequency,
+                    r.PriceFirstClass,
+                    r.PriceEconomy,
+                    r.HandBagPrice,
+                    r.HandBagWeight,
+                    r.BagPrice,
+                    r.BagWeight,
+                    r.BagMultiplier,
+                    r.StartDate,
+                    r.FinalizationDate,
+                    r.EconomyClassCapacity,
+                    r.FirstClassCapacity,
+                    r.OriginCity,
+                    r.DestinationCity
                 FROM Route r
                 LEFT JOIN Aircraft a
-                    ON r.AircraftCode = a.Code;
+                    ON r.AircraftCode = a.Code
+                WHERE r.IsDeleted = 0;
             ";
 
-            using (var connection = new SqlConnection(_connectionString))
-            {
-                return connection.Query<RouteDbModel>(query).ToList();
-            }
+            using var connection = new SqlConnection(_connectionString);
+
+            return connection.Query<RouteDbModel>(query).ToList();
         }
 
         public int GetOrCreateScheduledFlight(string routeCode, DateTime date)
         {
-            RouteDbModel route = GetRouteByCode(routeCode);
+            RouteDbModel? route = GetRouteByCode(routeCode);
+
+            if (route == null)
+            {
+                throw new Exception("La ruta seleccionada no existe o fue eliminada.");
+            }
+
             ValidateFlightDate(route, date);
             ValidateRouteDateRange(route, date);
 
@@ -219,6 +295,7 @@ namespace backend.Repositories
 
             return scheduledFlightId;
         }
+        
         public int? FindExistingScheduledFlight(string routeCode, DateTime date)
             => GetExistingScheduledFlight(routeCode, date);
 
@@ -280,23 +357,45 @@ namespace backend.Repositories
                 );
             }
         }
-        public RouteDbModel GetRouteByCode(string routeCode)
+        public RouteDbModel? GetRouteByCode(string routeCode)
         {
             using var connection = new SqlConnection(_connectionString);
 
-            return connection.QuerySingle<RouteDbModel>(
+            return connection.QuerySingleOrDefault<RouteDbModel>(
                 @"
                 SELECT
-                    r.*,
-                    COALESCE(a.Model, r.AircraftTypeId) AS AircraftTypeId
+                    r.Code,
+                    r.OriginAirport,
+                    r.DestinationAirport,
+                    r.DepartureTime,
+                    r.ArrivalTime,
+                    r.Duration,
+                    COALESCE(a.Model, r.AircraftTypeId) AS AircraftTypeId,
+                    r.AircraftCode,
+                    r.Frequency,
+                    r.PriceFirstClass,
+                    r.PriceEconomy,
+                    r.HandBagPrice,
+                    r.HandBagWeight,
+                    r.BagPrice,
+                    r.BagWeight,
+                    r.BagMultiplier,
+                    r.StartDate,
+                    r.FinalizationDate,
+                    r.EconomyClassCapacity,
+                    r.FirstClassCapacity,
+                    r.OriginCity,
+                    r.DestinationCity
                 FROM Route r
                 LEFT JOIN Aircraft a
                     ON r.AircraftCode = a.Code
-                WHERE r.Code = @Code;
+                WHERE UPPER(LTRIM(RTRIM(r.Code))) = UPPER(LTRIM(RTRIM(@Code)))
+                AND r.IsDeleted = 0;
                 ",
                 new { Code = routeCode }
             );
         }
+
         private int GetAircraftCode(string aircraftType)
         {
             using var connection = new SqlConnection(_connectionString);
@@ -426,6 +525,27 @@ namespace backend.Repositories
                 0
             );
             return departureDate.Add(durationTime);
+        }
+
+        public bool DeleteRoute(string code)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            connection.Open();
+
+            try
+            {
+                bool wasDeleted = connection.ExecuteScalar<bool>(
+                    "DeleteRoute",
+                    new { Code = code },
+                    commandType: CommandType.StoredProcedure
+                );
+
+                return wasDeleted;
+            }
+            catch
+            {
+                throw;
+            }
         }
     }
 }
