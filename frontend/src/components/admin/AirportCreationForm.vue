@@ -98,7 +98,7 @@
             </small>
 
             <small v-if="submitted && errors.nameInvalid" class="error-text">
-              El nombre del aeropuerto no debe contener números ni caracteres especiales como #, !, %, $.
+              El nombre puede incluir letras, espacios, punto, guion (-) y apóstrofo ('). No debe contener números ni caracteres como #, !, %, $.
             </small>
           </div>
         </div>

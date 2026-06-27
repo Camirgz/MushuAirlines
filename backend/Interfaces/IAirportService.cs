@@ -10,5 +10,6 @@ public interface IAirportService
     List<AirportCatalogDto> GetCitiesByCountry(string country);
     string CreateAirport(AirportModel airport);
     string UpdateAirportName(string code, string airportName);
+    string DeleteAirport(string code);
     List<AirportSuggestionDto> GetSuggestions(string query);
 }

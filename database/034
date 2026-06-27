@@ -1,0 +1,14 @@
+USE MushuAirlines;
+GO
+
+ALTER TABLE Airport
+ADD IsDeleted BIT NOT NULL DEFAULT (0);
+
+ALTER TABLE AdminAirport
+DROP CONSTRAINT FK_Airport;
+
+ALTER TABLE AirportScheduled
+DROP CONSTRAINT FK_AirportScheduled_Airport;
+
+ALTER TABLE AirportNameHistory
+DROP CONSTRAINT FK_AirportNameHistory_Airport;

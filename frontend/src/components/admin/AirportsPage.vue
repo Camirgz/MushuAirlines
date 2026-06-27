@@ -9,6 +9,11 @@
         back-text="Volver al panel"
       />
 
+      <div v-if="successMessage" class="success-message">
+        <i class="bi bi-check-circle-fill"></i>
+        <span>{{ successMessage }}</span>
+      </div>
+
       <div v-if="errorMessage" class="error-message">
         <i class="bi bi-exclamation-circle-fill"></i>
         <span>{{ errorMessage }}</span>
@@ -38,57 +43,103 @@
           />
         </div>
 
-        <div v-if="filteredAirports.length > 0" class="table-wrapper">
-          <table class="airports-table">
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Código</th>
-                <th>País</th>
-                <th>Ciudad</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
+        <div v-if="filteredAirports.length > 0">
+          <div class="table-wrapper">
+            <table class="airports-table">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Código</th>
+                  <th>País</th>
+                  <th>Ciudad</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
 
-            <tbody>
-              <tr v-for="airport in filteredAirports" :key="airport.code">
-                <td>{{ airport.airportName }}</td>
+              <tbody>
+                <tr v-for="airport in paginatedAirports" :key="airport.code">
+                  <td>{{ airport.airportName }}</td>
 
-                <td>
-                  <span class="airport-code">{{ airport.code }}</span>
-                </td>
+                  <td>
+                    <span class="airport-code">{{ airport.code }}</span>
+                  </td>
 
-                <td>{{ airport.country }}</td>
+                  <td>{{ airport.country }}</td>
 
-                <td>{{ airport.city }}</td>
+                  <td>{{ airport.city }}</td>
 
-                <td>
-                  <div class="actions-wrapper">
-                    <button
-                      type="button"
-                      class="view-btn"
-                      @click="openAirportDetails(airport)"
-                    >
-                      <i class="bi bi-eye me-1"></i>
-                      Ver
-                    </button>
+                  <td>
+                    <div class="actions-wrapper">
+                      <button
+                        type="button"
+                        class="view-btn"
+                        @click="openAirportDetails(airport)"
+                      >
+                        <i class="bi bi-eye me-1"></i>
+                        Ver
+                      </button>
 
-                    <button
-                      v-if="isAdmin"
-                      type="button"
-                      class="edit-btn"
-                      @click="openAirportEdit(airport)"
-                    >
-                      <i class="bi bi-pencil me-1"></i>
-                      Editar
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                      <button
+                        v-if="isAdmin"
+                        type="button"
+                        class="edit-btn"
+                        @click="openAirportEdit(airport)"
+                      >
+                        <i class="bi bi-pencil me-1"></i>
+                        Editar
+                      </button>
+
+                      <button
+                        v-if="isAdmin"
+                        type="button"
+                        class="delete-btn"
+                        @click="openDeleteModal(airport)"
+                      >
+                        <i class="bi bi-trash me-1"></i>
+                        Eliminar
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div
+            v-if="filteredAirports.length > pageSize"
+            class="pagination-wrapper"
+          >
+            <span class="pagination-info">
+              Mostrando {{ paginationStart }} - {{ paginationEnd }}
+              de {{ filteredAirports.length }} aeropuertos
+            </span>
+
+            <div class="pagination-actions">
+              <button
+                type="button"
+                class="pagination-btn"
+                @click="goToPreviousPage"
+                :disabled="currentPage === 1"
+              >
+                Anterior
+              </button>
+
+              <span class="pagination-page">
+                Página {{ currentPage }} de {{ totalPages }}
+              </span>
+
+              <button
+                type="button"
+                class="pagination-btn"
+                @click="goToNextPage"
+                :disabled="currentPage === totalPages"
+              >
+                Siguiente
+              </button>
+            </div>
+          </div>
         </div>
-          
+
         <div v-else class="empty-state">
           <div v-if="isAdmin">
             <div class="empty-icon">
@@ -107,7 +158,6 @@
             </RouterLink>
           </div>
         </div>
-
       </AdminCard>
     </template>
 
@@ -231,6 +281,59 @@
         </form>
       </AdminCard>
     </template>
+
+    <div
+      v-if="showDeleteModal"
+      class="delete-modal-overlay"
+      @click.self="closeDeleteModal"
+    >
+      <div class="delete-modal">
+        <button
+          type="button"
+          class="delete-modal-close"
+          @click="closeDeleteModal"
+          aria-label="Cerrar modal"
+          :disabled="deletingAirport"
+        >
+          <i class="bi bi-x-lg"></i>
+        </button>
+
+        <div class="delete-modal-icon">
+          <i class="bi bi-trash"></i>
+        </div>
+
+        <h3 class="delete-modal-title">Eliminar aeropuerto</h3>
+
+        <p class="delete-modal-text">
+          ¿Estás seguro de eliminar
+          <strong>{{ airportToDelete?.airportName }}</strong>?
+        </p>
+
+        <p class="delete-modal-warning">
+          Esta acción es irreversible.
+        </p>
+
+        <div class="delete-modal-actions">
+          <button
+            type="button"
+            class="delete-cancel-btn"
+            @click="closeDeleteModal"
+            :disabled="deletingAirport"
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="button"
+            class="delete-confirm-btn"
+            @click="confirmDeleteAirport"
+            :disabled="deletingAirport"
+          >
+            {{ deletingAirport ? "Eliminando..." : "Eliminar" }}
+          </button>
+        </div>
+      </div>
+    </div>
   </AdminPageLayout>
 </template>
 
@@ -258,6 +361,7 @@ export default {
       searchText: "",
       selectedAirport: null,
       editingAirport: null,
+      airportToDelete: null,
       editAirportName: "",
       editErrors: {},
       editSubmitted: false,
@@ -267,6 +371,10 @@ export default {
       successMessage: "",
       errorMessage: "",
       userRole: null,
+      showDeleteModal: false,
+      deletingAirport: false,
+      currentPage: 1,
+      pageSize: 10,
     };
   },
 
@@ -294,6 +402,32 @@ export default {
           airport.country.toLowerCase().includes(text)
         );
       });
+    },
+
+    paginatedAirports() {
+      const startIndex = (this.currentPage - 1) * this.pageSize;
+      const endIndex = startIndex + this.pageSize;
+
+      return this.filteredAirports.slice(startIndex, endIndex);
+    },
+
+    totalPages() {
+      return Math.ceil(this.filteredAirports.length / this.pageSize) || 1;
+    },
+
+    paginationStart() {
+      if (this.filteredAirports.length === 0) {
+        return 0;
+      }
+
+      return (this.currentPage - 1) * this.pageSize + 1;
+    },
+
+    paginationEnd() {
+      return Math.min(
+        this.currentPage * this.pageSize,
+        this.filteredAirports.length
+      );
     },
 
     emptyTitle() {
@@ -326,6 +460,18 @@ export default {
         newName.length <= maxLenghtAirportName &&
         newName !== currentName
       );
+    },
+
+    watch: {
+      searchText() {
+        this.currentPage = 1;
+      },
+
+      filteredAirports() {
+        if (this.currentPage > this.totalPages) {
+          this.currentPage = this.totalPages;
+        }
+      },
     },
   },
 
@@ -376,6 +522,18 @@ export default {
       }
     },
 
+    goToPreviousPage() {
+      if (this.currentPage > 1) {
+        this.currentPage -= 1;
+      }
+    },
+
+    goToNextPage() {
+      if (this.currentPage < this.totalPages) {
+        this.currentPage += 1;
+      }
+    },
+
     openAirportDetails(airport) {
       this.selectedAirport = { ...airport };
       this.editingAirport = null;
@@ -420,6 +578,53 @@ export default {
       window.scrollTo({ top: 0, behavior: "smooth" });
     },
 
+    openDeleteModal(airport) {
+      this.airportToDelete = { ...airport };
+      this.showDeleteModal = true;
+      this.successMessage = "";
+      this.errorMessage = "";
+    },
+
+    closeDeleteModal() {
+      this.showDeleteModal = false;
+      this.airportToDelete = null;
+    },
+
+    async confirmDeleteAirport() {
+      if (!this.airportToDelete) {
+        return;
+      }
+
+      this.deletingAirport = true;
+      this.successMessage = "";
+      this.errorMessage = "";
+
+      try {
+        await axios.delete(`${BaseURL}/${this.airportToDelete.code}`);
+
+        this.airports = this.airports.filter(
+          (airport) => airport.code !== this.airportToDelete.code
+        );
+
+        if (this.currentPage > this.totalPages) {
+          this.currentPage = this.totalPages;
+        }
+
+        this.successMessage = "Aeropuerto eliminado correctamente.";
+
+        this.closeDeleteModal();
+
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } catch (error) {
+        this.errorMessage = "No se pudo eliminar el aeropuerto.";
+
+        if (error.response?.data) {
+          this.errorMessage = error.response.data;
+        }
+      } finally {
+        this.deletingAirport = false;
+      }
+    },
     validateEditForm() {
       this.editErrors = {};
 
@@ -662,7 +867,8 @@ export default {
 }
 
 .view-btn,
-.edit-btn {
+.edit-btn,
+.delete-btn {
   border: none;
   background: transparent;
   font-size: 0.88rem;
@@ -681,8 +887,13 @@ export default {
   color: #2563eb;
 }
 
+.delete-btn {
+  color: #ef0012;
+}
+
 .view-btn:hover,
-.edit-btn:hover {
+.edit-btn:hover,
+.delete-btn:hover {
   text-decoration: underline;
 }
 
@@ -692,6 +903,10 @@ export default {
 
 .edit-btn:hover {
   color: #1d4ed8;
+}
+
+.delete-btn:hover {
+  color: #c80010;
 }
 
 .empty-state {
@@ -898,6 +1113,171 @@ export default {
   background: #e5e7eb;
 }
 
+.delete-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(8px);
+}
+
+.delete-modal {
+  position: relative;
+  width: min(420px, 100%);
+  background: #ffffff;
+  border-radius: 22px;
+  padding: 28px 26px 24px;
+  box-shadow: 0 25px 60px rgba(15, 23, 42, 0.22);
+  text-align: center;
+}
+
+.delete-modal-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  border: none;
+  background: #f8fafc;
+  color: #94a3b8;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.delete-modal-close:hover {
+  color: #475569;
+  background: #f1f5f9;
+}
+
+.delete-modal-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 18px;
+  border-radius: 18px;
+  background: #fff1f2;
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.55rem;
+}
+
+.delete-modal-title {
+  margin: 0 0 10px;
+  color: #0f172a;
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.delete-modal-text {
+  margin: 0;
+  color: #475569;
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.delete-modal-warning {
+  margin: 12px 0 24px;
+  color: #ef4444;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.delete-modal-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.delete-cancel-btn,
+.delete-confirm-btn {
+  border: none;
+  border-radius: 14px;
+  padding: 14px 18px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.2s ease, background 0.2s ease;
+}
+
+.delete-cancel-btn {
+  background: #f3f4f6;
+  color: #1f2937;
+}
+
+.delete-confirm-btn {
+  background: linear-gradient(to right, #e11d48, #f97316);
+  color: #ffffff;
+}
+
+.delete-cancel-btn:hover:not(:disabled),
+.delete-confirm-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.delete-cancel-btn:disabled,
+.delete-confirm-btn:disabled,
+.delete-modal-close:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pagination-wrapper {
+  padding: 18px 24px;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.pagination-info {
+  color: #666f83;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.pagination-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pagination-btn {
+  border: none;
+  background: #f3f4f6;
+  color: #1f2937;
+  border-radius: 8px;
+  padding: 9px 14px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: #e5e7eb;
+  transform: translateY(-1px);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-page {
+  color: #001233;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
 @media (max-width: 768px) {
   .card-header-row {
     align-items: stretch;
@@ -920,8 +1300,18 @@ export default {
   }
 
   .details-actions,
-  .edit-actions {
+  .edit-actions,
+  .delete-modal-actions {
     grid-template-columns: 1fr;
+  }
+
+  .pagination-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pagination-actions {
+    justify-content: space-between;
   }
 }
 
