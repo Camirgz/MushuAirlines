@@ -33,7 +33,7 @@ describe('Navbar – guest user', () => {
 
 describe('Navbar – logged in user', () => {
   it('shows the Logout button instead of Admin Login when a user is logged in', async () => {
-    const wrapper = await mount({ userRole: 'Operator' })
+    const wrapper = await mount({ userRole: 'Operator', isProfileMenuOpen: true })
     expect(wrapper.text()).toContain('Logout')
     expect(wrapper.text()).not.toContain('Admin Login')
   })

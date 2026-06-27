@@ -1,0 +1,83 @@
+USE MushuAirlines;
+GO
+
+CREATE OR ALTER PROCEDURE DeleteAirport
+    @Code VARCHAR(3)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    DECLARE @NormalizedCode VARCHAR(3);
+    DECLARE @HasRoute BIT = 0;
+    DECLARE @WasDeleted BIT = 0;
+
+    SET @NormalizedCode = UPPER(@Code);
+
+    SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        IF EXISTS (
+            SELECT 1
+            FROM Route
+            WHERE UPPER(OriginAirport) = @NormalizedCode
+               OR UPPER(DestinationAirport) = @NormalizedCode
+        )
+        BEGIN
+            SET @HasRoute = 1;
+        END;
+
+        IF EXISTS (
+            SELECT 1
+            FROM dbo.FlightSchedule
+            WHERE UPPER(OriginAirport) = @NormalizedCode
+               OR UPPER(DestinationAirport) = @NormalizedCode
+        )
+        BEGIN
+            SET @HasRoute = 1;
+        END;
+
+        IF @HasRoute = 1
+        BEGIN
+            -- Soft delete
+            UPDATE dbo.Airport
+            SET IsDeleted = 1
+            WHERE UPPER(Code) = @NormalizedCode AND IsDeleted = 0;
+
+            IF @@ROWCOUNT > 0
+            BEGIN
+                SET @WasDeleted = 1;
+            END;
+        END
+        ELSE
+        BEGIN
+            -- Hard delete
+            DELETE FROM dbo.Airport
+            WHERE UPPER(Code) = @NormalizedCode AND IsDeleted = 0;
+
+            IF @@ROWCOUNT > 0
+            BEGIN
+                SET @WasDeleted = 1;
+            END;
+        END;
+
+        COMMIT TRANSACTION;
+
+        SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+
+        SELECT @WasDeleted AS WasDeleted;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+        BEGIN
+            ROLLBACK TRANSACTION;
+        END;
+
+        SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+
+        THROW;
+    END CATCH;
+END;
+GO

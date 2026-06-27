@@ -1,0 +1,23 @@
+USE MushuAirlines;
+GO
+
+ALTER TABLE AdminAirport
+ADD CONSTRAINT FK_Airport
+FOREIGN KEY (AirportCode)
+REFERENCES Airport(Code)
+ON DELETE CASCADE;
+GO
+
+ALTER TABLE AirportScheduled
+ADD CONSTRAINT FK_AirportScheduled_Airport
+FOREIGN KEY (AirportCode)
+REFERENCES Airport(Code)
+ON DELETE CASCADE;
+GO
+
+ALTER TABLE AirportNameHistory
+ADD CONSTRAINT FK_AirportNameHistory_Airport
+FOREIGN KEY (AirportCode)
+REFERENCES Airport(Code)
+ON DELETE CASCADE;
+GO
