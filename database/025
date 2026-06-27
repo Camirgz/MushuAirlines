@@ -1,0 +1,10 @@
+USE MushuAirlines;
+GO
+
+CREATE INDEX idx_SF_DepartureDate
+    ON ScheduledFlight (DepartureDate);
+GO
+
+CREATE INDEX idx_FS_OriginDest
+    ON FlightSchedule (OriginAirport, DestinationAirport);
+GO

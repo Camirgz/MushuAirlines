@@ -5,12 +5,16 @@
   "type": "module",
   "scripts": {
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:e2e": "node --test tests/AdditionalReportsUI/FlightDetailReport.e2e.js tests/AdditionalReportsUI/MonthlyIncomeReport.e2e.js",
+    "test:e2e:detail": "node --test tests/AdditionalReportsUI/FlightDetailReport.e2e.js",
+    "test:e2e:monthly": "node --test tests/AdditionalReportsUI/MonthlyIncomeReport.e2e.js"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.7",
     "@vue/test-utils": "^2.4.10",
     "jsdom": "^29.1.1",
+    "selenium-webdriver": "^4.45.0",
     "vitest": "^4.1.7"
   }
 }

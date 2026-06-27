@@ -67,13 +67,26 @@
 
       <h2>Sistema de reportes</h2>
 
-      <div class="empty-reports">
-        <div>
-          <h3>Reportes no disponibles por el momento</h3>
-          <p>
-            Esta sección estará disponible en una futura actualización del sistema.
-          </p>
-        </div>
+      <div class="option-list">
+        <RouterLink to="/admin/reports/flight-detail" class="admin-option">
+          <div class="option-left">
+            <div class="option-icon">
+              <i class="bi bi-airplane-fill"></i>
+            </div>
+            <span>Vuelo Detallado</span>
+          </div>
+          <i class="bi bi-chevron-right option-arrow"></i>
+        </RouterLink>
+
+        <RouterLink to="/admin/reports/monthly-income" class="admin-option">
+          <div class="option-left">
+            <div class="option-icon">
+              <i class="bi bi-bar-chart-line-fill"></i>
+            </div>
+            <span>Ingresos por Mes</span>
+          </div>
+          <i class="bi bi-chevron-right option-arrow"></i>
+        </RouterLink>
       </div>
     </AdminCard>
   </AdminPageLayout>
