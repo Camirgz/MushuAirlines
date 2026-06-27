@@ -27,15 +27,34 @@ public class FlightAggregatorService
     }
 
     public async Task<IEnumerable<ExternalAirlineFlightDto>> GetExternalFlightsAsync(
+        string origin,
+        string originType,
         string destination,
         string destinationType,
         string date)
     {
-        // Las APIs externas solo aceptan código IATA de aeropuerto como destino
         if (string.IsNullOrWhiteSpace(destination) || destinationType != "airport")
             return Enumerable.Empty<ExternalAirlineFlightDto>();
 
-        return await _externalAirlinesService.GetExternalFlightsAsync(destination, date);
+        // Siempre buscar vuelos al destino final (A→C directo o leg2 de escala X→C)
+        var airportCodes = new HashSet<string> { destination };
+
+        // Si el origen es IATA, buscar también los destinos intermedios de Mushu desde ese origen
+        // para poder armar escalas: Mushu A→B + Externo B→C
+        if (originType == "airport" && !string.IsNullOrWhiteSpace(origin))
+        {
+            var intermediates = _flightRepository.GetIntermediateDestinations(origin);
+            foreach (var code in intermediates)
+                if (code != destination)
+                    airportCodes.Add(code);
+        }
+
+        var tasks = airportCodes.Select(code => _externalAirlinesService.GetExternalFlightsAsync(code, date));
+        var results = await Task.WhenAll(tasks);
+
+        return results.SelectMany(r => r)
+            .GroupBy(f => f.FlightGUID + f.DepartureTime)
+            .Select(g => g.First());
     }
 
     private static FlightDto ToDto(RouteDbModel r) => new FlightDto

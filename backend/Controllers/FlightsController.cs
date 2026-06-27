@@ -25,7 +25,7 @@ public class FlightsController : ControllerBase
         try
         {
             var localFlights = _flightAggregatorService.GetAllFlights(date, origin, originType, destination, destinationType);
-            var externalFlights = await _flightAggregatorService.GetExternalFlightsAsync(destination, destinationType, date);
+            var externalFlights = await _flightAggregatorService.GetExternalFlightsAsync(origin, originType, destination, destinationType, date);
 
             return Ok(new
             {

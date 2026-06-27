@@ -1082,24 +1082,42 @@ export default {
 
       this.errorMsg = ''
 
-      // Two parallel fetches:
-      // 1. Direct flights — API filters by origin/destination/capacity
-      // 2. All available flights for this date — used by the stopover finder
+      // Fetches:
+      // 1. Direct flights — API filters by origin/destination
+      // 2. All local flights for this date — base pool for stopover finder
+      // 3. External flights to destination — for stopover leg2 candidates
+      // 4. External flights from origin airports — for stopover leg1 candidates
       let directFlights = []
       let availableFlights = this.flights
+
+      const { value: originVal, type: originType } = this.selectedOrigin
+      const { value: destVal, type: destType } = this.selectedDestination
+
+      const originCodes = originType === 'city'
+        ? this.airports.filter(a => a.city === originVal).map(a => a.code)
+        : [originVal]
+      const destCodes = destType === 'city'
+        ? this.airports.filter(a => a.city === destVal).map(a => a.code)
+        : [destVal]
+
       try {
-        const { value: originVal, type: originType } = this.selectedOrigin
-        const { value: destVal, type: destType } = this.selectedDestination
         const [directRes, allRes] = await Promise.all([
           fetch(`${API_BASE_URL}/api/flights?date=${this.departureDate}&origin=${encodeURIComponent(originVal)}&originType=${originType}&destination=${encodeURIComponent(destVal)}&destinationType=${destType}`),
-          fetch(`${API_BASE_URL}/api/flights?date=${this.departureDate}`)
+          fetch(`${API_BASE_URL}/api/flights?date=${this.departureDate}`),
         ])
         const directData = await directRes.json()
         const allData = await allRes.json()
-        const localDirect = (directData.flights ?? directData).map(routeToFlight)
-        const externalDirect = (directData.externalFlights ?? []).map(f => externalFlightToFlight(f, this.departureDate))
-        directFlights = [...localDirect, ...externalDirect]
-        availableFlights = (allData.flights ?? allData).map(routeToFlight)
+
+        const allExternal = (directData.externalFlights ?? []).map(f => externalFlightToFlight(f, this.departureDate))
+
+        // Directos: solo vuelos de Mushu (locales)
+        directFlights = (directData.flights ?? directData).map(routeToFlight)
+
+        const localPool = (allData.flights ?? allData).map(routeToFlight)
+        // Pool de escalas: locales + externos que lleguen al destino (para ser leg2)
+        // leg1 siempre será de Mushu (local), leg2 puede ser externo
+        const externalPool = allExternal.filter(f => destCodes.includes(f.destination))
+        availableFlights = [...localPool, ...externalPool]
       } catch (e) {
         console.error('Error consultando vuelos:', e)
       }
@@ -1114,14 +1132,6 @@ export default {
             ? addDaysToDateString(this.departureDate, 1)
             : this.departureDate,
         }))
-
-      // Stopover connections — expand city selection to array of airport codes
-      const originCodes = this.selectedOrigin.type === 'city'
-        ? this.airports.filter(a => a.city === this.selectedOrigin.value).map(a => a.code)
-        : [this.selectedOrigin.value]
-      const destCodes = this.selectedDestination.type === 'city'
-        ? this.airports.filter(a => a.city === this.selectedDestination.value).map(a => a.code)
-        : [this.selectedDestination.value]
 
       const rawConnections = findStopoverConnections(availableFlights, originCodes, destCodes, this.departureDate)
 
