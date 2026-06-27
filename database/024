@@ -1,0 +1,109 @@
+USE MushuAirlines;
+GO
+
+CREATE OR ALTER PROCEDURE sp_GetFlightDetailReport
+    @Origen    NVARCHAR(10)  = NULL,
+    @Destino   NVARCHAR(10)  = NULL,
+    @Clase     NVARCHAR(20)  = NULL,
+    @FechaDesde DATE          = NULL,
+    @FechaHasta DATE          = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+
+    BEGIN TRANSACTION;
+
+    BEGIN TRY
+
+        SELECT
+            sf.DepartureDate                                        AS Fecha,
+            fs.OriginAirport                                        AS Origen,
+            fs.DestinationAirport                                   AS Destino,
+            sf.Id                                                   AS NumeroVuelo,
+            SUM(CASE WHEN t.SeatClass = 'FirstClass' THEN 1 ELSE 0 END)
+                                                                    AS PasajerosPrimeraClase,
+            SUM(CASE WHEN t.SeatClass = 'Economy'    THEN 1 ELSE 0 END)
+                                                                    AS PasajerosEconomia,
+            'Mushu Airlines'                                        AS Aerolinea,
+            ISNULL(SUM(pd.Subtotal), 0)                             AS VentaPasajeros,
+            ISNULL(SUM(pbd.Subtotal), 0)                            AS VentaEquipajes,
+            ISNULL(SUM(pd.Subtotal), 0) + ISNULL(SUM(pbd.Subtotal), 0)
+                                                                    AS TotalVenta
+        FROM ScheduledFlight sf
+        INNER JOIN FlightScheduleHasScheduledFlight fshsf
+            ON fshsf.ScheduledFlightId = sf.Id
+        INNER JOIN FlightSchedule fs
+            ON fs.Id = fshsf.FlightScheduleId
+        INNER JOIN Ticket t
+            ON t.ScheduledId = sf.Id
+        INNER JOIN ItineraryScheduledFlight isf
+            ON isf.ScheduledId = sf.Id
+        INNER JOIN Purchase p
+            ON p.BookingCode = isf.BookingCode
+        LEFT JOIN PurchaseDetail pd
+            ON pd.PurchaseId = p.Id
+            AND (@Clase IS NULL OR pd.SeatClass = @Clase)
+        LEFT JOIN PurchaseBaggageDetail pbd
+            ON pbd.PurchaseId = p.Id
+        WHERE
+            (@Origen     IS NULL OR fs.OriginAirport      = @Origen)
+            AND (@Destino IS NULL OR fs.DestinationAirport = @Destino)
+            AND (@Clase   IS NULL OR t.SeatClass           = @Clase)
+            AND (@FechaDesde IS NULL OR sf.DepartureDate  >= @FechaDesde)
+            AND (@FechaHasta IS NULL OR sf.DepartureDate  <= @FechaHasta)
+        GROUP BY
+            sf.DepartureDate,
+            fs.OriginAirport,
+            fs.DestinationAirport,
+            sf.Id
+
+        UNION ALL
+
+        SELECT
+            NULL                                                    AS Fecha,
+            NULL                                                    AS Origen,
+            NULL                                                    AS Destino,
+            NULL                                                    AS NumeroVuelo,
+            ISNULL(SUM(CASE WHEN t.SeatClass = 'FirstClass' THEN 1 ELSE 0 END), 0),
+            ISNULL(SUM(CASE WHEN t.SeatClass = 'Economy'    THEN 1 ELSE 0 END), 0),
+            'TOTALES'                                               AS Aerolinea,
+            ISNULL(SUM(pd.Subtotal), 0),
+            ISNULL(SUM(pbd.Subtotal), 0),
+            ISNULL(SUM(pd.Subtotal), 0) + ISNULL(SUM(pbd.Subtotal), 0)
+        FROM ScheduledFlight sf
+        INNER JOIN FlightScheduleHasScheduledFlight fshsf
+            ON fshsf.ScheduledFlightId = sf.Id
+        INNER JOIN FlightSchedule fs
+            ON fs.Id = fshsf.FlightScheduleId
+        INNER JOIN Ticket t
+            ON t.ScheduledId = sf.Id
+        INNER JOIN ItineraryScheduledFlight isf
+            ON isf.ScheduledId = sf.Id
+        INNER JOIN Purchase p
+            ON p.BookingCode = isf.BookingCode
+        LEFT JOIN PurchaseDetail pd
+            ON pd.PurchaseId = p.Id
+            AND (@Clase IS NULL OR pd.SeatClass = @Clase)
+        LEFT JOIN PurchaseBaggageDetail pbd
+            ON pbd.PurchaseId = p.Id
+        WHERE
+            (@Origen     IS NULL OR fs.OriginAirport      = @Origen)
+            AND (@Destino IS NULL OR fs.DestinationAirport = @Destino)
+            AND (@Clase   IS NULL OR t.SeatClass           = @Clase)
+            AND (@FechaDesde IS NULL OR sf.DepartureDate  >= @FechaDesde)
+            AND (@FechaHasta IS NULL OR sf.DepartureDate  <= @FechaHasta)
+
+        ORDER BY Fecha;
+
+        COMMIT TRANSACTION;
+
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        THROW;
+    END CATCH;
+END;
+GO
