@@ -11,4 +11,10 @@ public interface IUserListRepository
     );
 
     bool UpdateUser(int employeeId, UserManagementUpdateModel user);
+
+    bool DeleteUser(int employeeId);
+
+    bool IsAdministrator(int employeeId);
+
+    int GetActiveAdministratorCount();
 }

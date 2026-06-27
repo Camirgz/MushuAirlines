@@ -2,6 +2,7 @@ using backend.DTOs;
 using backend.Interfaces;
 using backend.Model;
 using Dapper;
+using System.Data;
 using System.Data.SqlClient;
 
 namespace backend.Repositories;
@@ -25,6 +26,7 @@ public class AirportRepository : IAirportRepository
                 Country,
                 City
             FROM Airport
+            WHERE IsDeleted = 0
             ORDER BY AirportName;
         ";
 
@@ -76,7 +78,8 @@ public class AirportRepository : IAirportRepository
                 Country,
                 City
             FROM Airport
-            WHERE UPPER(Code) = UPPER(@Code);
+            WHERE UPPER(Code) = UPPER(@Code)
+              AND IsDeleted = 0;
         ";
 
         using var connection = new SqlConnection(_connectionString);
@@ -135,7 +138,8 @@ public class AirportRepository : IAirportRepository
             FROM Airport
             WHERE UPPER(AirportName) = UPPER(@AirportName)
               AND UPPER(Country) = UPPER(@Country)
-              AND UPPER(City) = UPPER(@City);
+              AND UPPER(City) = UPPER(@City)
+              AND IsDeleted = 0;
         ";
 
         using var connection = new SqlConnection(_connectionString);
@@ -166,7 +170,8 @@ public class AirportRepository : IAirportRepository
             WHERE UPPER(AirportName) = UPPER(@AirportName)
               AND UPPER(Country) = UPPER(@Country)
               AND UPPER(City) = UPPER(@City)
-              AND UPPER(Code) <> UPPER(@ExcludedCode);
+              AND UPPER(Code) <> UPPER(@ExcludedCode)
+              AND IsDeleted = 0;
         ";
 
         using var connection = new SqlConnection(_connectionString);
@@ -223,7 +228,8 @@ public class AirportRepository : IAirportRepository
         const string query = @"
             UPDATE Airport
             SET AirportName = @AirportName
-            WHERE UPPER(Code) = UPPER(@Code);
+            WHERE UPPER(Code) = UPPER(@Code)
+              AND IsDeleted = 0;
         ";
 
         using var connection = new SqlConnection(_connectionString);
@@ -246,9 +252,12 @@ public class AirportRepository : IAirportRepository
             WITH Matches AS (
                 SELECT Code, AirportName, City
                 FROM Airport
-                WHERE City        COLLATE Latin1_General_CI_AI LIKE '%' + @Query + '%'
-                   OR Code        COLLATE Latin1_General_CI_AI LIKE '%' + @Query + '%'
-                   OR AirportName COLLATE Latin1_General_CI_AI LIKE '%' + @Query + '%'
+                WHERE IsDeleted = 0
+                  AND (
+                       City        COLLATE Latin1_General_CI_AI LIKE '%' + @Query + '%'
+                    OR Code        COLLATE Latin1_General_CI_AI LIKE '%' + @Query + '%'
+                    OR AirportName COLLATE Latin1_General_CI_AI LIKE '%' + @Query + '%'
+                  )
             ),
             CityOptions AS (
                 SELECT DISTINCT
@@ -279,5 +288,25 @@ public class AirportRepository : IAirportRepository
         using var connection = new SqlConnection(_connectionString);
         return connection.Query<AirportSuggestionDto>(sql, new { Query = query }).ToList();
     }
-}
 
+    public bool DeleteAirport(string code)
+    {
+        using var connection = new SqlConnection(_connectionString);
+        connection.Open();
+
+        try
+        {
+            bool wasDeleted = connection.ExecuteScalar<bool>(
+                "DeleteAirport",
+                new { Code = code },
+                commandType: CommandType.StoredProcedure
+            );
+
+            return wasDeleted;
+        }
+        catch
+        {
+            throw;
+        }
+    }
+}

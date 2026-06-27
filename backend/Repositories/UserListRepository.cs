@@ -2,6 +2,7 @@ using backend.Interfaces;
 using backend.Model;
 using Dapper;
 using System.Data.SqlClient;
+using System.Data;
 
 namespace backend.Repositories;
 
@@ -53,6 +54,7 @@ public class UserListRepository : IUserListRepository
                 ) pa_sub ON pa_sub.EmployeeId = e.Id
                 LEFT JOIN Administrator adm ON adm.Id = e.Id
                 LEFT JOIN Operator op ON op.Id = e.Id
+                WHERE e.IsDeleted = 0
             )";
 
         const string where = @"
@@ -250,4 +252,45 @@ public class UserListRepository : IUserListRepository
             }
         }
     }
+
+    public bool DeleteUser(int employeeId)
+    {
+        using var connection = new SqlConnection(_connectionString);
+        connection.Open();
+
+        try
+        {
+            connection.Execute(
+                "DeleteEmployee",
+                new { id = employeeId },
+                commandType: CommandType.StoredProcedure
+            );
+            return true;
+        }
+        catch
+        {
+            throw;
+        }
+    }
+
+    public bool IsAdministrator(int employeeId)
+    {
+        using var connection = new SqlConnection(_connectionString);
+        return connection.ExecuteScalar<int>(
+            "SELECT COUNT(1) FROM Administrator WHERE Id = @EmployeeId",
+            new { EmployeeId = employeeId }
+        ) > 0;
+    }
+
+    public int GetActiveAdministratorCount()
+    {
+        using var connection = new SqlConnection(_connectionString);
+        return connection.ExecuteScalar<int>(
+            @"SELECT COUNT(1) 
+          FROM Administrator a
+          INNER JOIN Employee e ON e.Id = a.Id
+          WHERE e.IsDeleted = 0"
+        );
+    }
+
 }

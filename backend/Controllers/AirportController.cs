@@ -92,4 +92,17 @@ public class AirportController : ControllerBase
 
         return Ok("Nombre del aeropuerto actualizado correctamente.");
     }
+
+    [HttpDelete("{code}")]
+    public ActionResult DeleteAirport([FromRoute] string code)
+    {
+        string result = _airportService.DeleteAirport(code);
+
+        if (!string.IsNullOrWhiteSpace(result))
+        {
+            return BadRequest(result);
+        }
+
+        return Ok("Aeropuerto eliminado correctamente.");
+    }
 }

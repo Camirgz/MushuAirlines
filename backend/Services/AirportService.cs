@@ -1,18 +1,11 @@
 using backend.DTOs;
 using backend.Interfaces;
 using backend.Model;
-using System.Text.RegularExpressions;
 
 namespace backend.Services;
 
 public class AirportService : IAirportService
 {
-    private const int AirportCodeLength = 3;
-    private const int AirportNameMaxLength = 200;
-    private static readonly Regex AirportNameRegex = new(
-        @"^[A-Za-zÁÉÍÓÚáéíóúÑñÜü\s.'-]+$",
-        RegexOptions.Compiled
-    );
     private readonly IAirportRepository _airportRepository;
 
     public AirportService(IAirportRepository airportRepository)
@@ -47,9 +40,9 @@ public class AirportService : IAirportService
             return "Debe ingresar los datos del aeropuerto.";
         }
 
-        NormalizeAirport(airport);
+        airport.Normalize();
 
-        string validationMessage = ValidateAirportForCreation(airport);
+        string validationMessage = airport.ValidateForCreation();
 
         if (!string.IsNullOrEmpty(validationMessage))
         {
@@ -82,32 +75,21 @@ public class AirportService : IAirportService
 
     public string UpdateAirportName(string code, string airportName)
     {
-        if (string.IsNullOrWhiteSpace(code))
+        string normalizedCode = AirportModel.NormalizeCode(code);
+        string normalizedAirportName = airportName?.Trim() ?? string.Empty;
+
+        string codeValidation = AirportModel.ValidateCode(normalizedCode);
+
+        if (!string.IsNullOrWhiteSpace(codeValidation))
         {
-            return "Debe indicar el código del aeropuerto.";
+            return codeValidation;
         }
 
-        if (string.IsNullOrWhiteSpace(airportName))
-        {
-            return "Debe ingresar el nuevo nombre del aeropuerto.";
-        }
+        string nameValidation = AirportModel.ValidateAirportName(normalizedAirportName);
 
-        string normalizedCode = code.Trim().ToUpper();
-        string normalizedAirportName = airportName.Trim();
-
-        if (normalizedCode.Length != AirportCodeLength)
+        if (!string.IsNullOrWhiteSpace(nameValidation))
         {
-            return "El código del aeropuerto debe tener exactamente 3 caracteres.";
-        }
-
-        if (normalizedAirportName.Length > AirportNameMaxLength)
-        {
-            return $"El nombre del aeropuerto no puede superar los {AirportNameMaxLength} caracteres.";
-        }
-
-        if (!AirportNameRegex.IsMatch(normalizedAirportName))
-        {
-            return "El nombre del aeropuerto no debe contener caracteres especiales como #, !, %, $.";
+            return nameValidation;
         }
 
         AirportModel? currentAirport = _airportRepository.GetAirportByCode(normalizedCode);
@@ -149,58 +131,48 @@ public class AirportService : IAirportService
         return string.Empty;
     }
 
-    private static string ValidateAirportForCreation(AirportModel airport)
+    public string DeleteAirport(string code)
     {
-        if (string.IsNullOrWhiteSpace(airport.Country))
+        string normalizedCode = AirportModel.NormalizeCode(code);
+
+        string codeValidation = AirportModel.ValidateCode(normalizedCode);
+
+        if (!string.IsNullOrWhiteSpace(codeValidation))
         {
-            return "Debe seleccionar un país.";
+            return codeValidation;
         }
 
-        if (string.IsNullOrWhiteSpace(airport.City))
+        AirportModel? airport = _airportRepository.GetAirportByCode(normalizedCode);
+
+        if (airport == null)
         {
-            return "Debe seleccionar una ciudad.";
+            return "No existe un aeropuerto con ese código.";
         }
 
-        if (string.IsNullOrWhiteSpace(airport.AirportName))
+        try
         {
-            return "Debe ingresar el nombre del aeropuerto.";
-        }
+            bool wasDeleted = _airportRepository.DeleteAirport(normalizedCode);
 
-        if (string.IsNullOrWhiteSpace(airport.Code))
+            if (!wasDeleted)
+            {
+                return "No se encontró el aeropuerto que desea eliminar.";
+            }
+
+            return string.Empty;
+        }
+        catch
         {
-            return "Debe ingresar el código del aeropuerto.";
+            return "No se pudo eliminar el aeropuerto.";
         }
-
-        if (airport.Code.Length != AirportCodeLength)
-        {
-            return "El código del aeropuerto debe tener exactamente 3 caracteres.";
-        }
-
-        if (airport.AirportName.Length > AirportNameMaxLength)
-        {
-            return $"El nombre del aeropuerto no puede superar los {AirportNameMaxLength} caracteres.";
-        }
-
-        if (!AirportNameRegex.IsMatch(airport.AirportName))
-        {
-            return "El nombre del aeropuerto no debe contener números ni caracteres especiales como #, !, %, $.";
-        }
-
-        return string.Empty;
     }
 
     public List<AirportSuggestionDto> GetSuggestions(string query)
     {
         if (string.IsNullOrWhiteSpace(query))
+        {
             return new List<AirportSuggestionDto>();
-        return _airportRepository.GetSuggestions(query);
-    }
+        }
 
-    private static void NormalizeAirport(AirportModel airport)
-    {
-        airport.Code = airport.Code?.Trim().ToUpper() ?? string.Empty;
-        airport.AirportName = airport.AirportName?.Trim() ?? string.Empty;
-        airport.Country = airport.Country?.Trim() ?? string.Empty;
-        airport.City = airport.City?.Trim() ?? string.Empty;
+        return _airportRepository.GetSuggestions(query.Trim());
     }
 }

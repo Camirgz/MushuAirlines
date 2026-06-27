@@ -396,13 +396,8 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
-# VS Code files for those working on multiple tools
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-!.vscode/*.code-snippets
+# VS Code workspace settings and files
+.vscode/
 
 # Local History for Visual Studio Code
 .history/
@@ -417,3 +412,5 @@ FodyWeavers.xsd
 *.msm
 *.msp
 /frontend/src/LoginForm.vue
+
+

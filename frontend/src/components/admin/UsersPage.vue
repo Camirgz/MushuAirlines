@@ -1,304 +1,324 @@
 <template>
-  <AdminPageLayout>
-    <template v-if="isListMode">
-      <AdminHero
-        title="Lista de Usuarios"
-        subtitle="Panel de administración de Mushu Airlines"
-        icon="bi bi-people"
-        back-to="/admin"
-        back-text="Volver al panel"
-      />
+    <AdminPageLayout>
+        <template v-if="isListMode">
+            <AdminHero title="Lista de Usuarios"
+                       subtitle="Panel de administración de Mushu Airlines"
+                       icon="bi bi-people"
+                       back-to="/admin"
+                       back-text="Volver al panel" />
 
-      <div v-if="successMessage" class="success-message">
-        <i class="bi bi-check-circle-fill"></i>
-        <span>{{ successMessage }}</span>
-      </div>
+            <div v-if="successMessage" class="success-message">
+                <i class="bi bi-check-circle-fill"></i>
+                <span>{{ successMessage }}</span>
+            </div>
 
-      <div v-if="errorMsg" class="error-message">
-        <i class="bi bi-exclamation-circle-fill"></i>
-        <span>{{ errorMsg }}</span>
-      </div>
+            <div v-if="errorMsg" class="error-message">
+                <i class="bi bi-exclamation-circle-fill"></i>
+                <span>{{ errorMsg }}</span>
+            </div>
 
-      <AdminCard class="users-card">
-        <div class="card-header-row">
-          <h2>Usuarios ({{ totalCount }})</h2>
+            <AdminCard class="users-card">
+                <div class="card-header-row">
+                    <h2>Usuarios ({{ totalCount }})</h2>
 
-          <RouterLink to="/create-profile" class="create-user-btn">
-            <i class="bi bi-plus-lg me-2"></i>
-            Crear Usuario
-          </RouterLink>
-        </div>
+                    <RouterLink to="/create-profile" class="create-user-btn">
+                        <i class="bi bi-plus-lg me-2"></i>
+                        Crear Usuario
+                    </RouterLink>
+                </div>
 
-        <div class="search-wrapper">
-          <i class="bi bi-search"></i>
+                <div class="search-wrapper">
+                    <i class="bi bi-search"></i>
 
-          <input
-            v-model="searchInput"
-            @keyup.enter="doSearch"
-            type="text"
-            placeholder="Buscar por nombre, SSN o correo..."
-            aria-label="Buscar usuario"
-          />
+                    <input v-model="searchInput"
+                           @keyup.enter="doSearch"
+                           type="text"
+                           placeholder="Buscar por nombre, SSN o correo..."
+                           aria-label="Buscar usuario" />
 
-          <button type="button" class="search-btn-small" @click="doSearch">
-            Buscar
-          </button>
-        </div>
+                    <button type="button" class="search-btn-small" @click="doSearch">
+                        Buscar
+                    </button>
+                </div>
 
-        <div v-if="loading" class="loading-state">
-          <i class="bi bi-arrow-repeat"></i>
-          <p>Cargando usuarios...</p>
-        </div>
+                <div v-if="loading" class="loading-state">
+                    <i class="bi bi-arrow-repeat"></i>
+                    <p>Cargando usuarios...</p>
+                </div>
 
-        <div v-else-if="users.length > 0" class="table-wrapper">
-          <table class="users-table">
-            <thead>
-              <tr>
-                <th>Nombre Completo</th>
-                <th>SSN</th>
-                <th>Correo</th>
-                <th>Rol</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
+                <div v-else-if="users.length > 0" class="table-wrapper">
+                    <table class="users-table">
+                        <thead>
+                            <tr>
+                                <th>Nombre Completo</th>
+                                <th>SSN</th>
+                                <th>Correo</th>
+                                <th>Rol</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
 
-            <tbody>
-              <tr v-for="user in users" :key="user.id">
-                <td>{{ user.fullName }}</td>
-                <td>{{ user.ssn }}</td>
-                <td>{{ user.email }}</td>
-                <td>
-                  <span :class="['role-badge', roleBadgeClass(user.role)]">
-                    {{ displayRole(user.role) }}
-                  </span>
-                </td>
-                <td>
-                  <div class="actions-wrapper">
-                    <button
-                      type="button"
-                      class="view-btn"
-                      @click="openUserDetails(user)"
-                    >
-                      <i class="bi bi-eye me-1"></i>
-                      Ver
+                        <tbody>
+                            <tr v-for="user in users" :key="user.id">
+                                <td>{{ user.fullName }}</td>
+                                <td>{{ user.ssn }}</td>
+                                <td>{{ user.email }}</td>
+                                <td>
+                                    <span :class="['role-badge', roleBadgeClass(user.role)]">
+                                        {{ displayRole(user.role) }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="actions-wrapper">
+                                        <button type="button"
+                                                class="view-btn"
+                                                @click="openUserDetails(user)">
+                                            <i class="bi bi-eye me-1"></i>
+                                            Ver
+                                        </button>
+
+                                        <button type="button"
+                                                class="edit-btn"
+                                                @click="openUserEdit(user)">
+                                            <i class="bi bi-pencil me-1"></i>
+                                            Editar
+                                        </button>
+
+                                        <button type="button"
+                                                class="delete-btn"
+                                                @click="openDeleteModal(user)">
+                                            <i class="bi bi-trash3 me-1"></i>
+                                            Eliminar
+                                        </button>
+
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div v-else class="empty-state">
+                    <div class="empty-icon">
+                        <i class="bi bi-people"></i>
+                    </div>
+
+                    <h3>No se encontraron usuarios</h3>
+
+                    <p>
+                        Intente buscar por otro nombre, SSN o correo electrónico.
+                    </p>
+
+                    <RouterLink to="/create-profile" class="empty-create-btn">
+                        <i class="bi bi-plus-lg me-2"></i>
+                        Crear primer usuario
+                    </RouterLink>
+                </div>
+
+                <div class="pagination" v-if="!loading && totalPages > 0">
+                    <button type="button"
+                            @click="changePage(page - 1)"
+                            :disabled="page === 1"
+                            class="page-btn">
+                        Anterior
                     </button>
 
-                    <button
-                      type="button"
-                      class="edit-btn"
-                      @click="openUserEdit(user)"
-                    >
-                      <i class="bi bi-pencil me-1"></i>
-                      Editar
+                    <span class="page-info">Página {{ page }} de {{ totalPages }}</span>
+
+                    <button type="button"
+                            @click="changePage(page + 1)"
+                            :disabled="page >= totalPages"
+                            class="page-btn">
+                        Siguiente
                     </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+                </div>
+            </AdminCard>
+        </template>
 
-        <div v-else class="empty-state">
-          <div class="empty-icon">
-            <i class="bi bi-people"></i>
-          </div>
+        <template v-else-if="selectedUser">
+            <AdminHero title="Detalles del Usuario"
+                       subtitle="Información completa del usuario registrado"
+                       icon="bi bi-person-lines-fill" />
 
-          <h3>No se encontraron usuarios</h3>
+            <AdminCard class="details-card">
+                <div class="detail-grid">
+                    <div class="detail-group">
+                        <span class="detail-label">Nombre</span>
+                        <p>{{ selectedUser.firstName || "-" }}</p>
+                    </div>
 
-          <p>
-            Intente buscar por otro nombre, SSN o correo electrónico.
-          </p>
+                    <div class="detail-group">
+                        <span class="detail-label">Apellido</span>
+                        <p>{{ selectedUser.lastName || "-" }}</p>
+                    </div>
 
-          <RouterLink to="/create-profile" class="empty-create-btn">
-            <i class="bi bi-plus-lg me-2"></i>
-            Crear primer usuario
-          </RouterLink>
-        </div>
+                    <div class="detail-group detail-full">
+                        <span class="detail-label">Correo</span>
+                        <p>{{ selectedUser.email || "-" }}</p>
+                    </div>
 
-        <div class="pagination" v-if="!loading && totalPages > 0">
-          <button
-            type="button"
-            @click="changePage(page - 1)"
-            :disabled="page === 1"
-            class="page-btn"
-          >
-            Anterior
-          </button>
+                    <div class="detail-group">
+                        <span class="detail-label">Nombre completo</span>
+                        <p>{{ selectedUser.fullName || "-" }}</p>
+                    </div>
 
-          <span class="page-info">Página {{ page }} de {{ totalPages }}</span>
-
-          <button
-            type="button"
-            @click="changePage(page + 1)"
-            :disabled="page >= totalPages"
-            class="page-btn"
-          >
-            Siguiente
-          </button>
-        </div>
-      </AdminCard>
-    </template>
-
-    <template v-else-if="selectedUser">
-      <AdminHero
-        title="Detalles del Usuario"
-        subtitle="Información completa del usuario registrado"
-        icon="bi bi-person-lines-fill"
-      />
-
-      <AdminCard class="details-card">
-        <div class="detail-grid">
-          <div class="detail-group">
-            <span class="detail-label">Nombre</span>
-            <p>{{ selectedUser.firstName || "-" }}</p>
-          </div>
-
-          <div class="detail-group">
-            <span class="detail-label">Apellido</span>
-            <p>{{ selectedUser.lastName || "-" }}</p>
-          </div>
-          
-          <div class="detail-group detail-full">
-            <span class="detail-label">Correo</span>
-            <p>{{ selectedUser.email || "-" }}</p>
-          </div>
-
-          <div class="detail-group">
-            <span class="detail-label">Nombre completo</span>
-            <p>{{ selectedUser.fullName || "-" }}</p>
-          </div>
-
-          <div class="detail-group">
-            <span class="detail-label">SSN</span>
-            <p>{{ selectedUser.ssn || "-" }}</p>
-          </div>
+                    <div class="detail-group">
+                        <span class="detail-label">SSN</span>
+                        <p>{{ selectedUser.ssn || "-" }}</p>
+                    </div>
 
 
-          <div class="detail-group">
-            <span class="detail-label">Nacionalidad</span>
-            <p>{{ selectedUser.nationality || "-" }}</p>
-          </div>
+                    <div class="detail-group">
+                        <span class="detail-label">Nacionalidad</span>
+                        <p>{{ selectedUser.nationality || "-" }}</p>
+                    </div>
 
-          <div class="detail-group">
-            <span class="detail-label">Salario</span>
-            <p>{{ formatSalary(selectedUser.salary) }}</p>
-          </div>
+                    <div class="detail-group">
+                        <span class="detail-label">Salario</span>
+                        <p>{{ formatSalary(selectedUser.salary) }}</p>
+                    </div>
 
-          <div class="detail-group">
-            <span class="detail-label">Horario</span>
-            <p>{{ selectedUser.workSchedule || "-" }}</p>
-          </div>
+                    <div class="detail-group">
+                        <span class="detail-label">Horario</span>
+                        <p>{{ selectedUser.workSchedule || "-" }}</p>
+                    </div>
 
-          <div class="detail-group">
-            <span class="detail-label">Rol</span>
-            <span :class="['role-badge', roleBadgeClass(selectedUser.role)]">
-              {{ displayRole(selectedUser.role) }}
-            </span>
-          </div>
+                    <div class="detail-group">
+                        <span class="detail-label">Rol</span>
+                        <span :class="['role-badge', roleBadgeClass(selectedUser.role)]">
+                            {{ displayRole(selectedUser.role) }}
+                        </span>
+                    </div>
 
-          <div class="detail-group detail-full">
-            <span class="detail-label">Permisos</span>
-            <p>{{ selectedUser.permissions || "-" }}</p>
-          </div>
-        </div>
+                    <div class="detail-group detail-full">
+                        <span class="detail-label">Permisos</span>
+                        <p>{{ selectedUser.permissions || "-" }}</p>
+                    </div>
+                </div>
 
-        <hr class="details-line" />
+                <hr class="details-line" />
 
-        <div class="details-actions">
-          <button type="button" class="edit-details-btn" @click="openUserEdit(selectedUser)">
-            Editar usuario
-          </button>
+                <div class="details-actions">
+                    <button type="button" class="edit-details-btn" @click="openUserEdit(selectedUser)">
+                        Editar usuario
+                    </button>
 
-          <button type="button" class="close-details-btn" @click="closeDetails">
-            Cerrar
-          </button>
-        </div>
-      </AdminCard>
-    </template>
+                    <button type="button" class="close-details-btn" @click="closeDetails">
+                        Cerrar
+                    </button>
+                </div>
+            </AdminCard>
+        </template>
 
-    <template v-else-if="editingUser">
-      <AdminHero
-        title="Editar Usuario"
-        subtitle="Modificación de datos del usuario"
-        icon="bi bi-pencil-square"
-      />
+        <template v-else-if="editingUser">
+            <AdminHero title="Editar Usuario"
+                       subtitle="Modificación de datos del usuario"
+                       icon="bi bi-pencil-square" />
 
-      <div v-if="successMessage" class="success-message">
-        <i class="bi bi-check-circle-fill"></i>
-        <span>{{ successMessage }}</span>
-      </div>
-
-      <div v-if="errorMsg" class="error-message">
-        <i class="bi bi-exclamation-circle-fill"></i>
-        <span>{{ errorMsg }}</span>
-      </div>
-
-      <AdminCard class="edit-card">
-        <form class="user-form" @submit.prevent="saveUserChanges">
-          <div class="form-grid">
-            <div class="form-group">
-              <label for="firstName">Nombre <span>*</span></label>
-              <input id="firstName" v-model.trim="editForm.firstName" type="text" required />
+            <div v-if="successMessage" class="success-message">
+                <i class="bi bi-check-circle-fill"></i>
+                <span>{{ successMessage }}</span>
             </div>
 
-            <div class="form-group">
-              <label for="lastName">Apellido <span>*</span></label>
-              <input id="lastName" v-model.trim="editForm.lastName" type="text" required />
+            <div v-if="errorMsg" class="error-message">
+                <i class="bi bi-exclamation-circle-fill"></i>
+                <span>{{ errorMsg }}</span>
             </div>
 
-            <div class="form-group full-width">
-              <label for="email">Correo</label>
-              <input id="email" v-model="editForm.email" type="email" disabled />
-              <small>El correo no se puede modificar.</small>
+            <AdminCard class="edit-card">
+                <form class="user-form" @submit.prevent="saveUserChanges">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="firstName">Nombre <span>*</span></label>
+                            <input id="firstName" v-model.trim="editForm.firstName" type="text" required />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="lastName">Apellido <span>*</span></label>
+                            <input id="lastName" v-model.trim="editForm.lastName" type="text" required />
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="email">Correo</label>
+                            <input id="email" v-model="editForm.email" type="email" disabled />
+                            <small>El correo no se puede modificar.</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="ssn">SSN <span>*</span></label>
+                            <input id="ssn" v-model.trim="editForm.ssn" type="text" required />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="nationality">Nacionalidad <span>*</span></label>
+                            <input id="nationality" v-model.trim="editForm.nationality" type="text" required />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="salary">Salario <span>*</span></label>
+                            <input id="salary" v-model.number="editForm.salary" type="number" min="0" required />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="workSchedule">Horario <span>*</span></label>
+                            <input id="workSchedule" v-model.trim="editForm.workSchedule" type="text" required />
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="permissions">Permisos <span>*</span></label>
+                            <input id="permissions" v-model.trim="editForm.permissions" type="text" required />
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="role">Rol <span>*</span></label>
+                            <select id="role" v-model="editForm.role">
+                                <option value="Administrator">Administrator</option>
+                                <option value="Operator">Operator</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="edit-actions">
+                        <button type="submit" class="save-btn" :disabled="saving">
+                            {{ saving ? "Guardando..." : "Guardar cambios" }}
+                        </button>
+
+                        <button type="button" class="cancel-btn" @click="cancelEdit">
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            </AdminCard>
+        </template>
+        <Transition name="modal-fade">
+            <div v-if="deletingUser" class="delete-modal-overlay" @click.self="closeDeleteModal">
+                <div class="delete-modal" role="dialog" aria-modal="true" aria-labelledby="delete-user-title">
+                    <button type="button" class="modal-close-btn" @click="closeDeleteModal" aria-label="Cerrar">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+
+                    <div class="delete-modal-icon">
+                        <i class="bi bi-trash3"></i>
+                    </div>
+
+                    <h3 id="delete-user-title">Eliminar usuario</h3>
+
+                    <p class="delete-modal-text">¿Estás seguro de eliminar a {{ deletingUser.fullName }}?</p>
+                    <p class="delete-modal-warning">Esta acción es irreversible.</p>
+
+                    <div class="delete-modal-actions">
+                        <button type="button" class="modal-secondary-btn" @click="closeDeleteModal" :disabled="deleting">
+                            Cancelar
+                        </button>
+
+                        <button type="button" class="modal-danger-btn" @click="confirmDelete" :disabled="deleting">
+                            {{ deleting ? 'Eliminando...' : 'Eliminar' }}
+                        </button>
+                    </div>
+                </div>
             </div>
-
-            <div class="form-group">
-              <label for="ssn">SSN <span>*</span></label>
-              <input id="ssn" v-model.trim="editForm.ssn" type="text" required />
-            </div>
-
-            <div class="form-group">
-              <label for="nationality">Nacionalidad <span>*</span></label>
-              <input id="nationality" v-model.trim="editForm.nationality" type="text" required />
-            </div>
-
-            <div class="form-group">
-              <label for="salary">Salario <span>*</span></label>
-              <input id="salary" v-model.number="editForm.salary" type="number" min="0" required />
-            </div>
-
-            <div class="form-group">
-              <label for="workSchedule">Horario <span>*</span></label>
-              <input id="workSchedule" v-model.trim="editForm.workSchedule" type="text" required />
-            </div>
-
-            <div class="form-group full-width">
-              <label for="permissions">Permisos <span>*</span></label>
-              <input id="permissions" v-model.trim="editForm.permissions" type="text" required />
-            </div>
-
-            <div class="form-group full-width">
-              <label for="role">Rol <span>*</span></label>
-              <select id="role" v-model="editForm.role">
-                <option value="Administrator">Administrator</option>
-                <option value="Operator">Operator</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="edit-actions">
-            <button type="submit" class="save-btn" :disabled="saving">
-              {{ saving ? "Guardando..." : "Guardar cambios" }}
-            </button>
-
-            <button type="button" class="cancel-btn" @click="cancelEdit">
-              Cancelar
-            </button>
-          </div>
-        </form>
-      </AdminCard>
-    </template>
-  </AdminPageLayout>
+        </Transition>
+    </AdminPageLayout>
 </template>
 
 <script>
@@ -336,7 +356,9 @@ export default {
         permissions: "",
         email: "",
         role: "Operator",
-      },
+        },
+      deletingUser: null,
+      deleting: false,
       loading: false,
       saving: false,
       successMessage: "",
@@ -345,7 +367,8 @@ export default {
       activeSearch: "",
       page: 1,
       totalCount: 0,
-      pageSize: 10,
+        pageSize: 10,
+
     };
   },
 
@@ -592,7 +615,47 @@ export default {
       }
 
       return `$ ${Number(salary).toLocaleString("es-CR")}`;
-    },
+      },
+      openDeleteModal(user) {
+          this.deletingUser = { ...user };
+          this.successMessage = "";
+          this.errorMsg = "";
+      },
+
+      closeDeleteModal() {
+          this.deletingUser = null;
+      },
+
+      async confirmDelete() {
+          if (this.deleting || !this.deletingUser) return;
+
+          this.deleting = true;
+          this.errorMsg = "";
+
+          try {
+              const token = localStorage.getItem("token");
+
+              await axios.delete(
+                  `${BaseURL}/${encodeURIComponent(this.deletingUser.id)}`,
+                  {
+                      headers: { Authorization: `Bearer ${token}` },
+                  }
+              );
+
+              this.successMessage = "Usuario eliminado correctamente.";
+              this.deletingUser = null;
+              await this.fetchUsers();
+
+              setTimeout(() => {
+                  this.successMessage = "";
+              }, 2500);
+          } catch (error) {
+              this.errorMsg = error.response?.data || "No se pudo eliminar el usuario.";
+              this.deletingUser = null;
+          } finally {
+              this.deleting = false;
+          }
+      },
   },
 };
 </script>
@@ -900,6 +963,141 @@ export default {
 
 .edit-btn:hover {
   color: #1d4ed8;
+}
+
+.delete-btn {
+    border: none;
+    background: transparent;
+    color: #dc2626;
+    font-size: 0.88rem;
+    font-weight: 700;
+    padding: 0;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+}
+
+.delete-btn:hover {
+    text-decoration: underline;
+    color: #b91c1c;
+}
+
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+    transition: opacity 0.18s ease;
+}
+
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+    opacity: 0;
+}
+
+.delete-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    background: rgba(17, 24, 39, 0.55);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.delete-modal {
+    position: relative;
+    width: min(100%, 460px);
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 28px;
+    box-shadow: 0 24px 80px rgba(15, 23, 42, 0.28);
+    text-align: center;
+}
+
+.modal-close-btn {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 34px;
+    height: 34px;
+    border: none;
+    border-radius: 999px;
+    background: #f8fafc;
+    color: #94a3b8;
+    cursor: pointer;
+}
+
+.delete-modal-icon {
+    width: 64px;
+    height: 64px;
+    margin: 4px auto 16px;
+    border-radius: 20px;
+    background: #fff1f2;
+    color: #e11d48;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+}
+
+.delete-modal h3 {
+    margin: 0 0 12px;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.delete-modal-text {
+    margin: 0;
+    color: #334155;
+    font-size: 0.98rem;
+    line-height: 1.5;
+}
+
+.delete-modal-warning {
+    margin: 10px 0 0;
+    color: #ef4444;
+    font-size: 0.92rem;
+    font-weight: 700;
+}
+
+.delete-modal-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.modal-secondary-btn,
+.modal-danger-btn {
+    border: none;
+    border-radius: 12px;
+    padding: 13px 16px;
+    font-size: 0.95rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform 0.2s ease, opacity 0.2s ease, background 0.2s ease;
+}
+
+.modal-secondary-btn {
+    background: #f3f4f6;
+    color: #1f2937;
+}
+
+.modal-danger-btn {
+    background: linear-gradient(to right, #e11d48, #f97316);
+    color: #ffffff;
+}
+
+.modal-secondary-btn:hover:not(:disabled),
+.modal-danger-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+}
+
+.modal-secondary-btn:disabled,
+.modal-danger-btn:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
 }
 
 .success-message {

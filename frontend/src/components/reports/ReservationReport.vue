@@ -265,7 +265,7 @@ const MILLISECONDS_IN_A_DAY = MILLISECONDS_IN_AN_HOUR * 24;
 
 const FLIGHT_CLASS_TRANSLATIONS = {
   'FirstClass': 'Primera Clase',
-  'Economy': 'Económica'
+  'Economy': 'Clase Turista'
 };
 export default {
   name: 'ReservationReport',
