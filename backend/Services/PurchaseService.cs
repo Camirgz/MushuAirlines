@@ -186,28 +186,37 @@ public class PurchaseService : IPurchaseService
                 .ToList();
         }
 
-        var purchaseId = await _purchaseRepo.ExecutePurchaseTransactionAsync(new PurchaseTransactionData
+        int purchaseId;
+        try
         {
-            Record = new PurchaseRecord
+            purchaseId = await _purchaseRepo.ExecutePurchaseTransactionAsync(new PurchaseTransactionData
             {
-                PassengerId     = firstPassengerId,
-                ReservationCode = reservationCode,
-                InvoiceNumber   = invoiceNumber,
-                PaymentMethod   = request.Payment.Method,
-                Email           = request.Payment.ContactEmail,
-                TotalPaid       = totals.TotalPaid,
-                TotalSeats      = totals.TotalSeats,
-                PurchaseDate    = purchaseDate
-            },
-            Details        = totals.DetailByClass,
-            BaggageDetails = totals.BaggageDetails,
-            Tickets1       = tickets1,
-            TicketBaggage1 = ticketBaggage1,
-            ScheduledId1   = scheduledFlightId1,
-            Tickets2       = tickets2,
-            TicketBaggage2 = ticketBaggage2,
-            ScheduledId2   = isStopover ? scheduledFlightId2 : null
-        });
+                Record = new PurchaseRecord
+                {
+                    PassengerId     = firstPassengerId,
+                    ReservationCode = reservationCode,
+                    InvoiceNumber   = invoiceNumber,
+                    PaymentMethod   = request.Payment.Method,
+                    Email           = request.Payment.ContactEmail,
+                    TotalPaid       = totals.TotalPaid,
+                    TotalSeats      = totals.TotalSeats,
+                    PurchaseDate    = purchaseDate
+                },
+                Details        = totals.DetailByClass,
+                BaggageDetails = totals.BaggageDetails,
+                Tickets1       = tickets1,
+                TicketBaggage1 = ticketBaggage1,
+                ScheduledId1   = scheduledFlightId1,
+                Tickets2       = tickets2,
+                TicketBaggage2 = ticketBaggage2,
+                ScheduledId2   = isStopover ? scheduledFlightId2 : null
+            });
+        }
+        catch
+        {
+            await _passengerRepo.DeletePassengersAsync(passengerIds);
+            throw;
+        }
 
         var tickets = GenerateTicketSummaries(
             request.SeatSelections,
