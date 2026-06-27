@@ -175,13 +175,17 @@
                 </div>
               </button>
 
-              <button class="action" @click="cancelReservation">
-                <div class="action-icon red"><i class="bi bi-x-circle"></i></div>
-                <div>
-                  <div class="action-label">Cancelar reserva</div>
-                  <div class="action-sub">Solicitar reembolso</div>
-                </div>
-              </button>
+              <button class="action" @click="showCancelPopup = true">
+              <div class="action-icon red">
+                  <i class="bi bi-x-circle"></i>
+              </div>
+
+              <div>
+                  <div class="action-label">
+                      Cancelar reserva
+                  </div>
+              </div>
+          </button>
 
               <button class="action" @click="printItinerary">
                 <div class="action-icon gray"><i class="bi bi-printer"></i></div>
@@ -211,7 +215,36 @@
                 <span class="summary-value">{{ detail.seatCount }} asiento{{ detail.seatCount === 1 ? '' : 's' }}</span>
               </div>
             </AdminCard>
+            <button class="back-home-btn" @click="goBack">
+              <i class="bi bi-arrow-left"></i> Volver al inicio
+            </button>
           </aside>
+        </div>
+      </div>
+      <div v-if="showCancelPopup" class="popup-overlay">
+          <div class="popup-card">
+            <div class="popup-icon">
+              <i class="bi bi-exclamation-triangle"></i>
+            </div>
+            <h3>Cancelar reserva</h3>
+            <p>¿Está seguro que desea cancelar esta reserva?</p>
+            <p>Se enviará un correo de confirmación al comprador.</p>
+            <div class="popup-buttons">
+              <button class="secondary" @click="showCancelPopup = false">Volver</button>
+              <button class="primary" @click="cancellationEmail">Enviar correo</button>
+            </div>
+          </div>
+        </div>
+        <div v-if="popupMessage" class="popup-overlay" @click="popupMessage = null">
+        <div class="popup-card">
+          <div class="popup-icon">
+            <i class="bi bi-check-circle" style="color: #16a34a"></i>
+          </div>
+          <h3>Correo enviado</h3>
+          <p>{{ popupMessage }}</p>
+          <div class="popup-buttons">
+            <button class="primary" style="background: #16a34a" @click="goBack">Aceptar</button>
+          </div>
         </div>
       </div>
     </template>
@@ -222,6 +255,7 @@
 
 <script>
 import { getReservationReport, downloadItinerary } from '@/services/ReservationService';
+import { sendCancellationEmail } from "@/services/CancelReservation";
 import AdminHero       from '@/components/admin/ui/AdminHero.vue';
 import AdminCard       from '@/components/admin/ui/AdminCard.vue';
 import AdminPageLayout from '@/components/layout/AdminPageLayout.vue';
@@ -238,7 +272,7 @@ export default {
   components: { AdminCard, AdminHero, AdminPageLayout },
 
   data() {
-    return { loading: true, loadError: null, reservation: null };
+    return { loading: true, loadError: null, reservation: null,  showCancelPopup: false, popupMessage: null };
   },
   emits: ["back"],
   computed: {
@@ -266,6 +300,16 @@ export default {
   },
   
   methods: {
+    async cancellationEmail() {
+      try {
+        await sendCancellationEmail();
+        this.showCancelPopup = false;
+        this.popupMessage = "Se envió un correo con el enlace para confirmar la cancelación.";
+      }
+      catch(error){
+        this.popupMessage = error.message;
+      }
+    },
     async printItinerary() {
       try {
         const pdf = await downloadItinerary();
@@ -289,6 +333,9 @@ export default {
     goBack() {
       localStorage.removeItem("reservationToken");
       this.$router.push("/");
+    },
+    goBaggage() {
+      this.$router.push(`/purchase/${this.reservation.purchaseId}/add-baggage`);
     },
     formatDateShort(dateString) {
       if (!dateString) return '';
@@ -442,4 +489,98 @@ tr:hover td { background: #fafafa; }
 .summary-row:last-child { border-bottom: none; }
 .summary-label { color: #999; }
 .summary-value { font-weight: 600; }
+
+.back-home-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px 14px;
+  background: transparent;
+  border: 1px solid #d0d0d0;
+  border-radius: 10px;
+  color: #999;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.back-home-btn:hover {
+  color: #666;
+  border-color: #bbb;
+}
+.popup-buttons{
+    display:flex;
+    gap:12px;
+    margin-top:20px;
+}
+
+.popup-buttons button{
+    flex:1;
+}
+
+.secondary{
+    background:white;
+    color:#111827;
+    border:1px solid #d1d5db;
+}
+.primary {
+    background: linear-gradient(135deg, #f01818 0%, #ff5a00 45%, #ffc400 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.popup-card {
+  width: 360px;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 28px;
+  text-align: center;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.25);
+}
+
+.popup-icon {
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  background: #fff4ed;
+  color: #f01818;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.6rem;
+}
+
+.popup-card h3 {
+  margin: 0 0 10px;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #111827;
+}
+
+.popup-card p {
+  margin: 0 0 8px;
+  color: #4b5563;
+  font-size: 0.95rem;
+}
+
 </style>

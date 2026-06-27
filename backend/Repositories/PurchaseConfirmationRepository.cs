@@ -24,7 +24,7 @@ namespace backend.Repositories
                         ROW_NUMBER() OVER (ORDER BY
                             CAST(fs.DepartureDate AS DATETIME) + CAST(fs.DepartureTime AS DATETIME)
                         ) AS LegOrder,
-                        CAST(sf.Id AS VARCHAR)                                                      AS FlightNumber,
+                        sf.RouteCode                                                                AS FlightNumber,
                         at.AircraftType                                                             AS AircraftType,
                         a.Model                                                                     AS AircraftModel,
                         fs.OriginAirport,
@@ -97,6 +97,11 @@ namespace backend.Repositories
                     purchase.CheckedBaggageCount    = checkedBaggage.Quantity;
                     purchase.CheckedBaggageSubtotal = checkedBaggage.Subtotal;
                 }
+
+                var legs = GetBagPricingByPurchaseId(purchaseId);
+                purchase.BagLegs       = legs;
+                purchase.BagPrice      = legs.Sum(l => l.BagPrice);
+                purchase.BagMultiplier = legs.FirstOrDefault()?.BagMultiplier ?? 1;
             }
 
             return purchase;
@@ -179,33 +184,185 @@ namespace backend.Repositories
         public List<TicketSummary> GetPassengerTickets(int purchaseId)
         {
             using var connection = new SqlConnection(connectionString);
- 
+
             const string query = @"
-              SELECT
-                per.FirstName + ' ' + per.LastName AS PassengerFullName,
-                CAST(t.SeatNumber AS VARCHAR)      AS SeatNumber,
-                t.SeatClass,
-                CAST(t.ScheduledId AS VARCHAR)     AS FlightNumber
-            FROM Ticket t
-            INNER JOIN Passenger pa
-                ON t.PassengerHas = pa.Id
-            INNER JOIN Person per
-                ON pa.Id = per.Id
-            INNER JOIN TicketBaggage tb
-                ON tb.PassengerId = t.PassengerHas
-                AND tb.ScheduledFlightId = t.ScheduledId
-            WHERE tb.BookingCode =
-            (
-                SELECT BookingCode
-                FROM Purchase
-                WHERE Id = @PurchaseId
-            )
-            ORDER BY
-                t.ScheduledId,
-                per.FirstName,
-                per.LastName";
- 
+                SELECT
+                    per.FirstName + ' ' + per.LastName AS PassengerFullName,
+                    CAST(t.SeatNumber AS VARCHAR)      AS SeatNumber,
+                    t.SeatClass,
+                    sf.RouteCode                       AS FlightNumber
+                FROM Ticket t
+                INNER JOIN ScheduledFlight sf
+                    ON sf.Id = t.ScheduledId
+                INNER JOIN Passenger pa
+                    ON t.PassengerHas = pa.Id
+                INNER JOIN Person per
+                    ON pa.Id = per.Id
+                INNER JOIN TicketBaggage tb
+                    ON tb.PassengerId = t.PassengerHas
+                    AND tb.ScheduledFlightId = t.ScheduledId
+                WHERE tb.BookingCode =
+                (
+                    SELECT BookingCode
+                    FROM Purchase
+                    WHERE Id = @PurchaseId
+                )
+                ORDER BY
+                    t.ScheduledId,
+                    per.FirstName,
+                    per.LastName";
+
             return connection.Query<TicketSummary>(query, new { PurchaseId = purchaseId }).ToList();
+        }
+        public List<TicketSummary> GetPassengerTicketsForBaggage(int purchaseId)
+        {
+            using var connection = new SqlConnection(connectionString);
+
+            const string query = @"
+                SELECT
+                    per.FirstName + ' ' + per.LastName AS PassengerFullName,
+                    CAST(t.SeatNumber AS VARCHAR)      AS SeatNumber,
+                    t.SeatClass,
+                    sf.RouteCode                       AS FlightNumber
+                FROM Ticket t
+                INNER JOIN ScheduledFlight sf
+                    ON sf.Id = t.ScheduledId
+                INNER JOIN Passenger pa
+                    ON t.PassengerHas = pa.Id
+                INNER JOIN Person per
+                    ON pa.Id = per.Id
+                WHERE t.ScheduledId =
+                (
+                    SELECT TOP 1 isf.ScheduledId
+                    FROM Purchase p
+                    INNER JOIN ItineraryScheduledFlight isf
+                        ON p.BookingCode = isf.BookingCode
+                    WHERE p.Id = @PurchaseId
+                    ORDER BY isf.ScheduledId
+                )
+                AND t.PassengerHas IN
+                (
+                    SELECT tb.PassengerId
+                    FROM TicketBaggage tb
+                    WHERE tb.BookingCode =
+                    (
+                        SELECT BookingCode
+                        FROM Purchase
+                        WHERE Id = @PurchaseId
+                    )
+                )
+                ORDER BY
+                    per.FirstName,
+                    per.LastName";
+
+            return connection.Query<TicketSummary>(
+                query,
+                new { PurchaseId = purchaseId }
+            ).ToList();
+        }
+        public PurchaseConfirmationModel GetPurchaseForBaggage(int purchaseId)
+        {
+            var purchase = GetPurchase(purchaseId);
+
+            purchase.Tickets = GetPassengerTicketsForBaggage(purchaseId);
+
+            return purchase;
+        }
+
+        public List<BagPricing> GetBagPricingByPurchaseId(int purchaseId)
+        {
+            using var connection = new SqlConnection(connectionString);
+
+            const string sql = @"
+                SELECT
+                    r.BagPrice,
+                    r.BagMultiplier
+                FROM Purchase p
+                INNER JOIN ItineraryScheduledFlight isf
+                    ON p.BookingCode = isf.BookingCode
+                INNER JOIN ScheduledFlight sf
+                    ON isf.ScheduledId = sf.Id
+                INNER JOIN Route r
+                    ON sf.RouteCode = r.Code
+                WHERE p.Id = @PurchaseId
+                ORDER BY isf.ScheduledId";
+
+            var legs = connection.Query<BagPricing>(sql, new { PurchaseId = purchaseId }).ToList();
+
+            if (legs.Count == 0)
+                throw new Exception("No se encontró la información de precios para esta compra.");
+
+            return legs;
+        }
+
+        public void AddCheckedBagsToTickets(int purchaseId, List<PassengerBaggageUpdate> updates, decimal bagPrice, decimal totalCharged)
+        {
+            using var connection = new SqlConnection(connectionString);
+            connection.Open();
+            using var tx = connection.BeginTransaction();
+
+            const string getBookingCode = @"
+                SELECT BookingCode FROM Purchase WHERE Id = @PurchaseId";
+
+            var bookingCode = connection.QueryFirstOrDefault<int?>(
+                getBookingCode, new { PurchaseId = purchaseId }, tx)
+                ?? throw new Exception("Compra no encontrada.");
+
+            const string updateTicketBaggage = @"
+                UPDATE tb
+                SET
+                    tb.CheckedBagCount = tb.CheckedBagCount + @ExtraBags,
+                    tb.BaggageSubtotal = tb.BaggageSubtotal + @ExtraCost
+                FROM TicketBaggage tb
+                INNER JOIN Passenger pa  ON tb.PassengerId = pa.Id
+                INNER JOIN Person    per ON pa.Id          = per.Id
+                WHERE tb.BookingCode = @BookingCode
+                  AND per.FirstName + ' ' + per.LastName = @PassengerFullName";
+
+            foreach (var update in updates)
+            {
+                connection.Execute(updateTicketBaggage, new
+                {
+                    update.ExtraBags,
+                    update.ExtraCost,
+                    BookingCode = bookingCode,
+                    update.PassengerFullName
+                }, tx);
+            }
+
+            int totalExtraBags = updates.Sum(u => u.ExtraBags);
+
+            const string upsertBaggageDetail = @"
+                IF EXISTS (
+                    SELECT 1 FROM PurchaseBaggageDetail
+                    WHERE PurchaseId = @PurchaseId AND BaggageType = 'CheckedBaggage'
+                )
+                    UPDATE PurchaseBaggageDetail
+                    SET Quantity = Quantity + @TotalExtraBags,
+                        Subtotal = Subtotal + @TotalCharged
+                    WHERE PurchaseId = @PurchaseId AND BaggageType = 'CheckedBaggage'
+                ELSE
+                    INSERT INTO PurchaseBaggageDetail (PurchaseId, BaggageType, Quantity, UnitPrice, Subtotal)
+                    VALUES (@PurchaseId, 'CheckedBaggage', @TotalExtraBags, @BagPrice, @TotalCharged)";
+
+            connection.Execute(upsertBaggageDetail, new
+            {
+                PurchaseId = purchaseId,
+                TotalExtraBags = totalExtraBags,
+                TotalCharged = totalCharged,
+                BagPrice = bagPrice
+            }, tx);
+
+            const string updateTotalPaid = @"
+                UPDATE Purchase SET TotalPaid = TotalPaid + @TotalCharged WHERE Id = @PurchaseId";
+
+            connection.Execute(updateTotalPaid, new
+            {
+                TotalCharged = totalCharged,
+                PurchaseId = purchaseId
+            }, tx);
+
+            tx.Commit();
         }
     }
 }

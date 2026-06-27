@@ -22,6 +22,9 @@ import ReservationLogin from "./components/login/ReservationLogin.vue";
 import ReservationReport from "./components/reports/ReservationReport.vue";
 import FlightDetailReport from "./components/reports/FlightDetailReport.vue";
 import MonthlyIncomeReport from "./components/reports/MonthlyIncomeReport.vue";
+import AddBaggagePage from './components/purchase/AddBaggagePage.vue';
+
+import CancelReservation from "./components/reports/CancelReservation.vue";
 
 import "@/assets/styles/admin-shared.css";
 
@@ -48,6 +51,8 @@ const router = createRouter({
         { path: "/my-reservation/report", name: "ReservationReport",component: ReservationReport, meta:{requiresAuth:true}},
         { path: "/admin/reports/flight-detail", name: "FlightDetailReport", component: FlightDetailReport, meta: { requiresAuth: true, allowedRoles: ["Administrator", "Operator"] } },
         { path: "/admin/reports/monthly-income", name: "MonthlyIncomeReport", component: MonthlyIncomeReport, meta: { requiresAuth: true, allowedRoles: ["Administrator", "Operator"] } },
+        { path: "/purchase/:id/add-baggage", name: "AddBaggage", component: AddBaggagePage },
+        { path: "/cancel-reservation/:token", name: "CancelReservation", component: CancelReservation },
     ],
 });
 

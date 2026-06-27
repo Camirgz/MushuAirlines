@@ -1,6 +1,7 @@
 using backend.Exceptions;
 using backend.Interfaces;
 using backend.Model;
+using Microsoft.Extensions.Logging;
 
 namespace backend.Services;
 
@@ -11,19 +12,22 @@ public class PurchaseService : IPurchaseService
     private readonly ICodeGenerator        _codeGenerator;
     private readonly IPricingCalculator    _pricingCalculator;
     private readonly IRouteCreationService _routeCreationService;
+    private readonly ILogger<PurchaseService> _logger;
 
     public PurchaseService(
         IPassengerRepository  passengerRepo,
         IPurchaseRepository   purchaseRepo,
         ICodeGenerator        codeGenerator,
         IPricingCalculator    pricingCalculator,
-        IRouteCreationService routeCreationService)
+        IRouteCreationService routeCreationService,
+        ILogger<PurchaseService> logger)
     {
         _passengerRepo        = passengerRepo;
         _purchaseRepo         = purchaseRepo;
         _codeGenerator        = codeGenerator;
         _pricingCalculator    = pricingCalculator;
         _routeCreationService = routeCreationService;
+        _logger               = logger;
     }
 
     public async Task<PurchaseResponseModel> CreatePurchaseAsync(PurchaseRequestModel request)
@@ -70,16 +74,20 @@ public class PurchaseService : IPurchaseService
                 request.Flight2.FlightDate.ToDateTime(TimeOnly.MinValue));
         }
 
-        var seatCount = request.SeatSelections.Count;
+        int seatCount       = request.SeatSelections.Count;
+        int firstClassCount = request.SeatSelections.Count(s => s.SeatClass == SeatClass.FirstClass);
+        int economyCount    = request.SeatSelections.Count(s => s.SeatClass == SeatClass.Economy);
 
-        var seatCheckResults = await Task.WhenAll(
-            _purchaseRepo.HasAvailableSeatsAsync(scheduledFlightId1, seatCount),
-            isStopover
-                ? _purchaseRepo.HasAvailableSeatsAsync(scheduledFlightId2, seatCount)
-                : Task.FromResult(true));
+        bool flight1Available = await IsFlightAvailableAsync(
+            request.Flight.RouteCode, request.Flight.FlightDate, firstClassCount, economyCount);
+        if (!flight1Available) throw new SeatUnavailableException(scheduledFlightId1);
 
-        if (!seatCheckResults[0]) throw new SeatUnavailableException(scheduledFlightId1);
-        if (isStopover && !seatCheckResults[1]) throw new SeatUnavailableException(scheduledFlightId2);
+        if (isStopover)
+        {
+            bool flight2Available = await IsFlightAvailableAsync(
+                request.Flight2!.RouteCode, request.Flight2.FlightDate, firstClassCount, economyCount);
+            if (!flight2Available) throw new SeatUnavailableException(scheduledFlightId2);
+        }
 
         var seatNumberResults = await Task.WhenAll(
             _purchaseRepo.GetNextAvailableSeatNumbersAsync(scheduledFlightId1, seatCount),
@@ -93,8 +101,13 @@ public class PurchaseService : IPurchaseService
         decimal economyPrice    = route1.PriceEconomy    + (isStopover ? route2!.PriceEconomy    : 0);
         decimal firstClassPrice = route1.PriceFirstClass + (isStopover ? route2!.PriceFirstClass : 0);
         decimal handBagPrice    = route1.HandBagPrice    + (isStopover ? route2!.HandBagPrice    : 0);
-        decimal bagPrice        = route1.BagPrice        + (isStopover ? route2!.BagPrice        : 0);
-        decimal bagMultiplier   = route1.BagMultiplier;
+
+        var bagLegs = new List<BagPricing>
+        {
+            new() { BagPrice = route1.BagPrice, BagMultiplier = route1.BagMultiplier }
+        };
+        if (isStopover)
+            bagLegs.Add(new() { BagPrice = route2!.BagPrice, BagMultiplier = route2.BagMultiplier });
 
         var totals = _pricingCalculator.Calculate(
             request.SeatSelections,
@@ -102,8 +115,7 @@ public class PurchaseService : IPurchaseService
             economyPrice,
             firstClassPrice,
             handBagPrice,
-            bagPrice,
-            bagMultiplier);
+            bagLegs);
 
         var uniqueCodes = await Task.WhenAll(
             GenerateUniqueReservationCodeAsync(),
@@ -265,27 +277,58 @@ public class PurchaseService : IPurchaseService
     return tickets;
 }
 
-    public async Task<bool> IsFlightAvailableAsync(string routeCode, DateOnly flightDate, int requestedCount)
+    public async Task<bool> IsFlightAvailableAsync(
+        string routeCode, DateOnly flightDate, int firstClassCount, int economyCount)
     {
         RouteCreationModel route;
         try { route = _routeCreationService.GetRouteByCode(routeCode); }
-        catch { return true; } 
+        catch (Exception ex)
+        {
+            _logger.LogWarning("IsFlightAvailableAsync: route '{RouteCode}' not found — {Msg}", routeCode, ex.Message);
+            return true;
+        }
 
+        int fcCapacity  = route.FirstClassCapacity;
+        int ecoCapacity = route.EconomyClassCapacity;
 
-        int capacity = route.EconomyClassCapacity + route.FirstClassCapacity;
-        if (capacity == 0)
-            capacity = await _purchaseRepo.GetAircraftCapacityByTypeAsync(route.AircraftTypeId);
-        if (capacity == 0) return true; 
-        if (requestedCount > capacity) return false;
+        if (fcCapacity == 0 && ecoCapacity == 0)
+        {
+            var (fc, eco) = await _purchaseRepo.GetAircraftCapacityByClassAsync(route.AircraftTypeId);
+            fcCapacity  = fc;
+            ecoCapacity = eco;
+            _logger.LogInformation(
+                "IsFlightAvailableAsync: route capacities were 0, fell back to aircraft — FC_cap={FC} Eco_cap={Eco}",
+                fcCapacity, ecoCapacity);
+        }
+
+        _logger.LogInformation(
+            "IsFlightAvailableAsync: route={RouteCode} FC_cap={FC} Eco_cap={Eco} requested FC={RqFC} Eco={RqEco}",
+            routeCode, fcCapacity, ecoCapacity, firstClassCount, economyCount);
 
         var flightDateTime     = flightDate.ToDateTime(TimeOnly.MinValue);
         int? scheduledFlightId = _routeCreationService.FindExistingScheduledFlight(routeCode, flightDateTime);
 
-        if (!scheduledFlightId.HasValue)
-            return true;
+        _logger.LogInformation("IsFlightAvailableAsync: scheduledFlightId={SFId}", scheduledFlightId);
 
-        int bookedSeats = await _purchaseRepo.GetBookedSeatsAsync(scheduledFlightId.Value);
-        return requestedCount + bookedSeats <= capacity;
+        if (firstClassCount > 0 && fcCapacity > 0)
+        {
+            int bookedFC = scheduledFlightId.HasValue
+                ? await _purchaseRepo.GetBookedSeatsByClassAsync(scheduledFlightId.Value, "FirstClass")
+                : 0;
+            _logger.LogInformation("IsFlightAvailableAsync: bookedFC={B} requested={R} cap={C}", bookedFC, firstClassCount, fcCapacity);
+            if (firstClassCount + bookedFC > fcCapacity) return false;
+        }
+
+        if (economyCount > 0 && ecoCapacity > 0)
+        {
+            int bookedEco = scheduledFlightId.HasValue
+                ? await _purchaseRepo.GetBookedSeatsByClassAsync(scheduledFlightId.Value, "Economy")
+                : 0;
+            _logger.LogInformation("IsFlightAvailableAsync: bookedEco={B} requested={R} cap={C}", bookedEco, economyCount, ecoCapacity);
+            if (economyCount + bookedEco > ecoCapacity) return false;
+        }
+
+        return true;
     }
 
     public async Task<List<string>> CheckPassengerDuplicatesAsync(

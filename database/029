@@ -1,0 +1,20 @@
+USE MushuAirlines;
+GO
+
+ALTER TABLE ScheduledFlight
+ADD BookedSeatsFirstClass INT NOT NULL DEFAULT 0,
+BookedSeatsEconomy    INT NOT NULL DEFAULT 0;
+GO
+
+UPDATE sf
+SET sf.BookedSeatsFirstClass = ISNULL(t.FirstCount, 0),
+sf.BookedSeatsEconomy    = ISNULL(t.EcoCount,   0)
+FROM ScheduledFlight sf
+LEFT JOIN (
+SELECT ScheduledId,
+SUM(CASE WHEN SeatClass = 'FirstClass' THEN 1 ELSE 0 END) AS FirstCount,
+SUM(CASE WHEN SeatClass = 'Economy'    THEN 1 ELSE 0 END) AS EcoCount
+FROM   Ticket
+GROUP BY ScheduledId
+) t ON t.ScheduledId = sf.Id;
+GO

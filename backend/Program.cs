@@ -107,6 +107,11 @@ builder.Services.AddScoped<IFlightDetailReportService, FlightDetailReportService
 
 builder.Services.AddScoped<IMonthlyIncomeReportRepository, MonthlyIncomeReportRepository>();
 builder.Services.AddScoped<IMonthlyIncomeReportService, MonthlyIncomeReportService>();
+builder.Services.AddScoped<IReservationCancellationService, ReservationCancellationService>();
+builder.Services.AddScoped<IReservationCancellationRepository, ReservationCancellationRepository>();
+builder.Services.AddScoped<IEmailCancellationService, EmailCancellationService>();
+
+
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>

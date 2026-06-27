@@ -1,0 +1,16 @@
+USE MushuAirlines;
+ALTER TABLE Itinerary
+ADD Status VARCHAR(20) NOT NULL
+CONSTRAINT DF_Itinerary_Status
+DEFAULT 'Active';
+GO
+
+ALTER TABLE Ticket
+ADD Status VARCHAR(20) NOT NULL
+CONSTRAINT DF_Ticket_Status
+DEFAULT 'Active';
+GO
+
+ALTER TABLE Itinerary
+ADD CancelledAt DATETIME NULL;
+GO

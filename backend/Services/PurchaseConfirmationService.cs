@@ -37,6 +37,10 @@ namespace backend.Services
                 throw new Exception("Compra no encontrada.");
             return purchase;
         }
+        public PurchaseConfirmationModel GetPurchaseDataForBaggage(int purchaseId)
+        {
+            return repository.GetPurchaseForBaggage(purchaseId);
+        }
 
         public void ResendEmail(int purchaseId)
         {
