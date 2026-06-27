@@ -11,4 +11,6 @@ public interface IUserListService
     );
 
     string UpdateUser(int employeeId, UserManagementUpdateModel user);
+
+    string DeleteUser(int employeeId);
 }
