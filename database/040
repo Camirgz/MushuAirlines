@@ -1,0 +1,20 @@
+USE MushuAirlines;
+GO
+
+ALTER TABLE Route
+ADD AircraftCode INT NULL;
+GO
+
+ALTER TABLE Route
+ADD CONSTRAINT FK_Route_Aircraft
+FOREIGN KEY (AircraftCode)
+REFERENCES dbo.Aircraft(Code);
+GO
+
+UPDATE r
+SET r.AircraftCode = a.Code
+FROM Route r
+INNER JOIN Aircraft a
+    ON r.AircraftTypeId = a.Model
+WHERE r.AircraftCode IS NULL;
+GO

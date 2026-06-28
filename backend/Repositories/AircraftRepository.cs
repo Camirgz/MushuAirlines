@@ -1,6 +1,7 @@
 using backend.Interfaces;
 using backend.Model;
 using Dapper;
+using System.Data;
 using System.Data.SqlClient;
 
 namespace backend.Repositories
@@ -33,7 +34,9 @@ namespace backend.Repositories
                         + a.FirstClassRows * a.FirstClassSeatsPerRow
                     ) AS Capacity
                 FROM Aircraft a
-                JOIN AircraftType aty ON a.[Type] = aty.Id";
+                JOIN AircraftType aty ON a.[Type] = aty.Id
+                WHERE a.IsDeleted = 0
+                ORDER BY a.Model;";
 
             return connection.Query<AircraftResponseModel>(query);
         }
@@ -58,7 +61,8 @@ namespace backend.Repositories
                     ) AS Capacity
                 FROM Aircraft a
                 JOIN AircraftType aty ON a.[Type] = aty.Id
-                WHERE a.Code = @Id";
+                WHERE a.Code = @Id
+                AND a.IsDeleted = 0;";
 
             return connection.QueryFirstOrDefault<AircraftResponseModel>(
                 query,
@@ -74,8 +78,9 @@ namespace backend.Repositories
                 SELECT COUNT(*)
                 FROM Aircraft a
                 JOIN AircraftType aty ON a.[Type] = aty.Id
-                WHERE a.Model = @Model 
-                  AND aty.AircraftType = @TypeName",
+                WHERE a.Model = @Model
+                AND aty.AircraftType = @TypeName
+                AND a.IsDeleted = 0",
                 new
                 {
                     Model = model,
@@ -163,6 +168,27 @@ namespace backend.Repositories
                 FirstClassRows = aircraft.FirstClassRows,
                 FirstClassSeatsPerRow = aircraft.FirstClassSeatsPerRow
             });
+        }
+
+        public bool Delete(int id)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            connection.Open();
+
+            try
+            {
+                bool wasDeleted = connection.ExecuteScalar<bool>(
+                    "DeleteAircraft",
+                    new { Code = id },
+                    commandType: CommandType.StoredProcedure
+                );
+
+                return wasDeleted;
+            }
+            catch
+            {
+                throw;
+            }
         }
     }
 }

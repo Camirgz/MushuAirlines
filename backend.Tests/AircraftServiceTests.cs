@@ -212,4 +212,102 @@ public class AircraftServiceTests
         // Assert
         Assert.That(result, Is.EqualTo("Debe aumentar al menos un valor para actualizar la aeronave."));
     }
+
+    [Test]
+    public void Delete_WhenIdIsInvalid_ShouldReturnInvalidAircraftMessage()
+    {
+        // Arrange
+        int aircraftId = 0;
+
+        // Act
+        string result = _aircraftService.Delete(aircraftId);
+
+        // Assert
+        Assert.That(result, Is.EqualTo("La aeronave seleccionada no es válida."));
+    }
+
+    [Test]
+    public void Delete_WhenAircraftDoesNotExist_ShouldReturnNotFoundMessage()
+    {
+        // Arrange
+        int aircraftId = 99;
+
+        _mockAircraftRepository
+            .Setup(repository => repository.GetById(aircraftId))
+            .Returns((AircraftResponseModel?)null);
+
+        // Act
+        string result = _aircraftService.Delete(aircraftId);
+
+        // Assert
+        Assert.That(result, Is.EqualTo("No se encontró la aeronave que desea eliminar."));
+    }
+
+    [Test]
+    public void Delete_WhenRepositoryReturnsFalse_ShouldReturnNotFoundMessage()
+    {
+        // Arrange
+        int aircraftId = 1;
+
+        var aircraft = new AircraftResponseModel
+        {
+            Id = aircraftId,
+            Model = "Boeing 777",
+            Type = "Avión comercial",
+            WeightKg = 80000,
+            EconomyRows = 20,
+            EconomySeatsPerRow = 7,
+            FirstClassRows = 4,
+            FirstClassSeatsPerRow = 4,
+            Capacity = 156
+        };
+
+        _mockAircraftRepository
+            .Setup(repository => repository.GetById(aircraftId))
+            .Returns(aircraft);
+
+        _mockAircraftRepository
+            .Setup(repository => repository.Delete(aircraftId))
+            .Returns(false);
+
+        // Act
+        string result = _aircraftService.Delete(aircraftId);
+
+        // Assert
+        Assert.That(result, Is.EqualTo("No se encontró la aeronave que desea eliminar."));
+    }
+
+    [Test]
+    public void Delete_WhenAircraftExists_ShouldReturnEmptyStringAndDeletesAircraft()
+    {
+        // Arrange
+        int aircraftId = 1;
+
+        var aircraft = new AircraftResponseModel
+        {
+            Id = aircraftId,
+            Model = "Boeing 777",
+            Type = "Avión comercial",
+            WeightKg = 80000,
+            EconomyRows = 20,
+            EconomySeatsPerRow = 7,
+            FirstClassRows = 4,
+            FirstClassSeatsPerRow = 4,
+            Capacity = 156
+        };
+
+        _mockAircraftRepository
+            .Setup(repository => repository.GetById(aircraftId))
+            .Returns(aircraft);
+
+        _mockAircraftRepository
+            .Setup(repository => repository.Delete(aircraftId))
+            .Returns(true);
+
+        // Act
+        string result = _aircraftService.Delete(aircraftId);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(string.Empty));
+    }
 }

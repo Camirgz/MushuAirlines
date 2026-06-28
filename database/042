@@ -1,0 +1,87 @@
+USE MushuAirlines;
+GO
+
+CREATE OR ALTER PROCEDURE DeleteAircraft
+    @Code INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    DECLARE @HasAssociation BIT = 0;
+    DECLARE @WasDeleted BIT = 0;
+    DECLARE @AircraftModel VARCHAR(100);
+
+    SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        SELECT @AircraftModel = Model
+        FROM Aircraft
+        WHERE Code = @Code
+          AND IsDeleted = 0;
+
+        IF @AircraftModel IS NULL
+        BEGIN
+            COMMIT TRANSACTION;
+            SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+
+            SELECT @WasDeleted AS WasDeleted;
+            RETURN;
+        END;
+
+        IF EXISTS (
+            SELECT 1
+            FROM ScheduledFlight
+            WHERE AircraftCode = @Code
+        )
+        BEGIN
+            SET @HasAssociation = 1;
+        END;
+
+        IF EXISTS (
+            SELECT 1
+            FROM Route
+            WHERE AircraftCode = @Code
+               OR AircraftTypeId = @AircraftModel
+        )
+        BEGIN
+            SET @HasAssociation = 1;
+        END;
+
+        IF @HasAssociation = 1
+        BEGIN
+            UPDATE Aircraft
+            SET IsDeleted = 1
+            WHERE Code = @Code
+              AND IsDeleted = 0;
+
+            IF @@ROWCOUNT > 0
+                SET @WasDeleted = 1;
+        END
+        ELSE
+        BEGIN
+            DELETE FROM Aircraft
+            WHERE Code = @Code
+              AND IsDeleted = 0;
+
+            IF @@ROWCOUNT > 0
+                SET @WasDeleted = 1;
+        END;
+
+        COMMIT TRANSACTION;
+        SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+
+        SELECT @WasDeleted AS WasDeleted;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+
+        THROW;
+    END CATCH;
+END;
+GO

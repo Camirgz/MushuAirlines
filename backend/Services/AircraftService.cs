@@ -134,5 +134,36 @@ namespace backend.Services
                 return "ERROR: " + ex.Message;
             }
         }
+
+        public string Delete(int id)
+        {
+            if (id <= 0)
+            {
+                return "La aeronave seleccionada no es válida.";
+            }
+
+            AircraftResponseModel? aircraft = _aircraftRepository.GetById(id);
+
+            if (aircraft == null)
+            {
+                return "No se encontró la aeronave que desea eliminar.";
+            }
+
+            try
+            {
+                bool wasDeleted = _aircraftRepository.Delete(id);
+
+                if (!wasDeleted)
+                {
+                    return "No se encontró la aeronave que desea eliminar.";
+                }
+
+                return string.Empty;
+            }
+            catch
+            {
+                return "No se pudo eliminar la aeronave.";
+            }
+        }
     }
 }

@@ -60,11 +60,16 @@
 
                     <div class="row mt-3">
                         <div class="col-md-6 form-group">
-                            <label>Tipo de Aeronave<span>*</span></label>
-                            <select v-model="form.aircraftTypeId" class="form-control" required>
-                                <option :value="null" disabled>Seleccione un tipo de aeronave</option>
-                                <option v-for="type in aircraftTypes" :key="type.id" :value="type.type">
-                                    {{ type.type }} — {{ type.model }}
+                            <label>Aeronave<span>*</span></label>
+                            <select v-model.number="form.aircraftCode" class="form-control" required>
+                                <option :value="null" disabled>Seleccione una aeronave</option>
+
+                                <option
+                                    v-for="aircraft in aircraftTypes"
+                                    :key="aircraft.id"
+                                    :value="aircraft.id"
+                                >
+                                    {{ aircraft.type }} — {{ aircraft.model }}
                                 </option>
                             </select>
                         </div>
@@ -278,7 +283,8 @@
                     departureTime: "",
                     arrivalTime: "",
                     duration: "",
-                    aircraftTypeId: null,
+                    aircraftCode: null,
+                    aircraftTypeId: "",
                     frequency: [],
                     startDate: "",
                     finalizationDate: "",
@@ -307,12 +313,19 @@
         },
 
         watch: {
-            'form.aircraftTypeId'(newName) {
-                if (!newName) return;
-                const selected = this.aircraftTypes.find(t => t.type === newName);
+            'form.aircraftCode'(selectedAircraftCode) {
+                if (!selectedAircraftCode) return;
+
+                const selected = this.aircraftTypes.find(
+                    aircraft => aircraft.id === selectedAircraftCode
+                );
+
                 if (selected) {
+                    this.form.aircraftTypeId = selected.model;
+
                     this.form.firstClassCapacity =
                         (selected.firstClassRows || 0) * (selected.firstClassSeatsPerRow || 0);
+
                     this.form.economyClassCapacity =
                         (selected.economyRows || 0) * (selected.economySeatsPerRow || 0);
                 }
@@ -328,7 +341,7 @@
                     this.form.departureTime !== "" &&
                     this.form.arrivalTime !== "" &&
                     this.form.duration !== "" &&
-                    this.form.aircraftTypeId != null &&
+                    this.form.aircraftCode != null &&
                     this.form.code !== "" &&
                     Array.isArray(this.form.frequency) &&
                     this.form.frequency.length > 0 &&
@@ -368,9 +381,13 @@
                 try {
                     const originAirport = this.airports.find(a => a.code === this.form.originAirport);
                     const destAirport = this.airports.find(a => a.code === this.form.destinationAirport);
-
+                    const selectedAircraft = this.aircraftTypes.find(
+                        aircraft => aircraft.id === this.form.aircraftCode
+                    );
                     await axios.post(`${API_BASE_URL}/api/routecreation`, {
                         ...this.form,
+                        aircraftCode: selectedAircraft?.id ?? null,
+                        aircraftTypeId: selectedAircraft?.model ?? "",
                         frequency: this.form.frequency,
                         originCity: originAirport?.city || "",
                         destinationCity: destAirport?.city || ""
@@ -387,7 +404,8 @@
                         departureTime: "",
                         arrivalTime: "",
                         duration: "",
-                        aircraftTypeId: null,
+                        aircraftCode: null,
+                        aircraftTypeId: "",
                         frequency: [],
                         priceFirstClass: 0,
                         priceEconomy: 0,
@@ -463,14 +481,20 @@
             async loadAircraftTypes() {
                 try {
                     const response = await axios.get(`${API_BASE_URL}/api/aircraft`);
-                    const seen = new Set();
-                    this.aircraftTypes = response.data.filter(a => {
-                        if (seen.has(a.type)) return false;
-                        seen.add(a.type);
-                        return true;
-                    });
+
+                    this.aircraftTypes = response.data.map(aircraft => ({
+                        id: aircraft.id ?? aircraft.Id,
+                        model: aircraft.model ?? aircraft.Model,
+                        type: aircraft.type ?? aircraft.Type,
+                        weightKg: aircraft.weightKg ?? aircraft.WeightKg,
+                        capacity: aircraft.capacity ?? aircraft.Capacity,
+                        economyRows: aircraft.economyRows ?? aircraft.EconomyRows,
+                        economySeatsPerRow: aircraft.economySeatsPerRow ?? aircraft.EconomySeatsPerRow,
+                        firstClassRows: aircraft.firstClassRows ?? aircraft.FirstClassRows,
+                        firstClassSeatsPerRow: aircraft.firstClassSeatsPerRow ?? aircraft.FirstClassSeatsPerRow
+                    }));
                 } catch (error) {
-                    this.errorMessage = "No se pudieron cargar los tipos de avión.";
+                    this.errorMessage = "No se pudieron cargar las aeronaves.";
                 }
             },
 
