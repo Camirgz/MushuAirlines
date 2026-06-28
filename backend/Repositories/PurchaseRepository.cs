@@ -1,5 +1,6 @@
 using Dapper;
 using System.Data.SqlClient;
+using backend.Exceptions;
 using backend.Interfaces;
 using backend.Model;
 
@@ -108,6 +109,27 @@ public class PurchaseRepository : IPurchaseRepository
 
         try
         {
+            const string checkSeats = @"
+                SELECT (r.EconomyClassCapacity + r.FirstClassCapacity) - COUNT(t.SeatNumber)
+                FROM   ScheduledFlight sf WITH (UPDLOCK, HOLDLOCK)
+                JOIN   Route  r  ON sf.RouteCode  = r.Code
+                LEFT JOIN Ticket t ON t.ScheduledId = sf.Id
+                WHERE  sf.Id = @ScheduledFlightId
+                GROUP BY r.EconomyClassCapacity, r.FirstClassCapacity";
+
+            int available1 = await connection.ExecuteScalarAsync<int>(
+                checkSeats, new { ScheduledFlightId = data.ScheduledId1 }, transaction);
+            if (available1 < data.Tickets1.Count)
+                throw new SeatUnavailableException(data.ScheduledId1);
+
+            if (data.ScheduledId2.HasValue)
+            {
+                int available2 = await connection.ExecuteScalarAsync<int>(
+                    checkSeats, new { ScheduledFlightId = data.ScheduledId2.Value }, transaction);
+                if (available2 < data.Tickets2!.Count)
+                    throw new SeatUnavailableException(data.ScheduledId2.Value);
+            }
+
             const string getNextBookingCode = @"
                 SELECT ISNULL(MAX(BookingCode), 0) + 1
                 FROM   Itinerary WITH (UPDLOCK, HOLDLOCK)";
