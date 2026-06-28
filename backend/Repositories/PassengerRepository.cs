@@ -58,29 +58,4 @@ public class PassengerRepository : IPassengerRepository
             throw;
         }
     }
-
-    public async Task DeletePassengersAsync(IEnumerable<int> ids)
-    {
-        var idList = ids.ToList();
-        if (idList.Count == 0) return;
-
-        using var connection = new SqlConnection(_connectionString);
-        await connection.OpenAsync();
-        using var transaction = connection.BeginTransaction();
-        try
-        {
-            await connection.ExecuteAsync(
-                "DELETE FROM Passenger WHERE Id IN @Ids", new { Ids = idList }, transaction);
-            await connection.ExecuteAsync(
-                "DELETE FROM Person    WHERE Id IN @Ids", new { Ids = idList }, transaction);
-            await connection.ExecuteAsync(
-                "DELETE FROM [User]    WHERE Id IN @Ids", new { Ids = idList }, transaction);
-            await transaction.CommitAsync();
-        }
-        catch
-        {
-            await transaction.RollbackAsync();
-            throw;
-        }
-    }
 }

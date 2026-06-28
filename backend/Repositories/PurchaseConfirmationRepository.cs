@@ -301,49 +301,68 @@ namespace backend.Repositories
             connection.Open();
             using var tx = connection.BeginTransaction();
 
-            try
+            const string getBookingCode = @"
+                SELECT BookingCode FROM Purchase WHERE Id = @PurchaseId";
+
+            var bookingCode = connection.QueryFirstOrDefault<int?>(
+                getBookingCode, new { PurchaseId = purchaseId }, tx)
+                ?? throw new Exception("Compra no encontrada.");
+
+            const string updateTicketBaggage = @"
+                UPDATE tb
+                SET
+                    tb.CheckedBagCount = tb.CheckedBagCount + @ExtraBags,
+                    tb.BaggageSubtotal = tb.BaggageSubtotal + @ExtraCost
+                FROM TicketBaggage tb
+                INNER JOIN Passenger pa  ON tb.PassengerId = pa.Id
+                INNER JOIN Person    per ON pa.Id          = per.Id
+                WHERE tb.BookingCode = @BookingCode
+                  AND per.FirstName + ' ' + per.LastName = @PassengerFullName";
+
+            foreach (var update in updates)
             {
-                var reservationCode = connection.QueryFirstOrDefault<string>(
-                    "SELECT ReservationCode FROM Purchase WHERE Id = @PurchaseId",
-                    new { PurchaseId = purchaseId }, tx)
-                    ?? throw new Exception("Compra no encontrada.");
-
-                var sessionId = Guid.NewGuid();
-
-                const string insertStaging = @"
-                    INSERT INTO BaggageAdditionStaging (SessionId, PassengerId, ExtraCheckedBags, UnitPrice)
-                    SELECT TOP 1 @SessionId, tb.PassengerId, @ExtraCheckedBags, @UnitPrice
-                    FROM   TicketBaggage tb
-                    JOIN   Purchase p   ON p.BookingCode = tb.BookingCode
-                    JOIN   Person   per ON per.Id        = tb.PassengerId
-                    WHERE  p.ReservationCode = @ReservationCode
-                      AND  per.FirstName + ' ' + per.LastName = @PassengerFullName";
-
-                foreach (var update in updates)
+                connection.Execute(updateTicketBaggage, new
                 {
-                    connection.Execute(insertStaging, new
-                    {
-                        SessionId        = sessionId,
-                        ExtraCheckedBags = update.ExtraBags,
-                        UnitPrice        = update.ExtraBags > 0 ? update.ExtraCost / update.ExtraBags : 0m,
-                        ReservationCode  = reservationCode,
-                        update.PassengerFullName
-                    }, tx);
-                }
-
-                connection.Execute(
-                    "AddBaggageToReservation",
-                    new { ReservationCode = reservationCode, SessionId = sessionId },
-                    tx,
-                    commandType: CommandType.StoredProcedure);
-
-                tx.Commit();
+                    update.ExtraBags,
+                    update.ExtraCost,
+                    BookingCode = bookingCode,
+                    update.PassengerFullName
+                }, tx);
             }
-            catch
+
+            int totalExtraBags = updates.Sum(u => u.ExtraBags);
+
+            const string upsertBaggageDetail = @"
+                IF EXISTS (
+                    SELECT 1 FROM PurchaseBaggageDetail
+                    WHERE PurchaseId = @PurchaseId AND BaggageType = 'CheckedBaggage'
+                )
+                    UPDATE PurchaseBaggageDetail
+                    SET Quantity = Quantity + @TotalExtraBags,
+                        Subtotal = Subtotal + @TotalCharged
+                    WHERE PurchaseId = @PurchaseId AND BaggageType = 'CheckedBaggage'
+                ELSE
+                    INSERT INTO PurchaseBaggageDetail (PurchaseId, BaggageType, Quantity, UnitPrice, Subtotal)
+                    VALUES (@PurchaseId, 'CheckedBaggage', @TotalExtraBags, @BagPrice, @TotalCharged)";
+
+            connection.Execute(upsertBaggageDetail, new
             {
-                try { tx.Rollback(); } catch (InvalidOperationException) { }
-                throw;
-            }
+                PurchaseId = purchaseId,
+                TotalExtraBags = totalExtraBags,
+                TotalCharged = totalCharged,
+                BagPrice = bagPrice
+            }, tx);
+
+            const string updateTotalPaid = @"
+                UPDATE Purchase SET TotalPaid = TotalPaid + @TotalCharged WHERE Id = @PurchaseId";
+
+            connection.Execute(updateTotalPaid, new
+            {
+                TotalCharged = totalCharged,
+                PurchaseId = purchaseId
+            }, tx);
+
+            tx.Commit();
         }
     }
 }

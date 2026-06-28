@@ -1,9 +1,0 @@
-USE MushuAirlines;
-GO
-
-CREATE INDEX IX_Ticket_ScheduledId
-    ON Ticket (ScheduledId);
-GO
-
-CREATE UNIQUE INDEX UX_Ticket_ScheduledId_SeatNumber
-    ON Ticket (ScheduledId, SeatNumber);

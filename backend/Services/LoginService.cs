@@ -12,10 +12,12 @@ namespace backend.Services
     public class LoginService : ILoginService
     {
         private readonly ILoginRepository loginRepository;
+        private readonly IConfiguration configuration;
         private readonly string jwtKey;
-        public LoginService(ILoginRepository loginRepository, IConfiguration configuration)
+        public LoginService(ILoginRepository loginRepository,IConfiguration configuration)
         {
             this.loginRepository = loginRepository;
+
             jwtKey = configuration["Jwt:Key"]!;
         }
 

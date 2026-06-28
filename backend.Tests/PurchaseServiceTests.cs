@@ -2,7 +2,6 @@ using backend.Exceptions;
 using backend.Interfaces;
 using backend.Model;
 using backend.Services;
-using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace backend.Tests;
@@ -10,13 +9,12 @@ namespace backend.Tests;
 [TestFixture]
 public class PurchaseServiceTests
 {
-    private Mock<IPassengerRepository>       _mockPassengerRepo = null!;
-    private Mock<IPurchaseRepository>        _mockPurchaseRepo  = null!;
-    private Mock<ICodeGenerator>             _mockCodeGenerator = null!;
-    private Mock<IPricingCalculator>         _mockPricing       = null!;
-    private Mock<IRouteCreationService>      _mockRouteService  = null!;
-    private Mock<ILogger<PurchaseService>>   _mockLogger        = null!;
-    private PurchaseService                  _service           = null!;
+    private Mock<IPassengerRepository>  _mockPassengerRepo = null!;
+    private Mock<IPurchaseRepository>   _mockPurchaseRepo  = null!;
+    private Mock<ICodeGenerator>        _mockCodeGenerator = null!;
+    private Mock<IPricingCalculator>    _mockPricing       = null!;
+    private Mock<IRouteCreationService> _mockRouteService  = null!;
+    private PurchaseService             _service           = null!;
 
     private static readonly DateOnly TestDate = new DateOnly(2026, 8, 15);
 
@@ -28,15 +26,13 @@ public class PurchaseServiceTests
         _mockCodeGenerator = new Mock<ICodeGenerator>();
         _mockPricing       = new Mock<IPricingCalculator>();
         _mockRouteService  = new Mock<IRouteCreationService>();
-        _mockLogger        = new Mock<ILogger<PurchaseService>>();
 
         _service = new PurchaseService(
             _mockPassengerRepo.Object,
             _mockPurchaseRepo.Object,
             _mockCodeGenerator.Object,
             _mockPricing.Object,
-            _mockRouteService.Object,
-            _mockLogger.Object);
+            _mockRouteService.Object);
     }
 
     private static RouteCreationModel Route(int economyCap, int firstClassCap, string type = "B737") =>
@@ -140,7 +136,7 @@ public class PurchaseServiceTests
             .Throws<Exception>();
 
         // Act
-        var result = await _service.IsFlightAvailableAsync("UNKNOWN", TestDate, 0, 1);
+        var result = await _service.IsFlightAvailableAsync("UNKNOWN", TestDate, 1);
 
         // Assert
         Assert.That(result, Is.True);
@@ -151,10 +147,10 @@ public class PurchaseServiceTests
     {
         // Arrange
         _mockRouteService.Setup(s => s.GetRouteByCode("R1")).Returns(Route(0, 0, "B737"));
-        _mockPurchaseRepo.Setup(r => r.GetAircraftCapacityByClassAsync("B737")).ReturnsAsync((0, 0));
+        _mockPurchaseRepo.Setup(r => r.GetAircraftCapacityByTypeAsync("B737")).ReturnsAsync(0);
 
         // Act
-        var result = await _service.IsFlightAvailableAsync("R1", TestDate, 0, 5);
+        var result = await _service.IsFlightAvailableAsync("R1", TestDate, 5);
 
         // Assert
         Assert.That(result, Is.True);
@@ -168,10 +164,10 @@ public class PurchaseServiceTests
         _mockRouteService
             .Setup(s => s.FindExistingScheduledFlight("R1", It.IsAny<DateTime>()))
             .Returns((int?)null);
-        _mockPurchaseRepo.Setup(r => r.GetAircraftCapacityByClassAsync("B737")).ReturnsAsync((0, 10));
+        _mockPurchaseRepo.Setup(r => r.GetAircraftCapacityByTypeAsync("B737")).ReturnsAsync(10);
 
         // Act
-        var result = await _service.IsFlightAvailableAsync("R1", TestDate, 0, 5);
+        var result = await _service.IsFlightAvailableAsync("R1", TestDate, 5);
 
         // Assert
         Assert.That(result, Is.True);
@@ -182,10 +178,10 @@ public class PurchaseServiceTests
     {
         // Arrange
         _mockRouteService.Setup(s => s.GetRouteByCode("R1")).Returns(Route(0, 0, "B737"));
-        _mockPurchaseRepo.Setup(r => r.GetAircraftCapacityByClassAsync("B737")).ReturnsAsync((0, 10));
+        _mockPurchaseRepo.Setup(r => r.GetAircraftCapacityByTypeAsync("B737")).ReturnsAsync(10);
 
         // Act
-        var result = await _service.IsFlightAvailableAsync("R1", TestDate, 0, 12);
+        var result = await _service.IsFlightAvailableAsync("R1", TestDate, 12);
 
         // Assert
         Assert.That(result, Is.False);
@@ -197,7 +193,7 @@ public class PurchaseServiceTests
         _mockRouteService.Setup(s => s.GetRouteByCode("R1")).Returns(Route(6, 2));
 
         // Act
-        var result = await _service.IsFlightAvailableAsync("R1", TestDate, 0, 9);
+        var result = await _service.IsFlightAvailableAsync("R1", TestDate, 9);
 
         // Assert
         Assert.That(result, Is.False);
@@ -213,7 +209,7 @@ public class PurchaseServiceTests
             .Returns((int?)null);
 
         // Act
-        var result = await _service.IsFlightAvailableAsync("R1", TestDate, 0, 4);
+        var result = await _service.IsFlightAvailableAsync("R1", TestDate, 4);
 
         // Assert
         Assert.That(result, Is.True);
@@ -227,10 +223,10 @@ public class PurchaseServiceTests
         _mockRouteService
             .Setup(s => s.FindExistingScheduledFlight("R1", It.IsAny<DateTime>()))
             .Returns(42);
-        _mockPurchaseRepo.Setup(r => r.GetBookedSeatsByClassAsync(42, "Economy")).ReturnsAsync(2);
+        _mockPurchaseRepo.Setup(r => r.GetBookedSeatsAsync(42)).ReturnsAsync(4);
 
         // Act
-        var result = await _service.IsFlightAvailableAsync("R1", TestDate, 0, 4);
+        var result = await _service.IsFlightAvailableAsync("R1", TestDate, 4);
 
         // Assert
         Assert.That(result, Is.True);
@@ -244,10 +240,10 @@ public class PurchaseServiceTests
         _mockRouteService
             .Setup(s => s.FindExistingScheduledFlight("R1", It.IsAny<DateTime>()))
             .Returns(42);
-        _mockPurchaseRepo.Setup(r => r.GetBookedSeatsByClassAsync(42, "Economy")).ReturnsAsync(5);
+        _mockPurchaseRepo.Setup(r => r.GetBookedSeatsAsync(42)).ReturnsAsync(5);
 
         // Act
-        var result = await _service.IsFlightAvailableAsync("R1", TestDate, 0, 4);
+        var result = await _service.IsFlightAvailableAsync("R1", TestDate, 4);
 
         // Assert
         Assert.That(result, Is.False);
@@ -261,10 +257,10 @@ public class PurchaseServiceTests
         _mockRouteService
             .Setup(s => s.FindExistingScheduledFlight("R1", It.IsAny<DateTime>()))
             .Returns(10);
-        _mockPurchaseRepo.Setup(r => r.GetBookedSeatsByClassAsync(10, "Economy")).ReturnsAsync(6);
+        _mockPurchaseRepo.Setup(r => r.GetBookedSeatsAsync(10)).ReturnsAsync(6);
 
         // Act
-        var result = await _service.IsFlightAvailableAsync("R1", TestDate, 0, 1);
+        var result = await _service.IsFlightAvailableAsync("R1", TestDate, 1);
 
         // Assert
         Assert.That(result, Is.False);
@@ -492,12 +488,9 @@ public class PurchaseServiceTests
         _mockRouteService
             .Setup(s => s.GetOrCreateScheduledFlight("R1", It.IsAny<DateTime>()))
             .Returns(42);
-        _mockRouteService
-            .Setup(s => s.FindExistingScheduledFlight("R1", It.IsAny<DateTime>()))
-            .Returns(42);
         _mockPurchaseRepo
-            .Setup(r => r.GetBookedSeatsByClassAsync(42, "Economy"))
-            .ReturnsAsync(99);
+            .Setup(r => r.HasAvailableSeatsAsync(42, It.IsAny<int>()))
+            .ReturnsAsync(false);
 
         // Act & Assert
         Assert.That(
@@ -570,12 +563,12 @@ public class PurchaseServiceTests
         _mockRouteService
             .Setup(s => s.GetOrCreateScheduledFlight("R2", It.IsAny<DateTime>()))
             .Returns(43);
-        _mockRouteService
-            .Setup(s => s.FindExistingScheduledFlight("R2", It.IsAny<DateTime>()))
-            .Returns(43);
         _mockPurchaseRepo
-            .Setup(r => r.GetBookedSeatsByClassAsync(43, "Economy"))
-            .ReturnsAsync(99);
+            .Setup(r => r.HasAvailableSeatsAsync(42, It.IsAny<int>()))
+            .ReturnsAsync(true);
+        _mockPurchaseRepo
+            .Setup(r => r.HasAvailableSeatsAsync(43, It.IsAny<int>()))
+            .ReturnsAsync(false);
 
         // Act & Assert
         Assert.That(
