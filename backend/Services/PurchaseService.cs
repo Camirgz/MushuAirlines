@@ -30,71 +30,106 @@ public class PurchaseService : IPurchaseService
     {
         ValidatePassengers(request.Passengers);
 
-        RouteCreationModel route1;
-        try
-        {
-            route1 = _routeCreationService.GetRouteByCode(request.Flight.RouteCode);
-        }
-        catch
-        {
-            throw new InvalidFlightDateException(
-                request.Flight.FlightDate,
-                request.Flight.RouteCode,
-                "la ruta no existe o no está disponible");
-        }
+        bool leg1IsExternal = request.ExternalFlight  != null;
+        bool leg2IsExternal = request.ExternalFlight2 != null;
+        bool hasLeg2        = request.Flight2 != null || request.ExternalFlight2 != null;
 
-        int scheduledFlightId1 = _routeCreationService.GetOrCreateScheduledFlight(
-            request.Flight.RouteCode,
-            request.Flight.FlightDate.ToDateTime(TimeOnly.MinValue));
+        // ── Resolve leg 1 ────────────────────────────────────────────────
+        int?   scheduledFlightId1 = null;
+        string airlineName1       = "Mushu Airlines";
 
-        bool isStopover          = request.Flight2 != null;
-        RouteCreationModel? route2      = null;
-        int                scheduledFlightId2 = 0;
+        RouteCreationModel? route1 = null;
 
-        if (isStopover)
+        if (!leg1IsExternal)
         {
-            try
-            {
-                route2 = _routeCreationService.GetRouteByCode(request.Flight2!.RouteCode);
-            }
+            if (request.Flight == null)
+                throw new InvalidFlightDateException(DateOnly.MinValue, "", "se requiere Flight o ExternalFlight para el primer tramo");
+
+            try { route1 = _routeCreationService.GetRouteByCode(request.Flight.RouteCode); }
             catch
             {
                 throw new InvalidFlightDateException(
-                    request.Flight2!.FlightDate,
-                    request.Flight2.RouteCode,
-                    "la ruta del segundo tramo no existe o no está disponible");
+                    request.Flight.FlightDate, request.Flight.RouteCode,
+                    "la ruta no existe o no está disponible");
             }
 
-            scheduledFlightId2 = _routeCreationService.GetOrCreateScheduledFlight(
-                request.Flight2.RouteCode,
-                request.Flight2.FlightDate.ToDateTime(TimeOnly.MinValue));
+            scheduledFlightId1 = _routeCreationService.GetOrCreateScheduledFlight(
+                request.Flight.RouteCode,
+                request.Flight.FlightDate.ToDateTime(TimeOnly.MinValue));
+        }
+        else
+        {
+            airlineName1 = request.ExternalFlight!.AirlineName;
         }
 
+        // ── Resolve leg 2 ─────────────────────────────────────────────────
+        int?   scheduledFlightId2 = null;
+        string? airlineName2      = null;
+
+        RouteCreationModel? route2 = null;
+
+        if (hasLeg2)
+        {
+            if (!leg2IsExternal)
+            {
+                try { route2 = _routeCreationService.GetRouteByCode(request.Flight2!.RouteCode); }
+                catch
+                {
+                    throw new InvalidFlightDateException(
+                        request.Flight2!.FlightDate, request.Flight2.RouteCode,
+                        "la ruta del segundo tramo no existe o no está disponible");
+                }
+
+                scheduledFlightId2 = _routeCreationService.GetOrCreateScheduledFlight(
+                    request.Flight2!.RouteCode,
+                    request.Flight2.FlightDate.ToDateTime(TimeOnly.MinValue));
+
+                airlineName2 = "Mushu Airlines";
+            }
+            else
+            {
+                airlineName2 = request.ExternalFlight2!.AirlineName;
+            }
+        }
+
+        // ── Seat availability (only for internal legs) ────────────────────
         var seatCount = request.SeatSelections.Count;
 
-        var seatCheckResults = await Task.WhenAll(
-            _purchaseRepo.HasAvailableSeatsAsync(scheduledFlightId1, seatCount),
-            isStopover
-                ? _purchaseRepo.HasAvailableSeatsAsync(scheduledFlightId2, seatCount)
-                : Task.FromResult(true));
+        if (!leg1IsExternal && scheduledFlightId1.HasValue)
+        {
+            bool avail = await _purchaseRepo.HasAvailableSeatsAsync(scheduledFlightId1.Value, seatCount);
+            if (!avail) throw new SeatUnavailableException(scheduledFlightId1.Value);
+        }
 
-        if (!seatCheckResults[0]) throw new SeatUnavailableException(scheduledFlightId1);
-        if (isStopover && !seatCheckResults[1]) throw new SeatUnavailableException(scheduledFlightId2);
+        if (hasLeg2 && !leg2IsExternal && scheduledFlightId2.HasValue)
+        {
+            bool avail = await _purchaseRepo.HasAvailableSeatsAsync(scheduledFlightId2.Value, seatCount);
+            if (!avail) throw new SeatUnavailableException(scheduledFlightId2.Value);
+        }
 
-        var seatNumberResults = await Task.WhenAll(
-            _purchaseRepo.GetNextAvailableSeatNumbersAsync(scheduledFlightId1, seatCount),
-            isStopover
-                ? _purchaseRepo.GetNextAvailableSeatNumbersAsync(scheduledFlightId2, seatCount)
-                : Task.FromResult<List<int>>([]));
+        // ── Assign seat numbers (only for internal legs) ──────────────────
+        List<int> assignedSeatNumbers1 = leg1IsExternal
+            ? Enumerable.Range(1, seatCount).ToList()
+            : await _purchaseRepo.GetNextAvailableSeatNumbersAsync(scheduledFlightId1!.Value, seatCount);
 
-        var assignedSeatNumbers1  = seatNumberResults[0];
-        List<int>? assignedSeatNumbers2 = isStopover ? seatNumberResults[1] : null;
+        List<int>? assignedSeatNumbers2 = null;
+        if (hasLeg2)
+        {
+            assignedSeatNumbers2 = leg2IsExternal
+                ? Enumerable.Range(1, seatCount).ToList()
+                : await _purchaseRepo.GetNextAvailableSeatNumbersAsync(scheduledFlightId2!.Value, seatCount);
+        }
 
-        decimal economyPrice    = route1.PriceEconomy    + (isStopover ? route2!.PriceEconomy    : 0);
-        decimal firstClassPrice = route1.PriceFirstClass + (isStopover ? route2!.PriceFirstClass : 0);
-        decimal handBagPrice    = route1.HandBagPrice    + (isStopover ? route2!.HandBagPrice    : 0);
-        decimal bagPrice        = route1.BagPrice        + (isStopover ? route2!.BagPrice        : 0);
-        decimal bagMultiplier   = route1.BagMultiplier;
+        // ── Pricing ───────────────────────────────────────────────────────
+        decimal economyPrice    = GetEconomyPrice(leg1IsExternal,  request, route1)
+                                + (hasLeg2 ? GetEconomyPrice2(leg2IsExternal, request, route2) : 0);
+        decimal firstClassPrice = GetFirstClassPrice(leg1IsExternal,  request, route1)
+                                + (hasLeg2 ? GetFirstClassPrice2(leg2IsExternal, request, route2) : 0);
+        decimal handBagPrice    = GetHandBagPrice(leg1IsExternal,  request, route1)
+                                + (hasLeg2 ? GetHandBagPrice2(leg2IsExternal, request, route2) : 0);
+        decimal bagPrice        = GetBagPrice(leg1IsExternal,  request, route1)
+                                + (hasLeg2 ? GetBagPrice2(leg2IsExternal, request, route2) : 0);
+        decimal bagMultiplier   = leg1IsExternal ? 1m : route1!.BagMultiplier;
 
         var totals = _pricingCalculator.Calculate(
             request.SeatSelections,
@@ -105,6 +140,7 @@ public class PurchaseService : IPurchaseService
             bagPrice,
             bagMultiplier);
 
+        // ── Unique codes ──────────────────────────────────────────────────
         var uniqueCodes = await Task.WhenAll(
             GenerateUniqueReservationCodeAsync(),
             GenerateUniqueInvoiceNumberAsync());
@@ -112,16 +148,17 @@ public class PurchaseService : IPurchaseService
         var reservationCode = uniqueCodes[0];
         var invoiceNumber   = uniqueCodes[1];
 
-        var passengerIds = await Task.WhenAll(
+        // ── Create passengers ─────────────────────────────────────────────
+        var passengerIds     = await Task.WhenAll(
             request.Passengers.Select(p => _passengerRepo.CreatePassengerAsync(p)));
-
         var firstPassengerId = passengerIds[0];
         var purchaseDate     = DateTime.UtcNow;
 
+        // ── Build tickets leg 1 ───────────────────────────────────────────
         var tickets1 = request.SeatSelections
             .Select((seat, i) => new TicketInsertData
             {
-                ScheduledFlightId = scheduledFlightId1,
+                ScheduledFlightId = leg1IsExternal ? 0 : scheduledFlightId1!.Value,
                 PassengerId       = passengerIds[seat.PassengerIndex],
                 SeatNumber        = assignedSeatNumbers1[i],
                 SeatClass         = seat.SeatClass.ToString()
@@ -134,7 +171,7 @@ public class PurchaseService : IPurchaseService
                 var bag = totals.PassengerBaggageDetails[seat.PassengerIndex];
                 return new TicketBaggageInsertData
                 {
-                    ScheduledFlightId = scheduledFlightId1,
+                    ScheduledFlightId = leg1IsExternal ? 0 : scheduledFlightId1!.Value,
                     PassengerId       = passengerIds[seat.PassengerIndex],
                     HandBagCount      = bag.HandBagCount,
                     CheckedBagCount   = bag.CheckedBagCount,
@@ -143,15 +180,16 @@ public class PurchaseService : IPurchaseService
             })
             .ToList();
 
+        // ── Build tickets leg 2 ───────────────────────────────────────────
         List<TicketInsertData>?        tickets2       = null;
         List<TicketBaggageInsertData>? ticketBaggage2 = null;
 
-        if (isStopover)
+        if (hasLeg2)
         {
             tickets2 = request.SeatSelections
                 .Select((seat, i) => new TicketInsertData
                 {
-                    ScheduledFlightId = scheduledFlightId2,
+                    ScheduledFlightId = leg2IsExternal ? 0 : scheduledFlightId2!.Value,
                     PassengerId       = passengerIds[seat.PassengerIndex],
                     SeatNumber        = assignedSeatNumbers2![i],
                     SeatClass         = seat.SeatClass.ToString()
@@ -164,7 +202,7 @@ public class PurchaseService : IPurchaseService
                     var bag = totals.PassengerBaggageDetails[seat.PassengerIndex];
                     return new TicketBaggageInsertData
                     {
-                        ScheduledFlightId = scheduledFlightId2,
+                        ScheduledFlightId = leg2IsExternal ? 0 : scheduledFlightId2!.Value,
                         PassengerId       = passengerIds[seat.PassengerIndex],
                         HandBagCount      = bag.HandBagCount,
                         CheckedBagCount   = bag.CheckedBagCount,
@@ -174,6 +212,16 @@ public class PurchaseService : IPurchaseService
                 .ToList();
         }
 
+        // ── Build external flight insert data ─────────────────────────────
+        ExternalFlightInsertData? extFlight1 = leg1IsExternal
+            ? ToExternalFlightInsertData(request.ExternalFlight!)
+            : null;
+
+        ExternalFlightInsertData? extFlight2 = leg2IsExternal
+            ? ToExternalFlightInsertData(request.ExternalFlight2!)
+            : null;
+
+        // ── Execute transaction ───────────────────────────────────────────
         var purchaseId = await _purchaseRepo.ExecutePurchaseTransactionAsync(new PurchaseTransactionData
         {
             Record = new PurchaseRecord
@@ -187,24 +235,33 @@ public class PurchaseService : IPurchaseService
                 TotalSeats      = totals.TotalSeats,
                 PurchaseDate    = purchaseDate
             },
-            Details        = totals.DetailByClass,
-            BaggageDetails = totals.BaggageDetails,
-            Tickets1       = tickets1,
-            TicketBaggage1 = ticketBaggage1,
-            ScheduledId1   = scheduledFlightId1,
-            Tickets2       = tickets2,
-            TicketBaggage2 = ticketBaggage2,
-            ScheduledId2   = isStopover ? scheduledFlightId2 : null
+            Details         = totals.DetailByClass,
+            BaggageDetails  = totals.BaggageDetails,
+            ScheduledId1    = scheduledFlightId1,
+            ExternalFlight1 = extFlight1,
+            AirlineName1    = airlineName1,
+            Tickets1        = tickets1,
+            TicketBaggage1  = ticketBaggage1,
+            ScheduledId2    = scheduledFlightId2,
+            ExternalFlight2 = extFlight2,
+            AirlineName2    = airlineName2,
+            Tickets2        = tickets2,
+            TicketBaggage2  = ticketBaggage2,
         });
+
+        var leg1Id = leg1IsExternal ? request.ExternalFlight!.FlightGUID : scheduledFlightId1!.Value.ToString();
+        var leg2Id = hasLeg2
+            ? (leg2IsExternal ? request.ExternalFlight2!.FlightGUID : scheduledFlightId2!.Value.ToString())
+            : null;
 
         var tickets = GenerateTicketSummaries(
             request.SeatSelections,
             request.Passengers,
             assignedSeatNumbers1,
             assignedSeatNumbers2,
-            isStopover,
-            scheduledFlightId1,
-            isStopover ? scheduledFlightId2 : null);
+            hasLeg2,
+            leg1Id,
+            leg2Id);
 
         return new PurchaseResponseModel
         {
@@ -219,63 +276,16 @@ public class PurchaseService : IPurchaseService
         };
     }
 
-
-    private static List<TicketSummary> GenerateTicketSummaries(
-        List<SeatSelection> seatSelections,
-        List<PassengerInfo> passengers,
-        List<int> seatNumbers1,
-        List<int>? seatNumbers2,
-        bool isStopover,
-        int scheduledFlightId1,
-        int? scheduledFlightId2)
-    {
-    var tickets = new List<TicketSummary>();
-
-    // Vuelo 1
-    tickets.AddRange(seatSelections.Select((seat, i) =>
-    {
-        var passenger = passengers[seat.PassengerIndex];
-
-        return new TicketSummary
-        {
-            PassengerFullName = $"{passenger.FirstName} {passenger.LastName}",
-            SeatNumber = seatNumbers1[i].ToString(),
-            SeatClass = seat.SeatClass,
-            FlightNumber = scheduledFlightId1.ToString()
-        };
-    }));
-
-    // Vuelo 2
-    if (isStopover && seatNumbers2 != null && scheduledFlightId2.HasValue)
-    {
-        tickets.AddRange(seatSelections.Select((seat, i) =>
-        {
-            var passenger = passengers[seat.PassengerIndex];
-
-            return new TicketSummary
-            {
-                PassengerFullName = $"{passenger.FirstName} {passenger.LastName}",
-                SeatNumber = seatNumbers2[i].ToString(),
-                SeatClass = seat.SeatClass,
-                FlightNumber = scheduledFlightId2.Value.ToString()
-            };
-        }));
-    }
-
-    return tickets;
-}
-
     public async Task<bool> IsFlightAvailableAsync(string routeCode, DateOnly flightDate, int requestedCount)
     {
         RouteCreationModel route;
         try { route = _routeCreationService.GetRouteByCode(routeCode); }
-        catch { return true; } 
-
+        catch { return true; }
 
         int capacity = route.EconomyClassCapacity + route.FirstClassCapacity;
         if (capacity == 0)
             capacity = await _purchaseRepo.GetAircraftCapacityByTypeAsync(route.AircraftTypeId);
-        if (capacity == 0) return true; 
+        if (capacity == 0) return true;
         if (requestedCount > capacity) return false;
 
         var flightDateTime     = flightDate.ToDateTime(TimeOnly.MinValue);
@@ -306,6 +316,88 @@ public class PurchaseService : IPurchaseService
                 string.Equals(e.PassportCountry.Trim(), p.PassportCountry.Trim(), StringComparison.OrdinalIgnoreCase)))
             .Select(p => $"{p.FirstName} {p.LastName}")
             .ToList();
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────
+
+    private static ExternalFlightInsertData ToExternalFlightInsertData(ExternalFlightSelection ext) =>
+        new()
+        {
+            Code               = ext.FlightGUID,
+            AirlineName        = ext.AirlineName,
+            DepartureTime      = DateTime.Parse(ext.DepartureTime),
+            ArrivalTime        = DateTime.Parse(ext.ArrivalTime),
+            OriginAirport      = ext.OriginAirport,
+            DestinationAirport = ext.DestinationAirport,
+            PriceEconomy       = ext.TouristPrice,
+            PriceFirstClass    = ext.FirstClassPrice,
+            HandBagPrice       = ext.CarryOnPrice,
+            BagPrice           = ext.CheckedPrice,
+        };
+
+    private static decimal GetEconomyPrice(bool isExternal, PurchaseRequestModel r, RouteCreationModel? route)
+        => isExternal ? r.ExternalFlight!.TouristPrice : route!.PriceEconomy;
+
+    private static decimal GetEconomyPrice2(bool isExternal, PurchaseRequestModel r, RouteCreationModel? route)
+        => isExternal ? r.ExternalFlight2!.TouristPrice : route!.PriceEconomy;
+
+    private static decimal GetFirstClassPrice(bool isExternal, PurchaseRequestModel r, RouteCreationModel? route)
+        => isExternal ? r.ExternalFlight!.FirstClassPrice : route!.PriceFirstClass;
+
+    private static decimal GetFirstClassPrice2(bool isExternal, PurchaseRequestModel r, RouteCreationModel? route)
+        => isExternal ? r.ExternalFlight2!.FirstClassPrice : route!.PriceFirstClass;
+
+    private static decimal GetHandBagPrice(bool isExternal, PurchaseRequestModel r, RouteCreationModel? route)
+        => isExternal ? r.ExternalFlight!.CarryOnPrice : route!.HandBagPrice;
+
+    private static decimal GetHandBagPrice2(bool isExternal, PurchaseRequestModel r, RouteCreationModel? route)
+        => isExternal ? r.ExternalFlight2!.CarryOnPrice : route!.HandBagPrice;
+
+    private static decimal GetBagPrice(bool isExternal, PurchaseRequestModel r, RouteCreationModel? route)
+        => isExternal ? r.ExternalFlight!.CheckedPrice : route!.BagPrice;
+
+    private static decimal GetBagPrice2(bool isExternal, PurchaseRequestModel r, RouteCreationModel? route)
+        => isExternal ? r.ExternalFlight2!.CheckedPrice : route!.BagPrice;
+
+    private static List<TicketSummary> GenerateTicketSummaries(
+        List<SeatSelection> seatSelections,
+        List<PassengerInfo> passengers,
+        List<int> seatNumbers1,
+        List<int>? seatNumbers2,
+        bool hasLeg2,
+        string flightId1,
+        string? flightId2)
+    {
+        var tickets = new List<TicketSummary>();
+
+        tickets.AddRange(seatSelections.Select((seat, i) =>
+        {
+            var passenger = passengers[seat.PassengerIndex];
+            return new TicketSummary
+            {
+                PassengerFullName = $"{passenger.FirstName} {passenger.LastName}",
+                SeatNumber        = seatNumbers1[i].ToString(),
+                SeatClass         = seat.SeatClass,
+                FlightNumber      = flightId1
+            };
+        }));
+
+        if (hasLeg2 && seatNumbers2 != null && flightId2 != null)
+        {
+            tickets.AddRange(seatSelections.Select((seat, i) =>
+            {
+                var passenger = passengers[seat.PassengerIndex];
+                return new TicketSummary
+                {
+                    PassengerFullName = $"{passenger.FirstName} {passenger.LastName}",
+                    SeatNumber        = seatNumbers2[i].ToString(),
+                    SeatClass         = seat.SeatClass,
+                    FlightNumber      = flightId2
+                };
+            }));
+        }
+
+        return tickets;
     }
 
     private async Task<string> GenerateUniqueReservationCodeAsync()

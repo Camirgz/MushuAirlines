@@ -63,18 +63,37 @@ export function usePurchaseFlow() {
 
   /**
    * Build the PurchaseRequestModel expected by POST /api/purchase.
+   * Handles both internal (routeCode) and external (flightGUID) legs.
    * Call this inside PaymentForm once both payment and all prior steps are set.
    */
   function buildPurchaseRequest() {
+    const f  = _state.flight
+    const f2 = _state.flight2
+
+    function toInternalLeg(leg) {
+      return { routeCode: leg.code, flightDate: leg.flightDate }
+    }
+
+    function toExternalLeg(leg) {
+      return {
+        flightGUID:         leg.code,
+        airlineName:        leg.airline,
+        departureTime:      leg.rawDepartureTime ?? leg.departureTime,
+        arrivalTime:        leg.rawArrivalTime   ?? leg.arrivalTime,
+        originAirport:      leg.origin,
+        destinationAirport: leg.destination,
+        touristPrice:       leg.priceEconomy,
+        firstClassPrice:    leg.priceFirstClass,
+        carryOnPrice:       leg.handBagPrice ?? 0,
+        checkedPrice:       leg.bagPrice     ?? 0,
+      }
+    }
+
     return {
-      flight: {
-        routeCode:  _state.flight?.code ?? '',
-        flightDate: _state.flight?.flightDate ?? '',
-      },
-      flight2: _state.flight2 ? {
-        routeCode:  _state.flight2.code,
-        flightDate: _state.flight2.flightDate,
-      } : null,
+      flight:          (f  && !f.isExternal)  ? toInternalLeg(f)  : null,
+      flight2:         (f2 && !f2.isExternal) ? toInternalLeg(f2) : null,
+      externalFlight:  (f  && f.isExternal)   ? toExternalLeg(f)  : null,
+      externalFlight2: (f2 && f2.isExternal)  ? toExternalLeg(f2) : null,
       passengers: _state.passengers.map(p => ({
         firstName:       p.firstName,
         lastName:        p.lastName,
