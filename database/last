@@ -1,0 +1,165 @@
+USE MushuAirlines;
+GO
+
+ALTER PROCEDURE sp_GetMonthlyIncomeReport
+    @Anio      INT           = NULL,
+    @Origen    NVARCHAR(10)  = NULL,
+    @Destino   NVARCHAR(10)  = NULL,
+    @Aerolinea NVARCHAR(100) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+
+    BEGIN TRANSACTION;
+    BEGIN TRY
+
+        -- ── Vuelos internos (Mushu Airlines) ──────────────────────────────
+        WITH TicketPurchase AS (
+            SELECT DISTINCT
+                t.ScheduledId,
+                t.PassengerHas,
+                t.SeatClass,
+                p.Id AS PurchaseId
+            FROM Ticket t
+            INNER JOIN TicketBaggage tb
+                ON  tb.ScheduledFlightId = t.ScheduledId
+                AND tb.PassengerId       = t.PassengerHas
+            INNER JOIN Purchase p
+                ON p.BookingCode = tb.BookingCode
+        ),
+        PurchaseSeats AS (
+            SELECT PurchaseId, SUM(Subtotal) AS Subtotal
+            FROM PurchaseDetail
+            GROUP BY PurchaseId
+        ),
+        PurchaseBaggage AS (
+            SELECT PurchaseId, SUM(Subtotal) AS Subtotal
+            FROM PurchaseBaggageDetail
+            GROUP BY PurchaseId
+        ),
+        FlightTotals AS (
+            SELECT
+                tp.ScheduledId,
+                SUM(CASE WHEN tp.SeatClass = 'FirstClass' THEN 1 ELSE 0 END) AS PasajerosPrimeraClase,
+                SUM(CASE WHEN tp.SeatClass = 'Economy'    THEN 1 ELSE 0 END) AS PasajerosEconomia,
+                COUNT(tp.PassengerHas)          AS TotalPasajeros,
+                ISNULL(SUM(ps.Subtotal), 0)     AS IngresosTiquetes,
+                ISNULL(SUM(pb.Subtotal), 0)     AS IngresosMaletas
+            FROM TicketPurchase tp
+            LEFT JOIN PurchaseSeats   ps ON ps.PurchaseId = tp.PurchaseId
+            LEFT JOIN PurchaseBaggage pb ON pb.PurchaseId = tp.PurchaseId
+            GROUP BY tp.ScheduledId
+        ),
+        InternalRows AS (
+            SELECT
+                YEAR(sf.DepartureDate)  AS Anio,
+                MONTH(sf.DepartureDate) AS Mes,
+                COUNT(DISTINCT sf.Id)               AS CantidadVuelos,
+                SUM(ft.PasajerosPrimeraClase)       AS PasajerosPrimeraClase,
+                SUM(ft.PasajerosEconomia)           AS PasajerosEconomia,
+                SUM(ft.TotalPasajeros)              AS TotalPasajeros,
+                ISNULL(SUM(ft.IngresosTiquetes), 0) AS IngresosTiquetes,
+                ISNULL(SUM(ft.IngresosMaletas),  0) AS IngresosMaletas
+            FROM ScheduledFlight sf
+            INNER JOIN FlightScheduleHasScheduledFlight fshsf ON fshsf.ScheduledFlightId = sf.Id
+            INNER JOIN FlightSchedule fs ON fs.Id = fshsf.FlightScheduleId
+            INNER JOIN FlightTotals ft   ON ft.ScheduledId = sf.Id
+            WHERE
+                (@Aerolinea IS NULL OR @Aerolinea = 'Mushu Airlines')
+                AND (@Anio    IS NULL OR YEAR(sf.DepartureDate)    = @Anio)
+                AND (@Origen  IS NULL OR fs.OriginAirport          = @Origen)
+                AND (@Destino IS NULL OR fs.DestinationAirport     = @Destino)
+            GROUP BY YEAR(sf.DepartureDate), MONTH(sf.DepartureDate)
+        ),
+
+        -- ── Vuelos externos (Snoopy, Zuli, Air Dreams) ────────────────────
+        ExternalRows AS (
+            SELECT
+                YEAR(p.PurchaseDate)  AS Anio,
+                MONTH(p.PurchaseDate) AS Mes,
+                COUNT(DISTINCT ef.Code)             AS CantidadVuelos,
+                SUM(CASE WHEN pd.SeatClass = 'FirstClass' THEN pd.SeatCount ELSE 0 END) AS PasajerosPrimeraClase,
+                SUM(CASE WHEN pd.SeatClass = 'Economy'    THEN pd.SeatCount ELSE 0 END) AS PasajerosEconomia,
+                SUM(pd.SeatCount)                   AS TotalPasajeros,
+                ISNULL(SUM(pd.Subtotal), 0)         AS IngresosTiquetes,
+                ISNULL(SUM(pbd.Subtotal), 0)        AS IngresosMaletas
+            FROM ItineraryScheduledFlight isf
+            INNER JOIN ExternalFlight ef         ON ef.Code        = isf.ExternalFlightCode
+            INNER JOIN Itinerary i               ON i.BookingCode  = isf.BookingCode
+            INNER JOIN Purchase p                ON p.BookingCode  = i.BookingCode
+            INNER JOIN PurchaseDetail pd         ON pd.PurchaseId  = p.Id
+            LEFT  JOIN PurchaseBaggageDetail pbd ON pbd.PurchaseId = p.Id
+            WHERE
+                (@Aerolinea IS NULL OR @Aerolinea <> 'Mushu Airlines')
+                AND (@Aerolinea IS NULL OR isf.AirlineName = @Aerolinea)
+                AND (@Anio    IS NULL OR YEAR(p.PurchaseDate)  = @Anio)
+                AND (@Origen  IS NULL OR ef.OriginAirport      = @Origen)
+                AND (@Destino IS NULL OR ef.ArrivalAirport     = @Destino)
+            GROUP BY YEAR(p.PurchaseDate), MONTH(p.PurchaseDate)
+        ),
+
+        -- ── Combinar ambas fuentes ─────────────────────────────────────────
+        Combined AS (
+            SELECT Anio, Mes, CantidadVuelos, PasajerosPrimeraClase, PasajerosEconomia,
+                   TotalPasajeros, IngresosTiquetes, IngresosMaletas FROM InternalRows
+            UNION ALL
+            SELECT Anio, Mes, CantidadVuelos, PasajerosPrimeraClase, PasajerosEconomia,
+                   TotalPasajeros, IngresosTiquetes, IngresosMaletas FROM ExternalRows
+        ),
+        Grouped AS (
+            SELECT
+                Anio, Mes,
+                SUM(CantidadVuelos)        AS CantidadVuelos,
+                SUM(PasajerosPrimeraClase) AS PasajerosPrimeraClase,
+                SUM(PasajerosEconomia)     AS PasajerosEconomia,
+                SUM(TotalPasajeros)        AS TotalPasajeros,
+                SUM(IngresosTiquetes)      AS IngresosTiquetes,
+                SUM(IngresosMaletas)       AS IngresosMaletas
+            FROM Combined
+            GROUP BY Anio, Mes
+        )
+
+        SELECT
+            CASE Mes
+                WHEN 1  THEN 'Enero'      WHEN 2  THEN 'Febrero'
+                WHEN 3  THEN 'Marzo'      WHEN 4  THEN 'Abril'
+                WHEN 5  THEN 'Mayo'       WHEN 6  THEN 'Junio'
+                WHEN 7  THEN 'Julio'      WHEN 8  THEN 'Agosto'
+                WHEN 9  THEN 'Septiembre' WHEN 10 THEN 'Octubre'
+                WHEN 11 THEN 'Noviembre'  WHEN 12 THEN 'Diciembre'
+            END + ' ' + CAST(Anio AS VARCHAR(4))  AS Mes,
+            CantidadVuelos,
+            PasajerosPrimeraClase                 AS TotalPasajerosPrimeraClase,
+            PasajerosEconomia                     AS TotalPasajerosEconomia,
+            TotalPasajeros,
+            IngresosTiquetes,
+            IngresosMaletas,
+            IngresosTiquetes + IngresosMaletas    AS TotalIngresos,
+            Anio                                  AS _AnioSort,
+            Mes                                   AS _MesSort
+        FROM Grouped
+
+        UNION ALL
+
+        SELECT
+            'TOTALES',
+            SUM(CantidadVuelos),
+            SUM(PasajerosPrimeraClase),
+            SUM(PasajerosEconomia),
+            SUM(TotalPasajeros),
+            SUM(IngresosTiquetes),
+            SUM(IngresosMaletas),
+            SUM(IngresosTiquetes + IngresosMaletas),
+            9999, 13
+        FROM Grouped
+
+        ORDER BY _AnioSort, _MesSort;
+
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH;
+END;

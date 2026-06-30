@@ -73,11 +73,13 @@
 
         <div class="form-group">
           <label>Aerolínea</label>
-          <input
-            v-model="filtros.aerolinea"
-            type="text"
-            placeholder="Ej. Mushu Airlines"
-          />
+          <select v-model="filtros.aerolinea">
+            <option value="">Todas</option>
+            <option value="Mushu Airlines">Mushu Airlines</option>
+            <option value="Snoopy Airlines">Snoopy Airlines</option>
+            <option value="Zuli Airlines">Zuli Airlines</option>
+            <option value="Air Dreams">Air Dreams</option>
+          </select>
         </div>
 
       </div>
@@ -359,7 +361,8 @@ export default {
   letter-spacing: 0.04em;
 }
 
-.form-group input {
+.form-group input,
+.form-group select {
   height: 40px;
   border: 1.5px solid #d1d5db;
   border-radius: 8px;
@@ -368,9 +371,11 @@ export default {
   color: #001233;
   outline: none;
   transition: border-color 0.2s;
+  background: #fff;
 }
 
-.form-group input:focus {
+.form-group input:focus,
+.form-group select:focus {
   border-color: #e8631a;
   box-shadow: 0 0 0 3px rgba(232, 99, 26, 0.12);
 }
