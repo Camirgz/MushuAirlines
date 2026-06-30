@@ -26,4 +26,5 @@ public class RouteCreationModel
     public int EconomyClassCapacity { get; set; }
     public int FirstClassCapacity { get; set; }
     public int AircraftCode { get; set; }
+    public bool IsDeleted { get; set; }
 }

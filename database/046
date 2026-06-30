@@ -1,0 +1,322 @@
+USE MushuAirlines;
+GO
+
+CREATE OR ALTER PROCEDURE DeleteRoute
+    @Code VARCHAR(100)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    DECLARE @NormalizedCode VARCHAR(100);
+    DECLARE @WasDeleted BIT = 0;
+
+    SET @NormalizedCode = UPPER(@Code);
+
+    SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        IF NOT EXISTS (
+            SELECT 1
+            FROM Route
+            WHERE UPPER(LTRIM(RTRIM(Code))) = @NormalizedCode
+              AND IsDeleted = 0
+        )
+        BEGIN
+            COMMIT TRANSACTION;
+            SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+
+            SELECT @WasDeleted AS WasDeleted;
+            RETURN;
+        END;
+
+        IF dbo.RouteHasPurchases(@NormalizedCode) = 1
+        BEGIN
+            UPDATE dbo.Route
+            SET IsDeleted = 1
+            WHERE UPPER(LTRIM(RTRIM(Code))) = @NormalizedCode
+              AND IsDeleted = 0;
+
+            SET @WasDeleted = 1;
+        END
+        ELSE
+        BEGIN
+            EXEC dbo.HardDeleteRouteData @NormalizedCode;
+            SET @WasDeleted = 1;
+        END;
+
+        COMMIT TRANSACTION;
+        SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+
+        SELECT @WasDeleted AS WasDeleted;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+
+        THROW;
+    END CATCH;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE DeleteAirport
+    @Code VARCHAR(3)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    DECLARE @NormalizedCode VARCHAR(3);
+    DECLARE @HasPurchase BIT = 0;
+    DECLARE @WasDeleted BIT = 0;
+    DECLARE @RouteCode VARCHAR(100);
+
+    SET @NormalizedCode = UPPER(@Code);
+
+    SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        IF NOT EXISTS (
+            SELECT 1
+            FROM Airport
+            WHERE UPPER(Code) = @NormalizedCode
+              AND IsDeleted = 0
+        )
+        BEGIN
+            COMMIT TRANSACTION;
+            SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+
+            SELECT @WasDeleted AS WasDeleted;
+            RETURN;
+        END;
+
+        IF EXISTS (
+            SELECT 1
+            FROM Purchase p
+            INNER JOIN ItineraryScheduledFlight isf
+                ON isf.BookingCode = p.BookingCode
+            INNER JOIN ScheduledFlight sf
+                ON sf.Id = isf.ScheduledId
+            INNER JOIN Route r
+                ON r.Code = sf.RouteCode
+            WHERE UPPER(r.OriginAirport) = @NormalizedCode
+               OR UPPER(r.DestinationAirport) = @NormalizedCode
+        )
+        BEGIN
+            SET @HasPurchase = 1;
+        END;
+
+        IF EXISTS (
+            SELECT 1
+            FROM Purchase p
+            INNER JOIN ItineraryScheduledFlight isf
+                ON isf.BookingCode = p.BookingCode
+            INNER JOIN ScheduledFlight sf
+                ON sf.Id = isf.ScheduledId
+            INNER JOIN FlightScheduleHasScheduledFlight fshsf
+                ON fshsf.ScheduledFlightId = sf.Id
+            INNER JOIN FlightSchedule fs
+                ON fs.Id = fshsf.FlightScheduleId
+            WHERE UPPER(fs.OriginAirport) = @NormalizedCode
+               OR UPPER(fs.DestinationAirport) = @NormalizedCode
+        )
+        BEGIN
+            SET @HasPurchase = 1;
+        END;
+
+        DECLARE @AirportRoutes TABLE
+        (
+            Code VARCHAR(100) PRIMARY KEY
+        );
+
+        INSERT INTO @AirportRoutes (Code)
+        SELECT Code
+        FROM Route
+        WHERE UPPER(OriginAirport) = @NormalizedCode
+           OR UPPER(DestinationAirport) = @NormalizedCode;
+
+        WHILE EXISTS (SELECT 1 FROM @AirportRoutes)
+        BEGIN
+            SELECT TOP 1 @RouteCode = Code
+            FROM @AirportRoutes;
+
+            IF dbo.RouteHasPurchases(@RouteCode) = 1
+            BEGIN
+                UPDATE dbo.Route
+                SET IsDeleted = 1
+                WHERE Code = @RouteCode
+                  AND IsDeleted = 0;
+            END
+            ELSE
+            BEGIN
+                EXEC dbo.HardDeleteRouteData @RouteCode;
+            END;
+
+            DELETE FROM @AirportRoutes
+            WHERE Code = @RouteCode;
+        END;
+
+        IF @HasPurchase = 1
+        BEGIN
+            UPDATE Airport
+            SET IsDeleted = 1
+            WHERE UPPER(Code) = @NormalizedCode
+              AND IsDeleted = 0;
+
+            SET @WasDeleted = 1;
+        END
+        ELSE
+        BEGIN
+            EXEC dbo.HardDeleteFlightSchedulesByAirport @NormalizedCode;
+
+            DELETE FROM AdminAirport
+            WHERE UPPER(AirportCode) = @NormalizedCode;
+
+            DELETE FROM AirportScheduled
+            WHERE UPPER(AirportCode) = @NormalizedCode;
+
+            DELETE FROM AirportNameHistory
+            WHERE UPPER(AirportCode) = @NormalizedCode;
+
+            DELETE FROM Airport
+            WHERE UPPER(Code) = @NormalizedCode
+              AND IsDeleted = 0;
+
+            IF @@ROWCOUNT > 0
+                SET @WasDeleted = 1;
+        END;
+
+        COMMIT TRANSACTION;
+        SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+
+        SELECT @WasDeleted AS WasDeleted;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+
+        THROW;
+    END CATCH;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE DeleteAircraft
+    @Code INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    DECLARE @HasPurchase BIT = 0;
+    DECLARE @WasDeleted BIT = 0;
+    DECLARE @AircraftModel VARCHAR(100);
+    DECLARE @RouteCode VARCHAR(100);
+
+    SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        SELECT @AircraftModel = Model
+        FROM Aircraft
+        WHERE Code = @Code
+          AND IsDeleted = 0;
+
+        IF @AircraftModel IS NULL
+        BEGIN
+            COMMIT TRANSACTION;
+            SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+
+            SELECT @WasDeleted AS WasDeleted;
+            RETURN;
+        END;
+
+        IF EXISTS (
+            SELECT 1
+            FROM Purchase p
+            INNER JOIN ItineraryScheduledFlight isf
+                ON isf.BookingCode = p.BookingCode
+            INNER JOIN ScheduledFlight sf
+                ON sf.Id = isf.ScheduledId
+            WHERE sf.AircraftCode = @Code
+        )
+        BEGIN
+            SET @HasPurchase = 1;
+        END;
+
+        DECLARE @AircraftRoutes TABLE
+        (
+            Code VARCHAR(100) PRIMARY KEY
+        );
+
+        INSERT INTO @AircraftRoutes (Code)
+        SELECT Code
+        FROM Route
+        WHERE AircraftCode = @Code
+           OR AircraftTypeId = @AircraftModel;
+
+        WHILE EXISTS (SELECT 1 FROM @AircraftRoutes)
+        BEGIN
+            SELECT TOP 1 @RouteCode = Code
+            FROM @AircraftRoutes;
+
+            IF dbo.RouteHasPurchases(@RouteCode) = 1
+            BEGIN
+                UPDATE dbo.Route
+                SET IsDeleted = 1
+                WHERE Code = @RouteCode
+                  AND IsDeleted = 0;
+            END
+            ELSE
+            BEGIN
+                EXEC dbo.HardDeleteRouteData @RouteCode;
+            END;
+
+            DELETE FROM @AircraftRoutes
+            WHERE Code = @RouteCode;
+        END;
+
+        IF @HasPurchase = 1
+        BEGIN
+            UPDATE Aircraft
+            SET IsDeleted = 1
+            WHERE Code = @Code
+              AND IsDeleted = 0;
+
+            SET @WasDeleted = 1;
+        END
+        ELSE
+        BEGIN
+            EXEC dbo.HardDeleteScheduledFlightsByAircraft @Code;
+
+            DELETE FROM Aircraft
+            WHERE Code = @Code
+              AND IsDeleted = 0;
+
+            IF @@ROWCOUNT > 0
+                SET @WasDeleted = 1;
+        END;
+
+        COMMIT TRANSACTION;
+        SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+
+        SELECT @WasDeleted AS WasDeleted;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+
+        THROW;
+    END CATCH;
+END;
+GO

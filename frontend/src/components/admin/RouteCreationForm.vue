@@ -1,175 +1,173 @@
 <template>
     <AdminPageLayout>
 
-        <div class="admin-banner mb-4">
-            <h1 style="font-weight: bold">
-                <img src="@/assets/GestionBox.png" width="44" class="me-2" />
-                Gestión de Rutas
-            </h1>
-            <p>Panel de administración para operadores de Mushu Airlines</p>
-        </div>
+        <AdminHero
+            title="Crear Ruta"
+            subtitle="Registro de rutas disponibles para Mushu Airlines"
+            icon="bi bi-geo-alt"
+            back-to="/admin/routes"
+            back-text="Volver a rutas"
+        />
 
-        <div class="mb-5 flight-container">
-            <div class="flight-card">
-                <div v-if="successMessage" class="alert-success-custom">
-                    {{ successMessage }}
-                </div>
-                <div v-if="errorMessage" class="alert-error-custom">
-                    {{ errorMessage }}
-                </div>
-                <form @submit.prevent="saveFlight">
-                    <h3 style="font-weight: bold;">+ Crear nueva ruta</h3>
-                    <div class="row">
-                        <div class="col-md-6 form-group">
-                            <label>Aeropuerto de Origen<span>*</span></label>
-                            <select v-model="form.originAirport" class="form-control" required>
-                                <option value="" disabled>Seleccione un aeropuerto</option>
-                                <option v-for="a in airports" :key="a.code" :value="a.code">{{ a.airportName }} ({{ a.city }})</option>
-                            </select>
-                        </div>
-
-                        <div class="col-md-6 form-group">
-                            <label>Aeropuerto de Destino<span>*</span></label>
-                            <select v-model="form.destinationAirport" class="form-control" required>
-                                <option value="" disabled>Seleccione un aeropuerto</option>
-                                <option v-for="a in airports" :key="a.code" :value="a.code">{{ a.airportName }} ({{ a.city }})</option>
-                            </select>
-                        </div>
-
-                        <div class="col-md-4 form-group">
-                            <label>Hora de Salida<span>*</span></label>
-                            <div class="input-box">
-                                <input type="time" v-model="form.departureTime" placeholder="00:00" required />
-                            </div>
-                        </div>
-
-                        <div class="col-md-4 form-group">
-                            <label>Hora de Llegada<span>*</span></label>
-                            <div class="input-box">
-                                <input type="time" v-model="form.arrivalTime" placeholder="00:00" required />
-                            </div>
-                        </div>
-
-                        <div class="col-md-4 form-group">
-                            <label>Duración<span>*</span></label>
-                            <div class="input-box">
-                                <input type="text" v-model="form.duration" placeholder="00:00" required @keypress="onlyNumbersDuration" @input="formatDuration" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row mt-3">
-                        <div class="col-md-6 form-group">
-                            <label>Aeronave<span>*</span></label>
-                            <select v-model.number="form.aircraftCode" class="form-control" required>
-                                <option :value="null" disabled>Seleccione una aeronave</option>
-
-                                <option
-                                    v-for="aircraft in aircraftTypes"
-                                    :key="aircraft.id"
-                                    :value="aircraft.id"
-                                >
-                                    {{ aircraft.type }} — {{ aircraft.model }}
-                                </option>
-                            </select>
-                        </div>
-                        <div class="col-md-6 form-group">
-                            <label>Código<span>*</span></label>
-                            <div class="input-box">
-                                <input type="text" minlength="6" maxlength="6" v-model="form.code" placeholder="XX0000" required @input="isValidCode($event)" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-group mt-4">
-                        <label>Frecuencia<span>*</span></label>
-                        <div class="day-container">
-                            <label v-for="dia in days"
-                                   :key="dia.val"
-                                   class="day-pill"
-                                   :class="{ active: form.frequency.includes(dia.val) }">
-                                <input type="checkbox" :value="dia.val" v-model="form.frequency" hidden />
-                                {{ dia.label }}
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="row mt-3">
-                        <div class="col-md-6 form-group">
-                            <label>Fecha de inicio<span>*</span></label>
-                            <div class="input-box">
-                                <input type="date" v-model="form.startDate" required />
-                            </div>
-                        </div>
-                        <div class="col-md-6 form-group">
-                            <label>Fecha de finalización<span>*</span></label>
-                            <div class="input-box">
-                                <input type="date" v-model="form.finalizationDate" required />
-                            </div>
-                        </div>
-                    </div>
-
-                    <h5 class="mt-4" style="font-weight: bold; font-size: x-large">Tarifas</h5>
-                    <div class="row">
-                        <div class="col-md-6 form-group">
-                            <label>Primera Clase $<span>*</span></label>
-                            <div class="input-box">
-                                <input type="number" min="0" step="0.01" v-model.number="form.priceFirstClass" placeholder="$ 0.00" @keypress="onlyNumbers" />
-                            </div>
-                        </div>
-
-                        <div class="col-md-6 form-group">
-                            <label>Clase Turista $<span>*</span></label>
-                            <div class="input-box">
-                                <input type="number" min="0" step="0.01" v-model.number="form.priceEconomy" placeholder="$ 0.00" @keypress="onlyNumbers" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <h5 class="mt-4">Políticas de Equipaje</h5>
-                    <div class="row">
-                        <div class="col-md-3 form-group">
-                            <label>Precio equipaje de mano $<span>*</span></label>
-                            <div class="input-box">
-                                <input type="number" min="0" step="0.01" v-model.number="form.handBagPrice" placeholder="$ 0.00" @keypress="onlyNumbers" />
-                            </div>
-                        </div>
-
-                        <div class="col-md-3 form-group">
-                            <label>Peso equipaje de mano (kg)<span>*</span></label>
-                            <div class="input-box">
-                                <input type="number" min="0" step="0.01" v-model.number="form.handBagWeight" placeholder="0.00" @keypress="onlyNumbers" />
-                            </div>
-                        </div>
-
-                        <div class="col-md-3 form-group">
-                            <label>Precio equipaje documentado $<span>*</span></label>
-                            <div class="input-box">
-                                <input type="number" min="0" step="0.01" v-model.number="form.bagPrice" placeholder="$ 0.00" @keypress="onlyNumbers" />
-                            </div>
-                        </div>
-
-                        <div class="col-md-3 form-group">
-                            <label>Peso equipaje documentado (kg)<span>*</span></label>
-                            <div class="input-box">
-                                <input type="number" min="0" step="0.01" v-model.number="form.bagWeight" placeholder="0.00" @keypress="onlyNumbers" />
-                            </div>
-                        </div>
-
-                        <div class="col-md-4 form-group mt-2">
-                            <label>Multiplicador<span>*</span></label>
-                            <div class="input-box">
-                                <input type="number" min="0" step="0.01" v-model.number="form.bagMultiplier" placeholder="0.00" @keypress="onlyNumbers" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="search-btn mt-4" style="font-size: large; font-weight: bold">
-                        Crear ruta
-                    </button>
-                </form>
+        <AdminCard class="flight-card mb-5">
+            <div v-if="successMessage" class="alert-success-custom">
+                {{ successMessage }}
             </div>
-        </div>
+            <div v-if="errorMessage" class="alert-error-custom">
+                {{ errorMessage }}
+            </div>
+            <form @submit.prevent="saveFlight">
+                <h3 style="font-weight: bold;">+ Crear nueva ruta</h3>
+                <div class="row">
+                    <div class="col-md-6 form-group">
+                        <label>Aeropuerto de Origen<span>*</span></label>
+                        <select v-model="form.originAirport" class="form-control" required>
+                            <option value="" disabled>Seleccione un aeropuerto</option>
+                            <option v-for="a in airports" :key="a.code" :value="a.code">{{ a.airportName }} ({{ a.city }})</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6 form-group">
+                        <label>Aeropuerto de Destino<span>*</span></label>
+                        <select v-model="form.destinationAirport" class="form-control" required>
+                            <option value="" disabled>Seleccione un aeropuerto</option>
+                            <option v-for="a in airports" :key="a.code" :value="a.code">{{ a.airportName }} ({{ a.city }})</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4 form-group">
+                        <label>Hora de Salida<span>*</span></label>
+                        <div class="input-box">
+                            <input type="time" v-model="form.departureTime" placeholder="00:00" required />
+                        </div>
+                    </div>
+
+                    <div class="col-md-4 form-group">
+                        <label>Hora de Llegada<span>*</span></label>
+                        <div class="input-box">
+                            <input type="time" v-model="form.arrivalTime" placeholder="00:00" required />
+                        </div>
+                    </div>
+
+                    <div class="col-md-4 form-group">
+                        <label>Duración<span>*</span></label>
+                        <div class="input-box">
+                            <input type="text" v-model="form.duration" placeholder="00:00" required @keypress="onlyNumbersDuration" @input="formatDuration" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col-md-6 form-group">
+                        <label>Aeronave<span>*</span></label>
+                        <select v-model.number="form.aircraftCode" class="form-control" required>
+                            <option :value="null" disabled>Seleccione una aeronave</option>
+
+                            <option
+                                v-for="aircraft in aircraftTypes"
+                                :key="aircraft.id"
+                                :value="aircraft.id"
+                            >
+                                {{ aircraft.type }} — {{ aircraft.model }}
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 form-group">
+                        <label>Código<span>*</span></label>
+                        <div class="input-box">
+                            <input type="text" minlength="6" maxlength="6" v-model="form.code" placeholder="XX0000" required @input="isValidCode($event)" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group mt-4">
+                    <label>Frecuencia<span>*</span></label>
+                    <div class="day-container">
+                        <label v-for="dia in days"
+                                :key="dia.val"
+                                class="day-pill"
+                                :class="{ active: form.frequency.includes(dia.val) }">
+                            <input type="checkbox" :value="dia.val" v-model="form.frequency" hidden />
+                            {{ dia.label }}
+                        </label>
+                    </div>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col-md-6 form-group">
+                        <label>Fecha de inicio<span>*</span></label>
+                        <div class="input-box">
+                            <input type="date" v-model="form.startDate" required />
+                        </div>
+                    </div>
+                    <div class="col-md-6 form-group">
+                        <label>Fecha de finalización<span>*</span></label>
+                        <div class="input-box">
+                            <input type="date" v-model="form.finalizationDate" required />
+                        </div>
+                    </div>
+                </div>
+
+                <h5 class="mt-4" style="font-weight: bold; font-size: x-large">Tarifas</h5>
+                <div class="row">
+                    <div class="col-md-6 form-group">
+                        <label>Primera Clase $<span>*</span></label>
+                        <div class="input-box">
+                            <input type="number" min="0" step="0.01" v-model.number="form.priceFirstClass" placeholder="$ 0.00" @keypress="onlyNumbers" />
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 form-group">
+                        <label>Clase Turista $<span>*</span></label>
+                        <div class="input-box">
+                            <input type="number" min="0" step="0.01" v-model.number="form.priceEconomy" placeholder="$ 0.00" @keypress="onlyNumbers" />
+                        </div>
+                    </div>
+                </div>
+
+                <h5 class="mt-4">Políticas de Equipaje</h5>
+                <div class="row">
+                    <div class="col-md-3 form-group">
+                        <label>Precio equipaje de mano $<span>*</span></label>
+                        <div class="input-box">
+                            <input type="number" min="0" step="0.01" v-model.number="form.handBagPrice" placeholder="$ 0.00" @keypress="onlyNumbers" />
+                        </div>
+                    </div>
+
+                    <div class="col-md-3 form-group">
+                        <label>Peso equipaje de mano (kg)<span>*</span></label>
+                        <div class="input-box">
+                            <input type="number" min="0" step="0.01" v-model.number="form.handBagWeight" placeholder="0.00" @keypress="onlyNumbers" />
+                        </div>
+                    </div>
+
+                    <div class="col-md-3 form-group">
+                        <label>Precio equipaje documentado $<span>*</span></label>
+                        <div class="input-box">
+                            <input type="number" min="0" step="0.01" v-model.number="form.bagPrice" placeholder="$ 0.00" @keypress="onlyNumbers" />
+                        </div>
+                    </div>
+
+                    <div class="col-md-3 form-group">
+                        <label>Peso equipaje documentado (kg)<span>*</span></label>
+                        <div class="input-box">
+                            <input type="number" min="0" step="0.01" v-model.number="form.bagWeight" placeholder="0.00" @keypress="onlyNumbers" />
+                        </div>
+                    </div>
+
+                    <div class="col-md-4 form-group mt-2">
+                        <label>Multiplicador<span>*</span></label>
+                        <div class="input-box">
+                            <input type="number" min="0" step="0.01" v-model.number="form.bagMultiplier" placeholder="0.00" @keypress="onlyNumbers" />
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="search-btn mt-4" style="font-size: large; font-weight: bold">
+                    Crear ruta
+                </button>
+            </form>
+        </AdminCard>
 
         <div class="mb-5">
             <div class="route-card">
@@ -250,7 +248,6 @@
                 </div>
             </div>
         </div>
-
     </AdminPageLayout>
 </template>
 
@@ -258,10 +255,14 @@
     import axios from "axios";
     import API_BASE_URL from "@/config/api";
     import AdminPageLayout from "@/components/layout/AdminPageLayout.vue";
+    import AdminHero from "@/components/admin/ui/AdminHero.vue";
+    import AdminCard from "@/components/admin/ui/AdminCard.vue";
 
     export default {
         components: {
             AdminPageLayout,
+            AdminHero,
+            AdminCard,
         },
 
         data() {

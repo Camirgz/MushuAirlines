@@ -6,11 +6,16 @@ namespace backend.Services
 {
     public class RouteCreationService : IRouteCreationService
     {
-        private readonly RouteCreationRepository routeCreationRepository;
+        private readonly IRouteCreationRepository routeCreationRepository;
 
         public RouteCreationService()
         {
             routeCreationRepository = new RouteCreationRepository();
+        }
+
+        public RouteCreationService(IRouteCreationRepository repository)
+        {
+            routeCreationRepository = repository;
         }
 
         public string CreateRoute(RouteCreationModel route)
@@ -18,7 +23,7 @@ namespace backend.Services
             try
             {
                 routeCreationRepository.InsertRoute(route);
-                return "";
+                return string.Empty;
             }
             catch (Exception ex)
             {
@@ -56,6 +61,7 @@ namespace backend.Services
                 DestinationCity = r.DestinationCity
             }).ToList();
         }
+
         public int GetOrCreateScheduledFlight(string routeCode, DateTime date)
         {
             return routeCreationRepository.GetOrCreateScheduledFlight(routeCode, date);
@@ -65,35 +71,65 @@ namespace backend.Services
         {
             return routeCreationRepository.FindExistingScheduledFlight(routeCode, date);
         }
+
         public RouteCreationModel GetRouteByCode(string code)
         {
-            var r = routeCreationRepository.GetRouteByCode(code);
+            RouteDbModel? r = routeCreationRepository.GetRouteByCode(code);
+
+            if (r == null)
+            {
+                return null;
+            }
+
             return new RouteCreationModel
             {
-                Code               = r.Code,
-                OriginAirport      = r.OriginAirport,
+                Code = r.Code,
+                OriginAirport = r.OriginAirport,
                 DestinationAirport = r.DestinationAirport,
-                DepartureTime      = r.DepartureTime,
-                ArrivalTime        = r.ArrivalTime,
-                Duration           = r.Duration,
-                AircraftTypeId     = r.AircraftTypeId,
-                AircraftCode       = r.AircraftCode,
-                Frequency          = r.Frequency.Split(',').ToList(),
-                PriceFirstClass    = r.PriceFirstClass,
-                PriceEconomy       = r.PriceEconomy,
-                HandBagPrice       = r.HandBagPrice,
-                HandBagWeight      = r.HandBagWeight,
-                BagPrice           = r.BagPrice,
-                BagWeight          = r.BagWeight,
-                BagMultiplier      = r.BagMultiplier,
-                StartDate          = r.StartDate,
-                FinalizationDate   = r.FinalizationDate,
+                DepartureTime = r.DepartureTime,
+                ArrivalTime = r.ArrivalTime,
+                Duration = r.Duration,
+                AircraftTypeId = r.AircraftTypeId,
+                AircraftCode = r.AircraftCode,
+                Frequency = r.Frequency.Split(',').ToList(),
+                PriceFirstClass = r.PriceFirstClass,
+                PriceEconomy = r.PriceEconomy,
+                HandBagPrice = r.HandBagPrice,
+                HandBagWeight = r.HandBagWeight,
+                BagPrice = r.BagPrice,
+                BagWeight = r.BagWeight,
+                BagMultiplier = r.BagMultiplier,
+                StartDate = r.StartDate,
+                FinalizationDate = r.FinalizationDate,
                 EconomyClassCapacity = r.EconomyClassCapacity,
-                FirstClassCapacity   = r.FirstClassCapacity,
-                OriginCity         = r.OriginCity,
-                DestinationCity    = r.DestinationCity
+                FirstClassCapacity = r.FirstClassCapacity,
+                OriginCity = r.OriginCity,
+                DestinationCity = r.DestinationCity
             };
         }
 
+        public string DeleteRoute(string code)
+        {
+            if (string.IsNullOrWhiteSpace(code))
+            {
+                return "La ruta seleccionada no es válida.";
+            }
+
+            try
+            {
+                bool wasDeleted = routeCreationRepository.DeleteRoute(code.Trim().ToUpper());
+
+                if (!wasDeleted)
+                {
+                    return "No se encontró la ruta que desea eliminar.";
+                }
+
+                return string.Empty;
+            }
+            catch
+            {
+                return "No se pudo eliminar la ruta.";
+            }
+        }
     }
 }

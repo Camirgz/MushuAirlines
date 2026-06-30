@@ -1,0 +1,141 @@
+USE MushuAirlines;
+GO
+
+CREATE OR ALTER PROCEDURE HardDeleteScheduledFlightsByAircraft
+    @AircraftCode INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @ScheduledFlights TABLE (Id INT PRIMARY KEY);
+    DECLARE @FlightSchedules TABLE (Id INT PRIMARY KEY);
+
+    INSERT INTO @ScheduledFlights (Id)
+    SELECT Id
+    FROM ScheduledFlight
+    WHERE AircraftCode = @AircraftCode;
+
+    INSERT INTO @FlightSchedules (Id)
+    SELECT DISTINCT fshsf.FlightScheduleId
+    FROM FlightScheduleHasScheduledFlight fshsf
+    INNER JOIN @ScheduledFlights sf
+        ON sf.Id = fshsf.ScheduledFlightId;
+
+    DELETE tb
+    FROM TicketBaggage tb
+    INNER JOIN @ScheduledFlights sf
+        ON sf.Id = tb.ScheduledFlightId;
+
+    DELETE t
+    FROM Ticket t
+    INNER JOIN @ScheduledFlights sf
+        ON sf.Id = t.ScheduledId;
+
+    DELETE isf
+    FROM ItineraryScheduledFlight isf
+    INNER JOIN @ScheduledFlights sf
+        ON sf.Id = isf.ScheduledId;
+
+    DELETE aps
+    FROM AirportScheduled aps
+    INNER JOIN @ScheduledFlights sf
+        ON sf.Id = aps.ScheduledFlightId;
+
+    DELETE fshsf
+    FROM FlightScheduleHasScheduledFlight fshsf
+    INNER JOIN @ScheduledFlights sf
+        ON sf.Id = fshsf.ScheduledFlightId;
+
+    DELETE m
+    FROM Manages m
+    INNER JOIN @FlightSchedules fs
+        ON fs.Id = m.FlightId;
+
+    DELETE escf
+    FROM ExternalSystChecksFlight escf
+    INNER JOIN @FlightSchedules fs
+        ON fs.Id = escf.FlightId;
+
+    DELETE fs
+    FROM FlightSchedule fs
+    INNER JOIN @FlightSchedules f
+        ON f.Id = fs.Id;
+
+    DELETE sf
+    FROM ScheduledFlight sf
+    INNER JOIN @ScheduledFlights s
+        ON s.Id = sf.Id;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE HardDeleteFlightSchedulesByAirport
+    @AirportCode VARCHAR(3)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @NormalizedAirportCode VARCHAR(3);
+
+    SET @NormalizedAirportCode = UPPER(@AirportCode);
+
+    DECLARE @FlightSchedules TABLE (Id INT PRIMARY KEY);
+    DECLARE @ScheduledFlights TABLE (Id INT PRIMARY KEY);
+
+    INSERT INTO @FlightSchedules (Id)
+    SELECT Id
+    FROM FlightSchedule
+    WHERE UPPER(OriginAirport) = @NormalizedAirportCode
+       OR UPPER(DestinationAirport) = @NormalizedAirportCode;
+
+    INSERT INTO @ScheduledFlights (Id)
+    SELECT DISTINCT fshsf.ScheduledFlightId
+    FROM FlightScheduleHasScheduledFlight fshsf
+    INNER JOIN @FlightSchedules fs
+        ON fs.Id = fshsf.FlightScheduleId;
+
+    DELETE tb
+    FROM TicketBaggage tb
+    INNER JOIN @ScheduledFlights sf
+        ON sf.Id = tb.ScheduledFlightId;
+
+    DELETE t
+    FROM Ticket t
+    INNER JOIN @ScheduledFlights sf
+        ON sf.Id = t.ScheduledId;
+
+    DELETE isf
+    FROM ItineraryScheduledFlight isf
+    INNER JOIN @ScheduledFlights sf
+        ON sf.Id = isf.ScheduledId;
+
+    DELETE aps
+    FROM AirportScheduled aps
+    INNER JOIN @ScheduledFlights sf
+        ON sf.Id = aps.ScheduledFlightId;
+
+    DELETE fshsf
+    FROM FlightScheduleHasScheduledFlight fshsf
+    INNER JOIN @ScheduledFlights sf
+        ON sf.Id = fshsf.ScheduledFlightId;
+
+    DELETE m
+    FROM Manages m
+    INNER JOIN @FlightSchedules fs
+        ON fs.Id = m.FlightId;
+
+    DELETE escf
+    FROM ExternalSystChecksFlight escf
+    INNER JOIN @FlightSchedules fs
+        ON fs.Id = escf.FlightId;
+
+    DELETE fs
+    FROM FlightSchedule fs
+    INNER JOIN @FlightSchedules f
+        ON f.Id = fs.Id;
+
+    DELETE sf
+    FROM ScheduledFlight sf
+    INNER JOIN @ScheduledFlights s
+        ON s.Id = sf.Id;
+END;
+GO
