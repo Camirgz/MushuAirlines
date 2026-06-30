@@ -51,7 +51,7 @@ BEGIN
     INSERT INTO @ScheduledFlights (Id)
     SELECT Id
     FROM ScheduledFlight
-    WHERE UPPERRouteCode) = @NormalizedRouteCode;
+    WHERE UPPER(RouteCode) = @NormalizedRouteCode;
 
     INSERT INTO @FlightSchedules (Id)
     SELECT DISTINCT fshsf.FlightScheduleId
