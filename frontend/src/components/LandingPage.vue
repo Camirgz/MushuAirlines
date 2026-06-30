@@ -400,6 +400,7 @@
             :direct-flight="flight"
             :passenger-count="passengerCount"
             :airports="airports"
+            :airline="flight.airline || null"
             @select="openFlightDetails"
           />
 
@@ -737,6 +738,40 @@ function flightOperatesOnDate(flight, dateStr) {
   return flight.frequency.includes(dayName)
 }
 
+function externalFlightToFlight(f, date) {
+  const hours = durationToHours(f.duration)
+  return {
+    id: f.flightGUID,
+    origin: f.departureAirport?.code || '',
+    destination: f.arrivalAirport?.code || '',
+    originCity: f.departureAirport?.city || '',
+    destinationCity: f.arrivalAirport?.city || '',
+    duration: f.duration,
+    departureTime: f.departureTime?.includes('T') ? f.departureTime.substring(11, 16) : f.departureTime?.substring(0, 5),
+    arrivalTime: f.arrivalTime?.includes('T') ? f.arrivalTime.substring(11, 16) : f.arrivalTime?.substring(0, 5),
+    // Full ISO strings preserved so the backend can store exact departure/arrival datetimes
+    rawDepartureTime: f.departureTime,
+    rawArrivalTime:   f.arrivalTime,
+    durationHours: hours,
+    durationLabel: durationToLabel(f.duration),
+    aircraftTypeId: null,
+    price: f.touristPrice,
+    priceFirstClass: f.firstClassPrice,
+    priceEconomy: f.touristPrice,
+    handBagPrice: f.carryOnPrice,
+    handBagWeight: 0,
+    bagPrice: f.checkedPrice,
+    bagWeight: 0,
+    bagMultiplier: 0,
+    frequency: [],
+    finalizationDate: null,
+    airline: f.airline,
+    isExternal: true,
+    date: date,
+    arrivalDate: date,
+  }
+}
+
 function routeToFlight(r) {
   const hours = durationToHours(r.duration)
   return {
@@ -832,7 +867,8 @@ export default {
     }
     try {
       const flightsRes = await fetch(`${API_BASE_URL}/api/flights`)
-      const flights = await flightsRes.json()
+      const flightsData = await flightsRes.json()
+      const flights = flightsData.flights ?? flightsData
       console.log('[DEBUG] primer vuelo raw del API:', JSON.stringify(flights[0]))
       this.flights = flights.map(routeToFlight)
       console.log('[DEBUG] primer vuelo mapeado finalizationDate:', this.flights[0]?.finalizationDate)
@@ -1099,20 +1135,42 @@ export default {
 
       this.errorMsg = ''
 
-      // Two parallel fetches:
-      // 1. Direct flights — API filters by origin/destination/capacity
-      // 2. All available flights for this date — used by the stopover finder
+      // Fetches:
+      // 1. Direct flights — API filters by origin/destination
+      // 2. All local flights for this date — base pool for stopover finder
+      // 3. External flights to destination — for stopover leg2 candidates
+      // 4. External flights from origin airports — for stopover leg1 candidates
       let directFlights = []
       let availableFlights = this.flights
+
+      const { value: originVal, type: originType } = this.selectedOrigin
+      const { value: destVal, type: destType } = this.selectedDestination
+
+      const originCodes = originType === 'city'
+        ? this.airports.filter(a => a.city === originVal).map(a => a.code)
+        : [originVal]
+      const destCodes = destType === 'city'
+        ? this.airports.filter(a => a.city === destVal).map(a => a.code)
+        : [destVal]
+
       try {
-        const { value: originVal, type: originType } = this.selectedOrigin
-        const { value: destVal, type: destType } = this.selectedDestination
         const [directRes, allRes] = await Promise.all([
           fetch(`${API_BASE_URL}/api/flights?date=${this.departureDate}&origin=${encodeURIComponent(originVal)}&originType=${originType}&destination=${encodeURIComponent(destVal)}&destinationType=${destType}`),
-          fetch(`${API_BASE_URL}/api/flights?date=${this.departureDate}`)
+          fetch(`${API_BASE_URL}/api/flights?date=${this.departureDate}`),
         ])
-        directFlights = (await directRes.json()).map(routeToFlight)
-        availableFlights = (await allRes.json()).map(routeToFlight)
+        const directData = await directRes.json()
+        const allData = await allRes.json()
+
+        const allExternal = (directData.externalFlights ?? []).map(f => externalFlightToFlight(f, this.departureDate))
+
+        // Directos: solo vuelos de Mushu (locales)
+        directFlights = (directData.flights ?? directData).map(routeToFlight)
+
+        const localPool = (allData.flights ?? allData).map(routeToFlight)
+        // Pool de escalas: locales + externos que lleguen al destino (para ser leg2)
+        // leg1 siempre será de Mushu (local), leg2 puede ser externo
+        const externalPool = allExternal.filter(f => destCodes.includes(f.destination))
+        availableFlights = [...localPool, ...externalPool]
       } catch (e) {
         console.error('Error consultando vuelos:', e)
       }
@@ -1127,14 +1185,6 @@ export default {
             ? addDaysToDateString(this.departureDate, 1)
             : this.departureDate,
         }))
-
-      // Stopover connections — expand city selection to array of airport codes
-      const originCodes = this.selectedOrigin.type === 'city'
-        ? this.airports.filter(a => a.city === this.selectedOrigin.value).map(a => a.code)
-        : [this.selectedOrigin.value]
-      const destCodes = this.selectedDestination.type === 'city'
-        ? this.airports.filter(a => a.city === this.selectedDestination.value).map(a => a.code)
-        : [this.selectedDestination.value]
 
       const rawConnections = findStopoverConnections(availableFlights, originCodes, destCodes, this.departureDate)
 
@@ -1252,39 +1302,45 @@ export default {
       const { setFlight } = usePurchaseFlow()
       setFlight(
         {
-          code:            leg1.id,
-          flightDate:      leg1.date,
-          origin:          leg1.origin,
-          destination:     leg2.destination,
-          originCity:      leg1.originCity      ?? '',
-          destinationCity: leg2.destinationCity ?? '',
-          departureTime:   leg1.departureTime,
-          arrivalTime:     leg2.arrivalTime,
-          priceEconomy:     leg1.priceEconomy    + leg2.priceEconomy,
-          priceFirstClass:  leg1.priceFirstClass + leg2.priceFirstClass,
+          code:             leg1.id,
+          flightDate:       leg1.date,
+          origin:           leg1.origin,
+          destination:      leg2.destination,
+          originCity:       leg1.originCity      ?? '',
+          destinationCity:  leg2.destinationCity ?? '',
+          departureTime:    leg1.departureTime,
+          arrivalTime:      leg2.arrivalTime,
+          rawDepartureTime: leg1.rawDepartureTime ?? null,
+          rawArrivalTime:   leg1.rawArrivalTime   ?? null,
+          priceEconomy:     leg1.priceEconomy,
+          priceFirstClass:  leg1.priceFirstClass,
           passengerCount:   this.passengerCount,
-          handBagPrice:    (leg1.handBagPrice ?? 0) + (leg2.handBagPrice ?? 0),
-          handBagWeight:    Math.min(leg1.handBagWeight ?? 0, leg2.handBagWeight ?? 0),
-          bagPrice:        (leg1.bagPrice ?? 0) * (leg1.bagMultiplier ?? 1)
-                         + (leg2.bagPrice ?? 0) * (leg2.bagMultiplier ?? 1),
-          bagWeight:        Math.min(leg1.bagWeight ?? 0, leg2.bagWeight ?? 0),
-          bagMultiplier:    1,
+          handBagPrice:     leg1.handBagPrice  ?? 0,
+          handBagWeight:    leg1.handBagWeight ?? 0,
+          bagPrice:         leg1.bagPrice      ?? 0,
+          bagWeight:        leg1.bagWeight     ?? 0,
+          bagMultiplier:    leg1.bagMultiplier ?? 1,
           isStopover:       true,
+          isExternal:       leg1.isExternal    ?? false,
+          airline:          leg1.airline       ?? null,
           connectionCity:   conn.connectionCity,
           layoverMinutes:   conn.layoverMinutes,
-          leg1HandBagPrice:  leg1.handBagPrice  ?? 0,
-          leg1BagPrice:      leg1.bagPrice      ?? 0,
-          leg1BagMultiplier: leg1.bagMultiplier ?? 1,
         },
         seats,
         {
-          code:          leg2.id,
-          flightDate:    leg2.date,
-          origin:        leg2.origin,
-          destination:   leg2.destination,
-          handBagPrice:  leg2.handBagPrice  ?? 0,
-          bagPrice:      leg2.bagPrice      ?? 0,
-          bagMultiplier: leg2.bagMultiplier ?? 1,
+          code:             leg2.id,
+          flightDate:       leg2.date,
+          origin:           leg2.origin,
+          destination:      leg2.destination,
+          rawDepartureTime: leg2.rawDepartureTime ?? null,
+          rawArrivalTime:   leg2.rawArrivalTime   ?? null,
+          priceEconomy:     leg2.priceEconomy,
+          priceFirstClass:  leg2.priceFirstClass,
+          handBagPrice:     leg2.handBagPrice  ?? 0,
+          bagPrice:         leg2.bagPrice      ?? 0,
+          bagMultiplier:    leg2.bagMultiplier ?? 1,
+          isExternal:       leg2.isExternal    ?? false,
+          airline:          leg2.airline       ?? null,
         }
       )
 
@@ -1321,14 +1377,16 @@ export default {
 
       const { setFlight } = usePurchaseFlow()
       setFlight({
-        code:            f.id,
-        flightDate:      f.date,
-        origin:          f.origin,
-        destination:     f.destination,
-        originCity:      f.originCity      ?? '',
-        destinationCity: f.destinationCity ?? '',
-        departureTime:   f.departureTime,
-        arrivalTime:     f.arrivalTime,
+        code:             f.id,
+        flightDate:       f.date,
+        origin:           f.origin,
+        destination:      f.destination,
+        originCity:       f.originCity       ?? '',
+        destinationCity:  f.destinationCity  ?? '',
+        departureTime:    f.departureTime,
+        arrivalTime:      f.arrivalTime,
+        rawDepartureTime: f.rawDepartureTime ?? null,
+        rawArrivalTime:   f.rawArrivalTime   ?? null,
         priceEconomy:     f.priceEconomy,
         priceFirstClass:  f.priceFirstClass,
         passengerCount:   this.passengerCount,
@@ -1337,6 +1395,8 @@ export default {
         bagPrice:         f.bagPrice        ?? 0,
         bagWeight:        f.bagWeight       ?? 0,
         bagMultiplier:    f.bagMultiplier   ?? 1,
+        isExternal:       f.isExternal      ?? false,
+        airline:          f.airline         ?? null,
       }, seats)
 
       this.closeFlightDetails()

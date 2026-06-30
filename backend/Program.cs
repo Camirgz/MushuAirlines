@@ -94,6 +94,8 @@ builder.Services.AddScoped<IProfileRepository, ProfileRepository>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
 
 builder.Services.AddScoped<IFlightRepository, RouteCreationRepository>();
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<IExternalAirlinesService, ExternalAirlinesService>();
 builder.Services.AddScoped<FlightAggregatorService>();
 
 builder.Services.AddSingleton<ICodeGenerator, CodeGenerator>();

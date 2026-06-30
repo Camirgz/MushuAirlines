@@ -82,6 +82,14 @@ namespace backend.Repositories
                 }).ToList();
         }
 
+        public IEnumerable<string> GetIntermediateDestinations(string originAirport)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            return connection.Query<string>(
+                "SELECT DISTINCT DestinationAirport FROM Route WHERE OriginAirport = @Origin",
+                new { Origin = originAirport }).ToList();
+        }
+
         public void InsertRoute(RouteCreationModel route)
         {
             using var connection = new SqlConnection(_connectionString);

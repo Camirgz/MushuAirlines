@@ -1,20 +1,24 @@
 USE MushuAirlines;
-GO
 
-ALTER TABLE Route
-ADD AircraftCode INT NULL;
-GO
+ALTER TABLE ItineraryScheduledFlight
+DROP CONSTRAINT FK_ISF_ScheduledFlight;
 
-ALTER TABLE Route
-ADD CONSTRAINT FK_Route_Aircraft
-FOREIGN KEY (AircraftCode)
-REFERENCES dbo.Aircraft(Code);
-GO
+-- 2. Drop the existing PK
+ALTER TABLE ItineraryScheduledFlight
+DROP CONSTRAINT PK_ItineraryScheduledFlight;
 
-UPDATE r
-SET r.AircraftCode = a.Code
-FROM Route r
-INNER JOIN Aircraft a
-    ON r.AircraftTypeId = a.Model
-WHERE r.AircraftCode IS NULL;
-GO
+-- 3. Add surrogate PK
+ALTER TABLE ItineraryScheduledFlight
+ADD Id INT IDENTITY(1,1) NOT NULL;
+
+ALTER TABLE ItineraryScheduledFlight
+ADD CONSTRAINT PK_ItineraryScheduledFlight PRIMARY KEY (Id);
+
+-- 4. Make ScheduledId nullable (now that it's no longer part of the PK)
+ALTER TABLE ItineraryScheduledFlight
+ALTER COLUMN ScheduledId INT NULL;
+
+-- 5. Re-add the FK for ScheduledId as optional
+ALTER TABLE ItineraryScheduledFlight
+ADD CONSTRAINT FK_ISF_ScheduledFlight
+    FOREIGN KEY (ScheduledId) REFERENCES ScheduledFlight(Id);

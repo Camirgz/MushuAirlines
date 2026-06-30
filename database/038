@@ -1,0 +1,27 @@
+USE MushuAirlines;
+
+CREATE TABLE ExternalAirline (
+    Id          INT IDENTITY(1,1) PRIMARY KEY,
+    Name        NVARCHAR(100) NOT NULL,
+    BaseUrl     NVARCHAR(500) NOT NULL,
+    ApiKey      NVARCHAR(1000) NOT NULL,
+    IsActive    BIT NOT NULL DEFAULT 1,
+    CreatedAt   DATETIME NOT NULL DEFAULT GETDATE()
+);
+
+INSERT INTO ExternalAirline (Name, BaseUrl, ApiKey) VALUES
+(
+    'Zuli Airlines',
+    'https://external-api-3-ebdrghbyf2akd2ac.southcentralus-01.azurewebsites.net',
+    '621aba50a73bcbe0173cdf87671f72aa1d4bb9039a006f354fb65d2358ce1a6efb38225103a85be6e026d9959f684e906d13c894f72641a6ef7e8f1bddec064510f42ba14c44bb4438004ad762682f86936827afd434be442c7b50c66b60cce30901b839b14c92f1456f42c65459e8ba2f1a2849d982a829c6ee9e82c7b4d3c4'
+),
+(
+    'Air Dreams',
+    'https://external-api-2-e2ggbtd3dbbvd0h8.southcentralus-01.azurewebsites.net',
+    'IDgmiRR3QxZGHFH0xjjksUkcSZMQqFZI8ASsdy2X0mfN3ZYnZulYLqcsvrhjfmRma29N5WxKtmb1ixTqbtQ76NlmoliVTWwA0zHB74OjxjfpOIogZfMMpBW4waUw8aWSpvF6VU3JSqvCuvt7qriEEhFMeC1Vjp7DRfB0a1YupwU7HVaN9QBw0O4XbbQJb2MX02y4DOqnB0kyExnAgB9yIm69AAlGDwW573fd0Li2JDcnXVHPi1smW5O4S2IcuhkZ'
+),
+(
+    'Snoopy Airlines',
+    'https://snoopyairlines-externalapi-a9aueuefcbacdwbv.eastus-01.azurewebsites.net',
+    'pwNQBgr0AfZFGb1UPoEnewmPA8uTqa2sw6682L3X6yXYV74dQw3ge5CEW9hn3YHQ1Nhb1cRZ3IneXNrJ41do0gPlRGIgQ2I0BtZiUYd6tzIe7hw1ih7MqnoHoCWpKc3vznIijA672fcj6Wfc5q9wlndDnIDldZjQtVzwbuKuZ6GApN1lhhknZ5NA4HBKyGXR6dArIqj4udKQShuaeNBjcUc591L5okawi8MOsluUmJhukLbLHO0aTp1BpjDk2Vg2'
+);

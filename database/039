@@ -1,0 +1,5 @@
+USE MushuAirlines;
+
+ALTER TABLE ItineraryScheduledFlight
+ADD ExternalFlightCode VARCHAR(100) NULL
+    CONSTRAINT FK_ISF_ExternalFlight FOREIGN KEY REFERENCES ExternalFlight(Code);

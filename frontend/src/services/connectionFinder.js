@@ -87,6 +87,7 @@ function findStopoverConnections(allFlights, originCodes, destinationCodes, date
   const nextDayWeekday = selectedWeekday ? advanceWeekday(selectedWeekday) : null
 
   const firstLegs = allFlights.filter(flight =>
+    !flight.isExternal &&
     originCodes.includes(flight.origin) &&
     !destinationCodes.includes(flight.destination) &&
     flightOperatesOnWeekday(flight, selectedWeekday) &&
