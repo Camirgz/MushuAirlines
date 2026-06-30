@@ -1,0 +1,8 @@
+USE MushuAirlines;
+GO
+
+CREATE NONCLUSTERED INDEX IX_Airport_Active_AirportName
+ON Airport (AirportName)
+INCLUDE (Code, Country, City)
+WHERE IsDeleted = 0;
+GO

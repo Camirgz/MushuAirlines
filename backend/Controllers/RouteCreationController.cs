@@ -15,14 +15,13 @@ public class RouteCreationController : ControllerBase
         routeCreationService = new RouteCreationService();
     }
 
-
     [HttpPost]
     public ActionResult CreateRoute([FromBody] RouteCreationModel route)
     {
-         if (route == null)
-         {
+        if (route == null)
+        {
             return BadRequest();
-         }
+        }
 
         var result = routeCreationService.CreateRoute(route);
 
@@ -30,10 +29,8 @@ public class RouteCreationController : ControllerBase
         {
             return Ok("Ruta creada correctamente");
         }
-        else
-        {
-            return BadRequest(result);
-        }
+
+        return BadRequest(result);
     }
 
     [HttpGet]
@@ -41,5 +38,36 @@ public class RouteCreationController : ControllerBase
     {
         var routes = routeCreationService.GetRoutes();
         return Ok(routes);
+    }
+
+    [HttpGet("{code}")]
+    public ActionResult GetRouteByCode(string code)
+    {
+        var route = routeCreationService.GetRouteByCode(code);
+
+        if (route == null)
+        {
+            return NotFound("No se encontró la ruta solicitada.");
+        }
+
+        return Ok(route);
+    }
+
+    [HttpDelete("{code}")]
+    public ActionResult DeleteRoute(string code)
+    {
+        string result = routeCreationService.DeleteRoute(code);
+
+        if (string.IsNullOrEmpty(result))
+        {
+            return Ok("Ruta eliminado correctamente.");
+        }
+
+        if (result == "No se encontró la ruta que desea eliminar.")
+        {
+            return NotFound(result);
+        }
+
+        return BadRequest(result);
     }
 }

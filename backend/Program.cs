@@ -101,6 +101,7 @@ builder.Services.AddSingleton<IPricingCalculator, PurchasePricingCalculator>();
 
 builder.Services.AddScoped<IRouteCreationService, RouteCreationService>();
 builder.Services.AddScoped<IPurchaseService, PurchaseService>();
+builder.Services.AddScoped<IRouteCreationRepository, RouteCreationRepository>();
 
 builder.Services.AddScoped<IFlightDetailReportRepository, FlightDetailReportRepository>();
 builder.Services.AddScoped<IFlightDetailReportService, FlightDetailReportService>();
