@@ -3,22 +3,18 @@ USE MushuAirlines;
 ALTER TABLE ItineraryScheduledFlight
 DROP CONSTRAINT FK_ISF_ScheduledFlight;
 
--- 2. Drop the existing PK
 ALTER TABLE ItineraryScheduledFlight
 DROP CONSTRAINT PK_ItineraryScheduledFlight;
 
--- 3. Add surrogate PK
 ALTER TABLE ItineraryScheduledFlight
 ADD Id INT IDENTITY(1,1) NOT NULL;
 
 ALTER TABLE ItineraryScheduledFlight
 ADD CONSTRAINT PK_ItineraryScheduledFlight PRIMARY KEY (Id);
 
--- 4. Make ScheduledId nullable (now that it's no longer part of the PK)
 ALTER TABLE ItineraryScheduledFlight
 ALTER COLUMN ScheduledId INT NULL;
 
--- 5. Re-add the FK for ScheduledId as optional
 ALTER TABLE ItineraryScheduledFlight
 ADD CONSTRAINT FK_ISF_ScheduledFlight
     FOREIGN KEY (ScheduledId) REFERENCES ScheduledFlight(Id);
