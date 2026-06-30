@@ -3,11 +3,22 @@
 
     <!-- Airline row + price row — shared by both variants -->
     <div class="result-card-header">
-      <div class="airline-row">
-        <div class="airline-icon">
+      <div class="airline-row" v-if="resultType === 'direct'">
+        <div class="airline-icon" :class="airlineIconClass">
           <i class="bi bi-airplane-fill"></i>
         </div>
-        <span class="airline-name">Mushu Airlines</span>
+        <span class="airline-name">{{ airlineName }}</span>
+      </div>
+      <div class="airline-row" v-else>
+        <div class="airline-icon" :class="getAirlineIconClass(leg1?.airline)">
+          <i class="bi bi-airplane-fill"></i>
+        </div>
+        <span class="airline-name">{{ leg1?.airline || 'Mushu Airlines' }}</span>
+        <span class="airline-separator">+</span>
+        <div class="airline-icon" :class="getAirlineIconClass(leg2?.airline)">
+          <i class="bi bi-airplane-fill"></i>
+        </div>
+        <span class="airline-name">{{ leg2?.airline || 'Mushu Airlines' }}</span>
       </div>
 
       <div class="price-row">
@@ -192,6 +203,10 @@ export default {
       type: Array,
       default: () => [],
     },
+    airline: {
+      type: String,
+      default: null,
+    },
   },
 
   emits: ['select'],
@@ -199,6 +214,14 @@ export default {
   methods: {
     getAirport(code) {
       return this.airports.find(a => a.code === code) || null
+    },
+
+    getAirlineIconClass(airline) {
+      const name = (airline || '').toLowerCase()
+      if (name.includes('zuli'))   return 'airline-icon--zuli'
+      if (name.includes('snoopy')) return 'airline-icon--snoopy'
+      if (name.includes('air dreams') || name.includes('airdreams')) return 'airline-icon--airdreams'
+      return ''
     },
   },
 
@@ -215,6 +238,14 @@ export default {
     firstClassPrice() {
       if (!this.isStopover) return this.directFlight.priceFirstClass
       return this.leg1.priceFirstClass + this.leg2.priceFirstClass
+    },
+
+    airlineName() {
+      return this.airline || 'Mushu Airlines'
+    },
+
+    airlineIconClass() {
+      return this.getAirlineIconClass(this.airline)
     },
 
     formattedLayover() {
@@ -285,10 +316,31 @@ export default {
   flex-shrink: 0;
 }
 
+.airline-icon--zuli {
+  background: #fffbe6;
+  color: #f5c400;
+}
+
+.airline-icon--snoopy {
+  background: #f0f0f0;
+  color: #888;
+}
+
+.airline-icon--airdreams {
+  background: #e8f0fe;
+  color: #1a73e8;
+}
+
 .airline-name {
   font-size: 0.88rem;
   font-weight: 600;
   color: #333;
+}
+
+.airline-separator {
+  font-size: 0.75rem;
+  color: #ccc;
+  margin: 0 4px;
 }
 
 .price-row {
