@@ -65,4 +65,25 @@ public class InternalFlightsController : ControllerBase
     {
         public string Name { get; set; } = default!;
     }
+
+    [HttpPost("order")]
+    public IActionResult OrderFlight([FromBody] OrderRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request?.ApiKey) || !_service.ValidateApiKey(request.ApiKey))
+            return Unauthorized();
+        try
+        {
+            if (request.Payment.Cvv )
+            {
+                request.Payment.PaymentMethod = request.Payment.Cvv.Length == 4 ? "Amex" : "Visa/Mastercard";
+            }
+
+            var orderResult = _service.OrderFlight(request);
+            return Ok(orderResult);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = ex.Message });
+        }
+    })
 }

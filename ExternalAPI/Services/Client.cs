@@ -111,4 +111,14 @@ public class Client : IClient
 
         return await response.Content.ReadFromJsonAsync<object>();
     }
+
+    public async Task<object?> OrderFlight(OrderRequest request)
+    {
+        var response = await _httpClient.PostAsJsonAsync("/api/InternalFlights/order", request);
+        
+        if (!response.IsSuccessStatusCode)
+            throw new BackendException((int)response.StatusCode, "Could not order flight in backend core.");
+
+        return await response.Content.ReadFromJsonAsync<object>();
+    }
 }
