@@ -20,12 +20,13 @@ public class PurchaseController : ControllerBase
     public async Task<ActionResult> CheckAvailability(
         [FromQuery] string routeCode,
         [FromQuery] string flightDate,
-        [FromQuery] int count)
+        [FromQuery] int firstClassCount,
+        [FromQuery] int economyCount)
     {
         if (!DateOnly.TryParse(flightDate, out DateOnly date))
             return BadRequest(new { message = "Formato de fecha inválido." });
 
-        bool available = await _purchaseService.IsFlightAvailableAsync(routeCode, date, count);
+        bool available = await _purchaseService.IsFlightAvailableAsync(routeCode, date, firstClassCount, economyCount);
         return Ok(new { available });
     }
 

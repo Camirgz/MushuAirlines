@@ -177,6 +177,13 @@ public class PurchaseRepository : IPurchaseRepository
                 Subtotal    = b.Subtotal
             }), transaction);
 
+            const string updateBookedSeats = @"
+                UPDATE ScheduledFlight
+                SET    BookedSeats           = BookedSeats           + @SeatCount,
+                       BookedSeatsFirstClass = BookedSeatsFirstClass + @FirstClassCount,
+                       BookedSeatsEconomy    = BookedSeatsEconomy    + @EconomyCount
+                WHERE  Id = @ScheduledFlightId";
+
             // ── Leg 1 ─────────────────────────────────────────────────────
             if (data.ExternalFlight1 != null)
             {
@@ -190,7 +197,6 @@ public class PurchaseRepository : IPurchaseRepository
             }
             else
             {
-                // Internal leg — insert Ticket and TicketBaggage
                 await InsertTicketsAsync(connection, transaction, data.Tickets1, bookingCode);
                 await InsertTicketBaggageAsync(connection, transaction, data.TicketBaggage1, bookingCode);
 
@@ -198,6 +204,14 @@ public class PurchaseRepository : IPurchaseRepository
                     connection, transaction,
                     scheduledId: data.ScheduledId1, externalFlightCode: null,
                     bookingCode, data.AirlineName1);
+
+                await connection.ExecuteAsync(updateBookedSeats, new
+                {
+                    ScheduledFlightId = data.ScheduledId1,
+                    SeatCount         = data.Tickets1.Count,
+                    FirstClassCount   = data.Tickets1.Count(t => t.SeatClass == "FirstClass"),
+                    EconomyCount      = data.Tickets1.Count(t => t.SeatClass == "Economy")
+                }, transaction);
             }
 
             // ── Leg 2 (optional stopover) ─────────────────────────────────
@@ -222,6 +236,14 @@ public class PurchaseRepository : IPurchaseRepository
                         connection, transaction,
                         scheduledId: data.ScheduledId2, externalFlightCode: null,
                         bookingCode, data.AirlineName2!);
+
+                    await connection.ExecuteAsync(updateBookedSeats, new
+                    {
+                        ScheduledFlightId = data.ScheduledId2,
+                        SeatCount         = data.Tickets2!.Count,
+                        FirstClassCount   = data.Tickets2!.Count(t => t.SeatClass == "FirstClass"),
+                        EconomyCount      = data.Tickets2!.Count(t => t.SeatClass == "Economy")
+                    }, transaction);
                 }
             }
 
@@ -365,6 +387,19 @@ public class PurchaseRepository : IPurchaseRepository
             new { Id = scheduledFlightId });
     }
 
+    public async Task<int> GetBookedSeatsByClassAsync(int scheduledFlightId, string seatClass)
+    {
+        using var connection = new SqlConnection(_connectionString);
+        return await connection.ExecuteScalarAsync<int>(@"
+            SELECT ISNULL(
+                CASE @SeatClass
+                    WHEN 'FirstClass' THEN BookedSeatsFirstClass
+                    ELSE BookedSeatsEconomy
+                END, 0)
+            FROM ScheduledFlight WHERE Id = @Id",
+            new { Id = scheduledFlightId, SeatClass = seatClass });
+    }
+
     public async Task<int> GetAircraftCapacityByTypeAsync(string aircraftTypeId)
     {
         using var connection = new SqlConnection(_connectionString);
@@ -376,6 +411,21 @@ public class PurchaseRepository : IPurchaseRepository
             JOIN AircraftType aty ON a.[Type] = aty.Id
             WHERE aty.AircraftType = @AircraftTypeId",
             new { AircraftTypeId = aircraftTypeId });
+    }
+
+    public async Task<(int FirstClass, int Economy)> GetAircraftCapacityByClassAsync(string aircraftTypeId)
+    {
+        using var connection = new SqlConnection(_connectionString);
+        var row = await connection.QueryFirstOrDefaultAsync(@"
+            SELECT TOP 1
+                ISNULL(a.FirstClassRows * a.FirstClassSeatsPerRow, 0) AS FirstClass,
+                ISNULL(a.EconomyRows    * a.EconomySeatsPerRow,    0) AS Economy
+            FROM Aircraft a
+            JOIN AircraftType aty ON a.[Type] = aty.Id
+            WHERE aty.AircraftType = @AircraftTypeId",
+            new { AircraftTypeId = aircraftTypeId });
+
+        return row is null ? (0, 0) : ((int)row.FirstClass, (int)row.Economy);
     }
 
     public async Task<List<PassengerIdentityRecord>> GetPassengerIdentitiesOnFlightAsync(int scheduledFlightId)

@@ -1,29 +1,36 @@
 using backend.Exceptions;
 using backend.Interfaces;
 using backend.Model;
+using Microsoft.Extensions.Logging;
 
 namespace backend.Services;
 
 public class PurchaseService : IPurchaseService
 {
-    private readonly IPassengerRepository  _passengerRepo;
-    private readonly IPurchaseRepository   _purchaseRepo;
-    private readonly ICodeGenerator        _codeGenerator;
-    private readonly IPricingCalculator    _pricingCalculator;
-    private readonly IRouteCreationService _routeCreationService;
+    private readonly IPassengerRepository     _passengerRepo;
+    private readonly IPurchaseRepository      _purchaseRepo;
+    private readonly ICodeGenerator           _codeGenerator;
+    private readonly IPricingCalculator       _pricingCalculator;
+    private readonly IRouteCreationService    _routeCreationService;
+    private readonly IExternalAirlinesService _externalAirlinesService;
+    private readonly ILogger<PurchaseService> _logger;
 
     public PurchaseService(
-        IPassengerRepository  passengerRepo,
-        IPurchaseRepository   purchaseRepo,
-        ICodeGenerator        codeGenerator,
-        IPricingCalculator    pricingCalculator,
-        IRouteCreationService routeCreationService)
+        IPassengerRepository     passengerRepo,
+        IPurchaseRepository      purchaseRepo,
+        ICodeGenerator           codeGenerator,
+        IPricingCalculator       pricingCalculator,
+        IRouteCreationService    routeCreationService,
+        IExternalAirlinesService externalAirlinesService,
+        ILogger<PurchaseService> logger)
     {
-        _passengerRepo        = passengerRepo;
-        _purchaseRepo         = purchaseRepo;
-        _codeGenerator        = codeGenerator;
-        _pricingCalculator    = pricingCalculator;
-        _routeCreationService = routeCreationService;
+        _passengerRepo           = passengerRepo;
+        _purchaseRepo            = purchaseRepo;
+        _codeGenerator           = codeGenerator;
+        _pricingCalculator       = pricingCalculator;
+        _routeCreationService    = routeCreationService;
+        _externalAirlinesService = externalAirlinesService;
+        _logger                  = logger;
     }
 
     public async Task<PurchaseResponseModel> CreatePurchaseAsync(PurchaseRequestModel request)
@@ -92,19 +99,23 @@ public class PurchaseService : IPurchaseService
             }
         }
 
-        // ── Seat availability (only for internal legs) ────────────────────
-        var seatCount = request.SeatSelections.Count;
+        // ── Seat availability (per class, only for internal legs) ─────────
+        int firstClassCount = request.SeatSelections.Count(s => s.SeatClass == SeatClass.FirstClass);
+        int economyCount    = request.SeatSelections.Count(s => s.SeatClass == SeatClass.Economy);
+        var seatCount       = request.SeatSelections.Count;
 
-        if (!leg1IsExternal && scheduledFlightId1.HasValue)
+        if (!leg1IsExternal && request.Flight != null)
         {
-            bool avail = await _purchaseRepo.HasAvailableSeatsAsync(scheduledFlightId1.Value, seatCount);
-            if (!avail) throw new SeatUnavailableException(scheduledFlightId1.Value);
+            bool avail = await CheckPerClassAvailabilityAsync(
+                request.Flight.RouteCode, request.Flight.FlightDate, firstClassCount, economyCount);
+            if (!avail) throw new SeatUnavailableException(scheduledFlightId1!.Value);
         }
 
-        if (hasLeg2 && !leg2IsExternal && scheduledFlightId2.HasValue)
+        if (hasLeg2 && !leg2IsExternal && request.Flight2 != null)
         {
-            bool avail = await _purchaseRepo.HasAvailableSeatsAsync(scheduledFlightId2.Value, seatCount);
-            if (!avail) throw new SeatUnavailableException(scheduledFlightId2.Value);
+            bool avail = await CheckPerClassAvailabilityAsync(
+                request.Flight2.RouteCode, request.Flight2.FlightDate, firstClassCount, economyCount);
+            if (!avail) throw new SeatUnavailableException(scheduledFlightId2!.Value);
         }
 
         // ── Assign seat numbers (only for internal legs) ──────────────────
@@ -221,33 +232,50 @@ public class PurchaseService : IPurchaseService
             ? ToExternalFlightInsertData(request.ExternalFlight2!)
             : null;
 
-        // ── Execute transaction ───────────────────────────────────────────
-        var purchaseId = await _purchaseRepo.ExecutePurchaseTransactionAsync(new PurchaseTransactionData
+        // ── Book with external airline + execute local transaction ────────
+        int purchaseId;
+        try
         {
-            Record = new PurchaseRecord
+            if (leg2IsExternal)
             {
-                PassengerId     = firstPassengerId,
-                ReservationCode = reservationCode,
-                InvoiceNumber   = invoiceNumber,
-                PaymentMethod   = request.Payment.Method,
-                Email           = request.Payment.ContactEmail,
-                TotalPaid       = totals.TotalPaid,
-                TotalSeats      = totals.TotalSeats,
-                PurchaseDate    = purchaseDate
-            },
-            Details         = totals.DetailByClass,
-            BaggageDetails  = totals.BaggageDetails,
-            ScheduledId1    = scheduledFlightId1,
-            ExternalFlight1 = extFlight1,
-            AirlineName1    = airlineName1,
-            Tickets1        = tickets1,
-            TicketBaggage1  = ticketBaggage1,
-            ScheduledId2    = scheduledFlightId2,
-            ExternalFlight2 = extFlight2,
-            AirlineName2    = airlineName2,
-            Tickets2        = tickets2,
-            TicketBaggage2  = ticketBaggage2,
-        });
+                var extOrder = BuildExternalOrder(
+                    request, firstClassCount > 0, ticketBaggage2!);
+                await _externalAirlinesService.BookExternalFlightAsync(
+                    request.ExternalFlight2!.AirlineName, extOrder);
+            }
+
+            purchaseId = await _purchaseRepo.ExecutePurchaseTransactionAsync(new PurchaseTransactionData
+            {
+                Record = new PurchaseRecord
+                {
+                    PassengerId     = firstPassengerId,
+                    ReservationCode = reservationCode,
+                    InvoiceNumber   = invoiceNumber,
+                    PaymentMethod   = request.Payment.Method,
+                    Email           = request.Payment.ContactEmail,
+                    TotalPaid       = totals.TotalPaid,
+                    TotalSeats      = totals.TotalSeats,
+                    PurchaseDate    = purchaseDate
+                },
+                Details         = totals.DetailByClass,
+                BaggageDetails  = totals.BaggageDetails,
+                ScheduledId1    = scheduledFlightId1,
+                ExternalFlight1 = extFlight1,
+                AirlineName1    = airlineName1,
+                Tickets1        = tickets1,
+                TicketBaggage1  = ticketBaggage1,
+                ScheduledId2    = scheduledFlightId2,
+                ExternalFlight2 = extFlight2,
+                AirlineName2    = airlineName2,
+                Tickets2        = tickets2,
+                TicketBaggage2  = ticketBaggage2,
+            });
+        }
+        catch
+        {
+            await _passengerRepo.DeletePassengersAsync(passengerIds);
+            throw;
+        }
 
         var leg1Id = leg1IsExternal ? request.ExternalFlight!.FlightGUID : scheduledFlightId1!.Value.ToString();
         var leg2Id = hasLeg2
@@ -276,27 +304,8 @@ public class PurchaseService : IPurchaseService
         };
     }
 
-    public async Task<bool> IsFlightAvailableAsync(string routeCode, DateOnly flightDate, int requestedCount)
-    {
-        RouteCreationModel route;
-        try { route = _routeCreationService.GetRouteByCode(routeCode); }
-        catch { return true; }
-
-        int capacity = route.EconomyClassCapacity + route.FirstClassCapacity;
-        if (capacity == 0)
-            capacity = await _purchaseRepo.GetAircraftCapacityByTypeAsync(route.AircraftTypeId);
-        if (capacity == 0) return true;
-        if (requestedCount > capacity) return false;
-
-        var flightDateTime     = flightDate.ToDateTime(TimeOnly.MinValue);
-        int? scheduledFlightId = _routeCreationService.FindExistingScheduledFlight(routeCode, flightDateTime);
-
-        if (!scheduledFlightId.HasValue)
-            return true;
-
-        int bookedSeats = await _purchaseRepo.GetBookedSeatsAsync(scheduledFlightId.Value);
-        return requestedCount + bookedSeats <= capacity;
-    }
+    public Task<bool> IsFlightAvailableAsync(string routeCode, DateOnly flightDate, int firstClassCount, int economyCount)
+        => CheckPerClassAvailabilityAsync(routeCode, flightDate, firstClassCount, economyCount);
 
     public async Task<List<string>> CheckPassengerDuplicatesAsync(
         string routeCode, DateOnly flightDate, IEnumerable<PassengerCheckInfo> passengers)
@@ -319,6 +328,102 @@ public class PurchaseService : IPurchaseService
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
+
+    private async Task<bool> CheckPerClassAvailabilityAsync(
+        string routeCode, DateOnly flightDate, int firstClassCount, int economyCount)
+    {
+        RouteCreationModel route;
+        try { route = _routeCreationService.GetRouteByCode(routeCode); }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("CheckPerClassAvailabilityAsync: route '{RouteCode}' not found — {Msg}", routeCode, ex.Message);
+            return true;
+        }
+
+        int fcCapacity  = route.FirstClassCapacity;
+        int ecoCapacity = route.EconomyClassCapacity;
+
+        if (fcCapacity == 0 && ecoCapacity == 0)
+        {
+            var (fc, eco) = await _purchaseRepo.GetAircraftCapacityByClassAsync(route.AircraftTypeId);
+            fcCapacity  = fc;
+            ecoCapacity = eco;
+            _logger.LogInformation(
+                "CheckPerClassAvailabilityAsync: route capacities were 0, fell back to aircraft — FC={FC} Eco={Eco}",
+                fcCapacity, ecoCapacity);
+        }
+
+        var flightDateTime     = flightDate.ToDateTime(TimeOnly.MinValue);
+        int? scheduledFlightId = _routeCreationService.FindExistingScheduledFlight(routeCode, flightDateTime);
+
+        if (firstClassCount > 0 && fcCapacity > 0)
+        {
+            int bookedFC = scheduledFlightId.HasValue
+                ? await _purchaseRepo.GetBookedSeatsByClassAsync(scheduledFlightId.Value, "FirstClass")
+                : 0;
+            if (firstClassCount + bookedFC > fcCapacity) return false;
+        }
+
+        if (economyCount > 0 && ecoCapacity > 0)
+        {
+            int bookedEco = scheduledFlightId.HasValue
+                ? await _purchaseRepo.GetBookedSeatsByClassAsync(scheduledFlightId.Value, "Economy")
+                : 0;
+            if (economyCount + bookedEco > ecoCapacity) return false;
+        }
+
+        return true;
+    }
+
+    private static ExternalOrderRequest BuildExternalOrder(
+        PurchaseRequestModel          request,
+        bool                          firstClass,
+        List<TicketBaggageInsertData> baggage2)
+    {
+        var buyer = request.Passengers[0];
+
+        var passengers = request.Passengers.Select((p, i) => new ExternalOrderPassenger
+        {
+            CarryOn                = baggage2[i].HandBagCount > 0,
+            Checked                = baggage2[i].CheckedBagCount,
+            Passport               = "000000000",
+            PassportExpirationDate = "2030-01-01",
+            PassportCountry        = p.PassportCountry,
+            FirstName              = p.FirstName,
+            LastName               = p.LastName,
+            LastName2              = null,
+            Gender                 = p.Gender switch
+            {
+                Gender.Male   => "M",
+                Gender.Female => "F",
+                _             => "O"
+            },
+            BirthDate = p.BirthDate.ToString("yyyy-MM-dd")
+        }).ToList();
+
+        return new ExternalOrderRequest
+        {
+            FlightGUID = request.ExternalFlight2!.FlightGUID,
+            FirstClass = firstClass,
+            Passengers = passengers,
+            Buyer = new ExternalOrderBuyer
+            {
+                Nationality = buyer.PassportCountry,
+                FirstName   = buyer.FirstName,
+                LastName    = buyer.LastName,
+                LastName2   = null,
+                PhoneNumber = buyer.Phone,
+                Email       = request.Payment.ContactEmail
+            },
+            Payment = new ExternalOrderPayment
+            {
+                CardNumber     = "4111111111111111",
+                CardExpiration = "2030-01",
+                Cvv            = "0000",
+                CardHolderName = $"{buyer.FirstName} {buyer.LastName}"
+            }
+        };
+    }
 
     private static ExternalFlightInsertData ToExternalFlightInsertData(ExternalFlightSelection ext) =>
         new()

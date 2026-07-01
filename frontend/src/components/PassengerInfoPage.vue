@@ -169,10 +169,10 @@
                 </span>
               </template>
               <template v-else-if="flight && flight.isStopover">
-                <span v-if="flight.leg1HandBagPrice" class="baggage-price-hint baggage-price-hint--leg">
-                  Vuelo 1 · ${{ flight.leg1HandBagPrice.toLocaleString() }} la 1ª
-                  <template v-if="flight.leg1BagMultiplier && flight.leg1BagMultiplier !== 1">
-                    · ${{ Math.round(flight.leg1HandBagPrice * flight.leg1BagMultiplier).toLocaleString() }} desde la 2ª
+                <span v-if="flight.handBagPrice" class="baggage-price-hint baggage-price-hint--leg">
+                  Vuelo 1 · ${{ flight.handBagPrice.toLocaleString() }} la 1ª
+                  <template v-if="flight.bagMultiplier && flight.bagMultiplier !== 1">
+                    · ${{ Math.round(flight.handBagPrice * flight.bagMultiplier).toLocaleString() }} desde la 2ª
                   </template>
                 </span>
                 <span v-if="flight2 && flight2.handBagPrice" class="baggage-price-hint baggage-price-hint--leg">
@@ -205,10 +205,10 @@
                 </span>
               </template>
               <template v-else-if="flight && flight.isStopover">
-                <span v-if="flight.leg1BagPrice" class="baggage-price-hint baggage-price-hint--leg">
-                  Vuelo 1 · ${{ flight.leg1BagPrice.toLocaleString() }} la 1ª
-                  <template v-if="flight.leg1BagMultiplier && flight.leg1BagMultiplier !== 1">
-                    · ${{ Math.round(flight.leg1BagPrice * flight.leg1BagMultiplier).toLocaleString() }} desde la 2ª
+                <span v-if="flight.bagPrice" class="baggage-price-hint baggage-price-hint--leg">
+                  Vuelo 1 · ${{ flight.bagPrice.toLocaleString() }} la 1ª
+                  <template v-if="flight.bagMultiplier && flight.bagMultiplier !== 1">
+                    · ${{ Math.round(flight.bagPrice * flight.bagMultiplier).toLocaleString() }} desde la 2ª
                   </template>
                 </span>
                 <span v-if="flight2 && flight2.bagPrice" class="baggage-price-hint baggage-price-hint--leg">
@@ -441,10 +441,11 @@ export default {
         return;
       }
 
-      const seatCount = this.purchaseState.seats.length;
-      const availLeg1 = checkAvailability(this.flight.code, this.flight.flightDate, seatCount);
-      const availLeg2 = flight2
-        ? checkAvailability(flight2.code, flight2.flightDate, seatCount)
+      const fcCount  = this.purchaseState.seats.filter(s => s.seatClass === 'FirstClass').length;
+      const ecoCount = this.purchaseState.seats.filter(s => s.seatClass === 'Economy').length;
+      const availLeg1 = checkAvailability(this.flight.code, this.flight.flightDate, fcCount, ecoCount);
+      const availLeg2 = (flight2 && !flight2.isExternal)
+        ? checkAvailability(flight2.code, flight2.flightDate, fcCount, ecoCount)
         : Promise.resolve(true);
 
       const [avail1, avail2] = await Promise.all([availLeg1, availLeg2]);

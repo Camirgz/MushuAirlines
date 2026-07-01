@@ -58,4 +58,20 @@ public class PassengerRepository : IPassengerRepository
             throw;
         }
     }
+
+    public async Task DeletePassengersAsync(IEnumerable<int> passengerIds)
+    {
+        var ids = passengerIds.ToList();
+        if (ids.Count == 0) return;
+
+        using var connection = new SqlConnection(_connectionString);
+        await connection.OpenAsync();
+
+        const string sql = @"
+            DELETE FROM Passenger WHERE Id IN @Ids;
+            DELETE FROM Person    WHERE Id IN @Ids;
+            DELETE FROM [User]    WHERE Id IN @Ids;";
+
+        await connection.ExecuteAsync(sql, new { Ids = ids });
+    }
 }

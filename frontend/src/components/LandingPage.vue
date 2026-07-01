@@ -1222,8 +1222,8 @@ export default {
       const leg2 = conn.leg2
 
       const [avail1, avail2] = await Promise.all([
-        checkAvailability(leg1.id, leg1.date, this.passengerCount),
-        checkAvailability(leg2.id, leg2.date, this.passengerCount),
+        checkAvailability(leg1.id, leg1.date, this.stopoverFirstClassCount, this.stopoverEconomyCount),
+        checkAvailability(leg2.id, leg2.date, this.stopoverFirstClassCount, this.stopoverEconomyCount),
       ])
 
       if (!avail1 || !avail2) {
@@ -1299,7 +1299,7 @@ export default {
       const f = this.selectedFlight
 
       // Verify seat availability before navigating
-      const available = await checkAvailability(f.id, f.date, this.passengerCount)
+      const available = await checkAvailability(f.id, f.date, this.firstClassCount, this.economyCount)
       if (!available) {
         this.seatAvailabilityError = 'Lo sentimos, este vuelo ya no tiene asientos disponibles para la cantidad de pasajeros solicitada.'
         return

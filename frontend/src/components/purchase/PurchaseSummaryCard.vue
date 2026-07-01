@@ -62,14 +62,40 @@
 
       <div class="info-group">
         <div class="group-label">Desglose</div>
-        <div class="price-item" v-if="fcCount > 0">
-          <span>{{ fcCount }} × Primera Clase</span>
-          <span class="price-val">${{ fcTotal.toLocaleString() }}</span>
-        </div>
-        <div class="price-item" v-if="ecCount > 0">
-          <span>{{ ecCount }} × Turista</span>
-          <span class="price-val">${{ ecTotal.toLocaleString() }}</span>
-        </div>
+
+        <!-- Direct flight seat prices -->
+        <template v-if="!flight.isStopover">
+          <div class="price-item" v-if="fcCount > 0">
+            <span>{{ fcCount }} × Primera Clase</span>
+            <span class="price-val">${{ fcTotal.toLocaleString() }}</span>
+          </div>
+          <div class="price-item" v-if="ecCount > 0">
+            <span>{{ ecCount }} × Turista</span>
+            <span class="price-val">${{ ecTotal.toLocaleString() }}</span>
+          </div>
+        </template>
+
+        <!-- Stopover seat prices per leg -->
+        <template v-if="flight.isStopover">
+          <div class="price-section-label">Vuelo 1</div>
+          <div class="price-item" v-if="fcCount > 0">
+            <span class="price-item--indented">{{ fcCount }} × Primera Clase</span>
+            <span class="price-val">${{ fcTotal.toLocaleString() }}</span>
+          </div>
+          <div class="price-item" v-if="ecCount > 0">
+            <span class="price-item--indented">{{ ecCount }} × Turista</span>
+            <span class="price-val">${{ ecTotal.toLocaleString() }}</span>
+          </div>
+          <div class="price-section-label">Vuelo 2</div>
+          <div class="price-item" v-if="fcCount > 0">
+            <span class="price-item--indented">{{ fcCount }} × Primera Clase</span>
+            <span class="price-val">${{ fcTotal2.toLocaleString() }}</span>
+          </div>
+          <div class="price-item" v-if="ecCount > 0">
+            <span class="price-item--indented">{{ ecCount }} × Turista</span>
+            <span class="price-val">${{ ecTotal2.toLocaleString() }}</span>
+          </div>
+        </template>
 
         <!-- Direct flight baggage -->
         <template v-if="!flight.isStopover">
@@ -152,6 +178,12 @@ export default {
     ecTotal() {
       return this.ecCount * (this.flight.priceEconomy || 0);
     },
+    fcTotal2() {
+      return this.fcCount * (this.flight2?.priceFirstClass || 0);
+    },
+    ecTotal2() {
+      return this.ecCount * (this.flight2?.priceEconomy || 0);
+    },
     // Direct flight totals
     handBagTotal() {
       const price      = this.flight.handBagPrice  || 0;
@@ -165,13 +197,13 @@ export default {
     },
     // Stopover leg 1 totals
     leg1HandBagTotal() {
-      const price      = this.flight.leg1HandBagPrice  || 0;
-      const multiplier = this.flight.leg1BagMultiplier || 1;
+      const price      = this.flight.handBagPrice  || 0;
+      const multiplier = this.flight.bagMultiplier || 1;
       return this.passengers.reduce((sum, p) => sum + this.bagSubtotal(p.handBagCount || 0, price, multiplier), 0);
     },
     leg1CheckedBagTotal() {
-      const price      = this.flight.leg1BagPrice      || 0;
-      const multiplier = this.flight.leg1BagMultiplier || 1;
+      const price      = this.flight.bagPrice      || 0;
+      const multiplier = this.flight.bagMultiplier || 1;
       return this.passengers.reduce((sum, p) => sum + this.bagSubtotal(p.checkedBagCount || 0, price, multiplier), 0);
     },
     // Stopover leg 2 totals
@@ -187,7 +219,7 @@ export default {
     },
     total() {
       if (this.flight.isStopover) {
-        return this.fcTotal + this.ecTotal
+        return this.fcTotal + this.ecTotal + this.fcTotal2 + this.ecTotal2
           + this.leg1HandBagTotal + this.leg1CheckedBagTotal
           + this.leg2HandBagTotal + this.leg2CheckedBagTotal;
       }

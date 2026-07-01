@@ -101,10 +101,10 @@ export async function checkPassengerDuplicates(routeCode, flightDate, passengers
  * @param {number} count       — number of seats needed
  * @returns {Promise<boolean>}
  */
-export async function checkAvailability(routeCode, flightDate, count) {
+export async function checkAvailability(routeCode, flightDate, firstClassCount, economyCount) {
   try {
     const response = await axios.get(`${BASE}/purchase/check-availability`, {
-      params: { routeCode, flightDate, count }
+      params: { routeCode, flightDate, firstClassCount, economyCount }
     })
     return response.data.available === true
   } catch {

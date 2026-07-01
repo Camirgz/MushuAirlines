@@ -13,5 +13,7 @@ public interface IPurchaseRepository
     Task<List<PassengerIdentityRecord>> GetPassengerIdentitiesOnFlightAsync(int scheduledFlightId);
     Task UpdateFlightBookingAsync(int scheduledFlightId, int firstPassengerId, int seatCount);
     Task<int> GetBookedSeatsAsync(int scheduledFlightId);
+    Task<int> GetBookedSeatsByClassAsync(int scheduledFlightId, string seatClass);
     Task<int> GetAircraftCapacityByTypeAsync(string aircraftTypeId);
+    Task<(int FirstClass, int Economy)> GetAircraftCapacityByClassAsync(string aircraftTypeId);
 }

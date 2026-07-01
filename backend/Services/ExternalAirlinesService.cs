@@ -1,3 +1,4 @@
+using System.Net.Http.Json;
 using System.Text.Json;
 using backend.Model;
 using Microsoft.Extensions.Configuration;
@@ -9,6 +10,8 @@ public interface IExternalAirlinesService
     Task<IEnumerable<ExternalAirlineFlightDto>> GetExternalFlightsAsync(
         string destination,
         string? date);
+
+    Task BookExternalFlightAsync(string airlineName, ExternalOrderRequest order);
 }
 
 public class ExternalAirlinesService : IExternalAirlinesService
@@ -40,6 +43,26 @@ public class ExternalAirlinesService : IExternalAirlinesService
         var results = await Task.WhenAll(tasks);
 
         return results.SelectMany(r => r);
+    }
+
+    public async Task BookExternalFlightAsync(string airlineName, ExternalOrderRequest order)
+    {
+        var airline = _airlines.FirstOrDefault(a =>
+            string.Equals(a.Name, airlineName, StringComparison.OrdinalIgnoreCase))
+            ?? throw new InvalidOperationException($"Aerolínea externa '{airlineName}' no configurada.");
+
+        order.ApiKey = airline.ApiKey;
+
+        var client   = _httpClientFactory.CreateClient();
+        var response = await client.PostAsJsonAsync(
+            $"{airline.BaseUrl}/api/external/order", order, _jsonOptions);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync();
+            throw new InvalidOperationException(
+                $"La aerolínea '{airlineName}' rechazó la reserva ({(int)response.StatusCode}): {body}");
+        }
     }
 
     private async Task<IEnumerable<ExternalAirlineFlightDto>> FetchFromAirlineAsync(
