@@ -70,4 +70,41 @@ public class ExternalApiController : ControllerBase
             return StatusCode(500, new { code = "INTERNAL_SERVER_ERROR", description = ex.Message });
         }
     }
+
+    [HttpPost("order")]
+    public async Task<IActionResult> OrderFlight([FromBody] OrderRequest request)
+    {
+
+        if (request == null)
+        {
+            return BadRequest(new { code = "MISSING_REQUEST", description = "Request body is required" });
+        }
+
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        if (string.IsNullOrEmpty(request.ApiKey))
+        {
+            return Unauthorized(new { code = "UNAUTHORIZED", description = "Invalid API Key" });
+        }
+
+        try
+        {
+            var result = await _client.OrderFlightAsync(request);
+            return Ok(result);
+        }
+        catch (Client.BackendException ex)
+        {
+            if (ex.StatusCode == 401)
+                return Unauthorized(new { code = "UNAUTHORIZED", description = "Backend unauthorized" });
+
+            return StatusCode(ex.StatusCode, new { code = "BACKEND_ERROR", description = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { code = "INTERNAL_SERVER_ERROR", description = ex.Message });
+        }
+    }
 }
