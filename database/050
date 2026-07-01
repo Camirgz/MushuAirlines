@@ -1,0 +1,4 @@
+USE MushuAirlines;
+
+CREATE INDEX idx_route_destination 
+ON Route (DestinationAirport);
