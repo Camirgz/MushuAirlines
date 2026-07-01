@@ -1,0 +1,4 @@
+USE MushuAirlines;
+
+CREATE INDEX idx_externalFlight_airline 
+ON ExternalFlight (Airline);

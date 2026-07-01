@@ -1,0 +1,15 @@
+USE MushuAirlines;
+
+CREATE TABLE ExternalFlight (
+	Code varchar(100) NOT NULL PRIMARY KEY,
+	Airline NVARCHAR(50) NOT NULL,
+	OriginAirport NVARCHAR(3) NOT NULL,
+	ArrivalAirport NVARCHAR(3) NOT NULL,
+	DepartureDate DATETIME NOT NULL,
+	ArrivalDate DATETIME NOT NULL,
+	Duration TIME NOT NULL,
+	PriceEconomy DECIMAL(10,2) NOT NULL,
+	PriceFirstClass DECIMAL(10,2) NOT NULL,
+	HandBagPrice DECIMAL(10,2) NOT NULL,
+	BagPrice DECIMAL(10,2) NOT NULL
+);

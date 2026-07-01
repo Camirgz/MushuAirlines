@@ -1,0 +1,5 @@
+ALTER TABLE ExternalFlight
+	ADD OriginCity NVARCHAR(100),
+		ArrivalCity NVARCHAR(100),
+		OriginAirportName NVARCHAR(100),
+		ArrivalAirportName NVARCHAR(100);
