@@ -85,10 +85,10 @@ public class ExternalOrderPassenger
     [JsonPropertyName("passportExpirationDate")]
     public string PassportExpirationDate { get; set; } = string.Empty;
 
-    [JsonPropertyName("paspoertCountry")]
+    [JsonPropertyName("passportCountry")]
     public string PassportCountry { get; set; } = string.Empty;
 
-    [JsonPropertyName("fisrtName")]
+    [JsonPropertyName("firstName")]
     public string FirstName { get; set; } = string.Empty;
 
     [JsonPropertyName("lastName")]
@@ -109,7 +109,7 @@ public class ExternalOrderBuyer
     [JsonPropertyName("nationality")]
     public string Nationality { get; set; } = string.Empty;
 
-    [JsonPropertyName("fisrtName")]
+    [JsonPropertyName("firstName")]
     public string FirstName { get; set; } = string.Empty;
 
     [JsonPropertyName("lastName")]
@@ -127,10 +127,10 @@ public class ExternalOrderBuyer
 
 public class ExternalOrderPayment
 {
-    [JsonPropertyName("cardNunber")]
+    [JsonPropertyName("cardNumber")]
     public string CardNumber { get; set; } = string.Empty;
 
-    [JsonPropertyName("cardEspiration")]
+    [JsonPropertyName("cardExpiration")]
     public string CardExpiration { get; set; } = string.Empty;
 
     [JsonPropertyName("cvv")]

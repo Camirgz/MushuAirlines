@@ -76,7 +76,7 @@ export function usePurchaseFlow() {
 
     function toExternalLeg(leg) {
       return {
-        flightGUID:         leg.code,
+        flightGUID:         leg.flightGUID ?? leg.code,
         airlineName:        leg.airline,
         departureTime:      leg.rawDepartureTime ?? leg.departureTime,
         arrivalTime:        leg.rawArrivalTime   ?? leg.arrivalTime,

@@ -719,7 +719,8 @@ function flightOperatesOnDate(flight, dateStr) {
 function externalFlightToFlight(f, date) {
   const hours = durationToHours(f.duration)
   return {
-    id: f.flightGUID,
+    id:         f.flightGUID,
+    flightGUID: f.flightGUID,
     origin: f.departureAirport?.code || '',
     destination: f.arrivalAirport?.code || '',
     originCity: f.departureAirport?.city || '',
@@ -1276,6 +1277,7 @@ export default {
         seats,
         {
           code:             leg2.id,
+          flightGUID:       leg2.flightGUID    ?? null,
           flightDate:       leg2.date,
           origin:           leg2.origin,
           destination:      leg2.destination,

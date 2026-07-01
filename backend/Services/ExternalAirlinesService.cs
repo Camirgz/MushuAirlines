@@ -54,6 +54,8 @@ public class ExternalAirlinesService : IExternalAirlinesService
         order.ApiKey = airline.ApiKey;
 
         var client   = _httpClientFactory.CreateClient();
+        var debugOpts = new JsonSerializerOptions(_jsonOptions) { WriteIndented = true };
+        Console.WriteLine($"[ExternalBooking] JSON enviado a {airlineName}:\n{JsonSerializer.Serialize(order, debugOpts)}");
         var response = await client.PostAsJsonAsync(
             $"{airline.BaseUrl}/api/external/order", order, _jsonOptions);
 
@@ -82,10 +84,12 @@ public class ExternalAirlinesService : IExternalAirlinesService
                       $"&apiKey={Uri.EscapeDataString(airline.ApiKey)}";
 
             var response = await client.GetAsync(url);
+            var content  = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"[Search] {airline.Name} → {destination} | {(int)response.StatusCode} | {content[..Math.Min(200, content.Length)]}");
+
             if (!response.IsSuccessStatusCode)
                 return Enumerable.Empty<ExternalAirlineFlightDto>();
 
-            var content = await response.Content.ReadAsStringAsync();
             var data = JsonSerializer.Deserialize<ExternalAirlineResponse>(content, _jsonOptions);
 
             if (data?.Flights == null)
