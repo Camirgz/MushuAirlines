@@ -27,4 +27,5 @@ public class RouteCreationModel
     public int FirstClassCapacity { get; set; }
     public int AircraftCode { get; set; }
     public bool IsDeleted { get; set; }
+    public string AirlineName { get; set; } = "Mushu Airlines";
 }

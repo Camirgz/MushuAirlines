@@ -95,6 +95,8 @@ builder.Services.AddScoped<IProfileService, ProfileService>();
 
 builder.Services.AddScoped<IFlightRepository, RouteCreationRepository>();
 builder.Services.AddScoped<FlightAggregatorService>();
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<IExternalAirlinesService, ExternalAirlinesService>();
 
 builder.Services.AddSingleton<ICodeGenerator, CodeGenerator>();
 builder.Services.AddSingleton<IPricingCalculator, PurchasePricingCalculator>();

@@ -23,6 +23,14 @@ namespace backend.Repositories
             _connectionString = configuration.GetConnectionString("LoginContext");
         }
 
+        public IEnumerable<string> GetIntermediateDestinations(string originAirport)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            return connection.Query<string>(
+                "SELECT DISTINCT DestinationAirport FROM Route WHERE OriginAirport = @Origin AND IsDeleted = 0",
+                new { Origin = originAirport }).ToList();
+        }
+
         public IEnumerable<RouteDbModel> GetAll(
             string date = null,
             string origin = null,
@@ -545,6 +553,109 @@ namespace backend.Repositories
             catch
             {
                 throw;
+            }
+        }
+
+        public void GetOrCreateExternalRoute(
+            string flightGuid,
+            string airlineName,
+            string originAirport,
+            string destinationAirport,
+            string departureTime,
+            string arrivalTime,
+            string duration,
+            decimal priceFirstClass,
+            decimal priceEconomy,
+            decimal handBagPrice,
+            decimal bagPrice)
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            bool exists = connection.QueryFirstOrDefault<int?>(@"
+                SELECT 1 FROM Route
+                WHERE UPPER(LTRIM(RTRIM(Code))) = UPPER(LTRIM(RTRIM(@Code)))
+                AND IsDeleted = 0",
+                new { Code = flightGuid }) != null;
+
+            if (exists) return;
+
+            int aircraftCode = GetAircraftCode($"External-{airlineName}");
+
+            string query = @"
+                INSERT INTO Route
+                (
+                    Code,
+                    OriginAirport,
+                    DestinationAirport,
+                    DepartureTime,
+                    ArrivalTime,
+                    Duration,
+                    AircraftTypeId,
+                    AircraftCode,
+                    Frequency,
+                    PriceFirstClass,
+                    PriceEconomy,
+                    HandBagPrice,
+                    HandBagWeight,
+                    BagPrice,
+                    BagWeight,
+                    BagMultiplier,
+                    StartDate,
+                    FinalizationDate,
+                    EconomyClassCapacity,
+                    FirstClassCapacity,
+                    OriginCity,
+                    DestinationCity,
+                    AirlineName
+                )
+                SELECT
+                    @Code,
+                    @OriginAirport,
+                    @DestinationAirport,
+                    @DepartureTime,
+                    @ArrivalTime,
+                    @Duration,
+                    a.Model,
+                    a.Code,
+                    'Lunes,Martes,Miércoles,Jueves,Viernes,Sábado,Domingo',
+                    @PriceFirstClass,
+                    @PriceEconomy,
+                    @HandBagPrice,
+                    0,
+                    @BagPrice,
+                    0,
+                    1,
+                    '2020-01-01',
+                    '2099-12-31',
+                    a.EconomyRows * a.EconomySeatsPerRow,
+                    a.FirstClassRows * a.FirstClassSeatsPerRow,
+                    @OriginAirport,
+                    @DestinationAirport,
+                    @AirlineName
+                FROM Aircraft a
+                WHERE a.Code = @AircraftCode
+                AND a.IsDeleted = 0;
+            ";
+
+            int affectedRows = connection.Execute(query, new
+            {
+                Code = flightGuid,
+                OriginAirport = originAirport,
+                DestinationAirport = destinationAirport,
+                DepartureTime = departureTime,
+                ArrivalTime = arrivalTime,
+                Duration = duration,
+                AircraftCode = aircraftCode,
+                PriceFirstClass = priceFirstClass,
+                PriceEconomy = priceEconomy,
+                HandBagPrice = handBagPrice,
+                BagPrice = bagPrice,
+                AirlineName = airlineName
+            });
+
+            if (affectedRows == 0)
+            {
+                throw new Exception("No se encontró la aeronave seleccionada para la ruta externa.");
             }
         }
     }

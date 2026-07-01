@@ -108,6 +108,25 @@ namespace backend.Services
             };
         }
 
+        public void GetOrCreateExternalRoute(
+            string flightGuid,
+            string airlineName,
+            string originAirport,
+            string destinationAirport,
+            string departureTime,
+            string arrivalTime,
+            string duration,
+            decimal priceFirstClass,
+            decimal priceEconomy,
+            decimal handBagPrice,
+            decimal bagPrice)
+        {
+            routeCreationRepository.GetOrCreateExternalRoute(
+                flightGuid, airlineName, originAirport, destinationAirport,
+                departureTime, arrivalTime, duration,
+                priceFirstClass, priceEconomy, handBagPrice, bagPrice);
+        }
+
         public string DeleteRoute(string code)
         {
             if (string.IsNullOrWhiteSpace(code))

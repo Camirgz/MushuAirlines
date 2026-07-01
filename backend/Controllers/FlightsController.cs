@@ -15,7 +15,7 @@ public class FlightsController : ControllerBase
     }
 
     [HttpGet]
-    public IActionResult GetFlights(
+    public async Task<IActionResult> GetFlights(
         [FromQuery] string date = null,
         [FromQuery] string origin = null,
         [FromQuery] string originType = null,
@@ -24,8 +24,14 @@ public class FlightsController : ControllerBase
     {
         try
         {
-            var flights = _flightAggregatorService.GetAllFlights(date, origin, originType, destination, destinationType);
-            return Ok(flights);
+            var localFlights = _flightAggregatorService.GetAllFlights(date, origin, originType, destination, destinationType);
+            var externalFlights = await _flightAggregatorService.GetExternalFlightsAsync(origin, originType, destination, destinationType, date);
+
+            return Ok(new
+            {
+                flights = localFlights,
+                externalFlights = externalFlights
+            });
         }
         catch (Exception ex)
         {

@@ -18,4 +18,17 @@ public interface IRouteCreationRepository
     int GetOrCreateScheduledFlight(string routeCode, DateTime date);
     int? FindExistingScheduledFlight(string routeCode, DateTime date);
     bool DeleteRoute(string code);
+
+    void GetOrCreateExternalRoute(
+        string flightGuid,
+        string airlineName,
+        string originAirport,
+        string destinationAirport,
+        string departureTime,
+        string arrivalTime,
+        string duration,
+        decimal priceFirstClass,
+        decimal priceEconomy,
+        decimal handBagPrice,
+        decimal bagPrice);
 }

@@ -66,14 +66,29 @@ export function usePurchaseFlow() {
    * Call this inside PaymentForm once both payment and all prior steps are set.
    */
   function buildPurchaseRequest() {
+    const flight2IsExternal = !!_state.flight2?.isExternal
+
     return {
       flight: {
         routeCode:  _state.flight?.code ?? '',
         flightDate: _state.flight?.flightDate ?? '',
       },
-      flight2: _state.flight2 ? {
+      flight2: (_state.flight2 && !flight2IsExternal) ? {
         routeCode:  _state.flight2.code,
         flightDate: _state.flight2.flightDate,
+      } : null,
+      externalFlight2: flight2IsExternal ? {
+        flightGUID:         _state.flight2.code,
+        airlineName:        _state.flight2.airline ?? '',
+        departureTime:      _state.flight2.departureTime ?? '',
+        arrivalTime:        _state.flight2.arrivalTime ?? '',
+        originAirport:      _state.flight2.origin ?? '',
+        destinationAirport: _state.flight2.destination ?? '',
+        flightDate:         _state.flight2.flightDate ?? '',
+        touristPrice:       _state.flight2.priceEconomy ?? 0,
+        firstClassPrice:    _state.flight2.priceFirstClass ?? 0,
+        carryOnPrice:       _state.flight2.handBagPrice ?? 0,
+        checkedPrice:       _state.flight2.bagPrice ?? 0,
       } : null,
       passengers: _state.passengers.map(p => ({
         firstName:       p.firstName,

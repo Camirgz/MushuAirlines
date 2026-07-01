@@ -400,6 +400,7 @@
             :direct-flight="flight"
             :passenger-count="passengerCount"
             :airports="airports"
+            :airline="flight.airline || null"
             @select="openFlightDetails"
           />
 
@@ -737,6 +738,37 @@ function flightOperatesOnDate(flight, dateStr) {
   return flight.frequency.includes(dayName)
 }
 
+function externalFlightToFlight(f, date) {
+  const hours = durationToHours(f.duration)
+  return {
+    id: f.flightGUID,
+    origin: f.departureAirport?.code || '',
+    destination: f.arrivalAirport?.code || '',
+    originCity: f.departureAirport?.city || '',
+    destinationCity: f.arrivalAirport?.city || '',
+    duration: f.duration,
+    departureTime: f.departureTime?.includes('T') ? f.departureTime.substring(11, 16) : f.departureTime?.substring(0, 5),
+    arrivalTime: f.arrivalTime?.includes('T') ? f.arrivalTime.substring(11, 16) : f.arrivalTime?.substring(0, 5),
+    durationHours: hours,
+    durationLabel: durationToLabel(f.duration),
+    aircraftTypeId: null,
+    price: f.touristPrice,
+    priceFirstClass: f.firstClassPrice,
+    priceEconomy: f.touristPrice,
+    handBagPrice: f.carryOnPrice,
+    handBagWeight: 0,
+    bagPrice: f.checkedPrice,
+    bagWeight: 0,
+    bagMultiplier: 1,
+    frequency: [],
+    finalizationDate: null,
+    airline: f.airline,
+    isExternal: true,
+    date: date,
+    arrivalDate: date,
+  }
+}
+
 function routeToFlight(r) {
   const hours = durationToHours(r.duration)
   return {
@@ -832,10 +864,9 @@ export default {
     }
     try {
       const flightsRes = await fetch(`${API_BASE_URL}/api/flights`)
-      const flights = await flightsRes.json()
-      console.log('[DEBUG] primer vuelo raw del API:', JSON.stringify(flights[0]))
+      const flightsData = await flightsRes.json()
+      const flights = flightsData.flights ?? flightsData
       this.flights = flights.map(routeToFlight)
-      console.log('[DEBUG] primer vuelo mapeado finalizationDate:', this.flights[0]?.finalizationDate)
     } catch (e) {
       console.error('Error cargando vuelos:', e)
     }
@@ -1099,20 +1130,41 @@ export default {
 
       this.errorMsg = ''
 
-      // Two parallel fetches:
-      // 1. Direct flights — API filters by origin/destination/capacity
-      // 2. All available flights for this date — used by the stopover finder
+      // Fetches:
+      // 1. Direct flights — API filters by origin/destination
+      // 2. All local flights for this date — base pool for stopover finder
+      // 3. External flights (from GET /api/flights externalFlights) — for stopover leg2 candidates
       let directFlights = []
       let availableFlights = this.flights
+
+      const { value: originVal, type: originType } = this.selectedOrigin
+      const { value: destVal, type: destType } = this.selectedDestination
+
+      const originCodes = originType === 'city'
+        ? this.airports.filter(a => a.city === originVal).map(a => a.code)
+        : [originVal]
+      const destCodes = destType === 'city'
+        ? this.airports.filter(a => a.city === destVal).map(a => a.code)
+        : [destVal]
+
       try {
-        const { value: originVal, type: originType } = this.selectedOrigin
-        const { value: destVal, type: destType } = this.selectedDestination
         const [directRes, allRes] = await Promise.all([
           fetch(`${API_BASE_URL}/api/flights?date=${this.departureDate}&origin=${encodeURIComponent(originVal)}&originType=${originType}&destination=${encodeURIComponent(destVal)}&destinationType=${destType}`),
-          fetch(`${API_BASE_URL}/api/flights?date=${this.departureDate}`)
+          fetch(`${API_BASE_URL}/api/flights?date=${this.departureDate}`),
         ])
-        directFlights = (await directRes.json()).map(routeToFlight)
-        availableFlights = (await allRes.json()).map(routeToFlight)
+        const directData = await directRes.json()
+        const allData = await allRes.json()
+
+        const allExternal = (directData.externalFlights ?? []).map(f => externalFlightToFlight(f, this.departureDate))
+
+        // Directos: solo vuelos de Mushu (locales)
+        directFlights = (directData.flights ?? directData).map(routeToFlight)
+
+        const localPool = (allData.flights ?? allData).map(routeToFlight)
+        // Pool de escalas: locales + externos que lleguen al destino (para ser leg2)
+        // leg1 siempre será de Mushu (local), leg2 puede ser externo
+        const externalPool = allExternal.filter(f => destCodes.includes(f.destination))
+        availableFlights = [...localPool, ...externalPool]
       } catch (e) {
         console.error('Error consultando vuelos:', e)
       }
@@ -1127,14 +1179,6 @@ export default {
             ? addDaysToDateString(this.departureDate, 1)
             : this.departureDate,
         }))
-
-      // Stopover connections — expand city selection to array of airport codes
-      const originCodes = this.selectedOrigin.type === 'city'
-        ? this.airports.filter(a => a.city === this.selectedOrigin.value).map(a => a.code)
-        : [this.selectedOrigin.value]
-      const destCodes = this.selectedDestination.type === 'city'
-        ? this.airports.filter(a => a.city === this.selectedDestination.value).map(a => a.code)
-        : [this.selectedDestination.value]
 
       const rawConnections = findStopoverConnections(availableFlights, originCodes, destCodes, this.departureDate)
 
@@ -1285,6 +1329,12 @@ export default {
           handBagPrice:  leg2.handBagPrice  ?? 0,
           bagPrice:      leg2.bagPrice      ?? 0,
           bagMultiplier: leg2.bagMultiplier ?? 1,
+          isExternal:      leg2.isExternal ?? false,
+          airline:         leg2.airline ?? '',
+          departureTime:   leg2.departureTime ?? '',
+          arrivalTime:     leg2.arrivalTime ?? '',
+          priceEconomy:    leg2.priceEconomy ?? 0,
+          priceFirstClass: leg2.priceFirstClass ?? 0,
         }
       )
 

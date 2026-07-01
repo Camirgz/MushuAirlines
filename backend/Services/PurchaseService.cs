@@ -51,11 +51,45 @@ public class PurchaseService : IPurchaseService
             request.Flight.RouteCode,
             request.Flight.FlightDate.ToDateTime(TimeOnly.MinValue));
 
-        bool isStopover          = request.Flight2 != null;
+        bool isExternalLeg2      = request.ExternalFlight2 != null;
+        bool isStopover          = request.Flight2 != null || isExternalLeg2;
         RouteCreationModel? route2      = null;
         int                scheduledFlightId2 = 0;
 
-        if (isStopover)
+        if (isExternalLeg2)
+        {
+            var ext = request.ExternalFlight2!;
+
+            _routeCreationService.GetOrCreateExternalRoute(
+                ext.FlightGUID,
+                ext.AirlineName,
+                ext.OriginAirport,
+                ext.DestinationAirport,
+                ext.DepartureTime,
+                ext.ArrivalTime,
+                "0:00",
+                ext.FirstClassPrice,
+                ext.TouristPrice,
+                ext.CarryOnPrice,
+                ext.CheckedPrice);
+
+            try
+            {
+                route2 = _routeCreationService.GetRouteByCode(ext.FlightGUID);
+            }
+            catch
+            {
+                throw new InvalidFlightDateException(
+                    ext.FlightDate,
+                    ext.FlightGUID,
+                    "el vuelo externo no pudo registrarse");
+            }
+
+            scheduledFlightId2 = _routeCreationService.GetOrCreateScheduledFlight(
+                ext.FlightGUID,
+                ext.FlightDate.ToDateTime(TimeOnly.MinValue));
+        }
+        else if (isStopover)
         {
             try
             {
@@ -74,6 +108,9 @@ public class PurchaseService : IPurchaseService
                 request.Flight2.FlightDate.ToDateTime(TimeOnly.MinValue));
         }
 
+        string?  leg2RouteCode  = isExternalLeg2 ? request.ExternalFlight2!.FlightGUID : request.Flight2?.RouteCode;
+        DateOnly leg2FlightDate = isExternalLeg2 ? request.ExternalFlight2!.FlightDate  : request.Flight2?.FlightDate ?? default;
+
         int seatCount       = request.SeatSelections.Count;
         int firstClassCount = request.SeatSelections.Count(s => s.SeatClass == SeatClass.FirstClass);
         int economyCount    = request.SeatSelections.Count(s => s.SeatClass == SeatClass.Economy);
@@ -85,7 +122,7 @@ public class PurchaseService : IPurchaseService
         if (isStopover)
         {
             bool flight2Available = await IsFlightAvailableAsync(
-                request.Flight2!.RouteCode, request.Flight2.FlightDate, firstClassCount, economyCount);
+                leg2RouteCode!, leg2FlightDate, firstClassCount, economyCount);
             if (!flight2Available) throw new SeatUnavailableException(scheduledFlightId2);
         }
 

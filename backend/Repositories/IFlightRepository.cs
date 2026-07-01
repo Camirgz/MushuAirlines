@@ -10,4 +10,6 @@ public interface IFlightRepository
         string originType = null,
         string destination = null,
         string destinationType = null);
+
+    IEnumerable<string> GetIntermediateDestinations(string originAirport);
 }
