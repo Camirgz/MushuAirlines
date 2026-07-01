@@ -866,9 +866,7 @@ export default {
       const flightsRes = await fetch(`${API_BASE_URL}/api/flights`)
       const flightsData = await flightsRes.json()
       const flights = flightsData.flights ?? flightsData
-      console.log('[DEBUG] primer vuelo raw del API:', JSON.stringify(flights[0]))
       this.flights = flights.map(routeToFlight)
-      console.log('[DEBUG] primer vuelo mapeado finalizationDate:', this.flights[0]?.finalizationDate)
     } catch (e) {
       console.error('Error cargando vuelos:', e)
     }

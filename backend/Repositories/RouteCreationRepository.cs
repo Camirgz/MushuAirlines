@@ -65,7 +65,7 @@ namespace backend.Repositories
                 INNER JOIN Airport ad
                     ON r.DestinationAirport = ad.Code
                 AND ad.IsDeleted = 0
-                INNER JOIN Aircraft ar
+                LEFT JOIN Aircraft ar
                     ON r.AircraftCode = ar.Code
                 AND ar.IsDeleted = 0
                 WHERE r.IsDeleted = 0
